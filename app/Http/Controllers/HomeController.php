@@ -1,0 +1,202 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\BarongProduct;
+use App\Models\Category;
+
+class HomeController extends Controller
+{
+    /**
+     * Display the homepage.
+     */
+    public function index()
+    {
+        // Get featured barong products
+        $featuredProducts = BarongProduct::with(['brand', 'category'])
+            ->featured()
+            ->available()
+            ->limit(8)
+            ->get();
+
+        // Get new arrivals
+        $newArrivals = BarongProduct::with(['brand', 'category'])
+            ->available()
+            ->orderBy('created_at', 'desc')
+            ->limit(8)
+            ->get();
+
+        // Get categories
+        $categories = Category::active()
+            ->ordered()
+            ->withCount(['barongProducts' => function ($query) {
+                $query->available();
+            }])
+            ->get();
+
+        return view('home', compact('featuredProducts', 'newArrivals', 'categories'));
+    }
+
+    /**
+     * Display the cart page.
+     */
+    public function cart()
+    {
+        return view('cart');
+    }
+
+    /**
+     * Display the checkout page.
+     */
+    public function checkout()
+    {
+        return view('checkout');
+    }
+
+    /**
+     * Display the custom design page.
+     */
+    public function customDesign()
+    {
+        return view('custom-design');
+    }
+
+    /**
+     * Display product details page.
+     */
+    public function productDetails($slug)
+    {
+        $product = BarongProduct::with(['brand', 'category'])
+            ->where('slug', $slug)
+            ->available()
+            ->first();
+
+        if (!$product) {
+            abort(404);
+        }
+        
+        
+
+        // Get related products from the same category
+        $relatedProducts = BarongProduct::with(['brand', 'category'])
+            ->where('category_id', $product->category_id)
+            ->where('id', '!=', $product->id)
+            ->available()
+            ->limit(4)
+            ->get();
+
+        return view('product-view', compact('product', 'relatedProducts'));
+    }
+
+    /**
+     * Display the wishlist page.
+     */
+    public function wishlist()
+    {
+        return view('wishlist');
+    }
+
+    /**
+     * Display the profile page.
+     */
+    public function profile()
+    {
+        return view('profile');
+    }
+
+    /**
+     * Display the orders page.
+     */
+    public function orders()
+    {
+        return view('orders');
+    }
+
+    /**
+     * Display category page with products.
+     */
+    public function category($slug)
+    {
+        $category = Category::where('slug', $slug)->where('is_active', true)->firstOrFail();
+        
+        $query = BarongProduct::where('category_id', $category->id)->available();
+        
+        // Apply filters using computed current price: COALESCE(sale_price, price)
+        $min = request('min_price');
+        $max = request('max_price');
+        
+        // Apply price range based on which bounds are present
+        $minVal = ($min !== null && $min !== '' && is_numeric($min)) ? (float) $min : null;
+        $maxVal = ($max !== null && $max !== '' && is_numeric($max)) ? (float) $max : null;
+        
+        if (!is_null($minVal) && !is_null($maxVal)) {
+            // Both bounds provided
+            if ($minVal > $maxVal) {
+                [$minVal, $maxVal] = [$maxVal, $minVal];
+            }
+            $query->where(function($q) use ($minVal, $maxVal) {
+                $q->where(function($subQ) use ($minVal, $maxVal) {
+                    $subQ->whereNotNull('special_price')
+                         ->whereBetween('special_price', [$minVal, $maxVal]);
+                })->orWhere(function($subQ) use ($minVal, $maxVal) {
+                    $subQ->whereNull('special_price')
+                         ->whereBetween('base_price', [$minVal, $maxVal]);
+                });
+            });
+        } elseif (!is_null($minVal)) {
+            // Only min provided
+            $query->where(function($q) use ($minVal) {
+                $q->where(function($subQ) use ($minVal) {
+                    $subQ->whereNotNull('special_price')
+                         ->where('special_price', '>=', $minVal);
+                })->orWhere(function($subQ) use ($minVal) {
+                    $subQ->whereNull('special_price')
+                         ->where('base_price', '>=', $minVal);
+                });
+            });
+        } elseif (!is_null($maxVal)) {
+            // Only max provided
+            $query->where(function($q) use ($maxVal) {
+                $q->where(function($subQ) use ($maxVal) {
+                    $subQ->whereNotNull('special_price')
+                         ->where('special_price', '<=', $maxVal);
+                })->orWhere(function($subQ) use ($maxVal) {
+                    $subQ->whereNull('special_price')
+                         ->where('base_price', '<=', $maxVal);
+                });
+            });
+        }
+        
+        // Apply sorting - prioritize price filtering over custom sorting
+        $hasPriceFilter = (!is_null($minVal) || !is_null($maxVal));
+        
+        if (!$hasPriceFilter && request()->has('sort')) {
+            // Only apply custom sorting when no price filter is active
+            switch (request()->sort) {
+                case 'price_low':
+                    $query->orderByRaw('COALESCE(special_price, base_price) ASC');
+                    break;
+                case 'price_high':
+                    $query->orderByRaw('COALESCE(special_price, base_price) DESC');
+                    break;
+                case 'newest':
+                    $query->orderBy('created_at', 'desc');
+                    break;
+                case 'popular':
+                    $query->orderBy('sales_count', 'desc');
+                    break;
+                default:
+                    $query->orderBy('name', 'asc');
+            }
+        } else {
+            // Default sorting when price filtering is active or no sort specified
+            $query->orderBy('name', 'asc');
+        }
+        
+        $barongProducts = $query->paginate(12)->withQueryString();
+        $allCategories = Category::active()->ordered()->get();
+        
+        return view('category', compact('category', 'barongProducts', 'allCategories'));
+    }
+}

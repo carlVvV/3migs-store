@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloudinary Image Upload Test</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .upload-section {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+            border-radius: 8px;
+        }
+        .upload-section.dragover {
+            border-color: #007bff;
+            background-color: #f8f9fa;
+        }
+        .preview {
+            margin: 20px 0;
+        }
+        .preview img {
+            max-width: 200px;
+            max-height: 200px;
+            margin: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .file-info {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cloudinary Image Upload Test</h1>
+    
+    <div class="upload-section" id="uploadArea">
+        <h3>Single Image Upload</h3>
+        <p>Drag and drop an image here or click to select</p>
+        <input type="file" id="singleFile" accept="image/*" style="display: none;">
+        <button onclick="document.getElementById('singleFile').click()">Select Image</button>
+        <button id="uploadSingle" onclick="uploadSingle()" disabled>Upload Single</button>
+    </div>
+    
+    <div class="upload-section" id="uploadMultipleArea">
+        <h3>Multiple Images Upload</h3>
+        <p>Select multiple images to upload</p>
+        <input type="file" id="multipleFiles" accept="image/*" multiple style="display: none;">
+        <button onclick="document.getElementById('multipleFiles').click()">Select Multiple Images</button>
+        <button id="uploadMultiple" onclick="uploadMultiple()" disabled>Upload Multiple</button>
+    </div>
+    
+    <div id="preview" class="preview"></div>
+    <div id="result"></div>
+    
+    <script>
+        let selectedFiles = [];
+        let selectedMultipleFiles = [];
+        
+        // Single file handling
+        document.getElementById('singleFile').addEventListener('change', function(e) {
+            selectedFiles = Array.from(e.target.files);
+            updateSinglePreview();
+            updateSingleButton();
+        });
+        
+        // Multiple files handling
+        document.getElementById('multipleFiles').addEventListener('change', function(e) {
+            selectedMultipleFiles = Array.from(e.target.files);
+            updateMultiplePreview();
+            updateMultipleButton();
+        });
+        
+        // Drag and drop for single upload
+        const uploadArea = document.getElementById('uploadArea');
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            selectedFiles = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+            updateSinglePreview();
+            updateSingleButton();
+        });
+        
+        function updateSinglePreview() {
+            const preview = document.getElementById('preview');
+            preview.innerHTML = '';
+            
+            selectedFiles.forEach(file => {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                preview.appendChild(img);
+                
+                const info = document.createElement('div');
+                info.className = 'file-info';
+                info.innerHTML = `
+                    <strong>${file.name}</strong><br>
+                    Size: ${(file.size / 1024 / 1024).toFixed(2)} MB<br>
+                    Type: ${file.type}
+                `;
+                preview.appendChild(info);
+            });
+        }
+        
+        function updateMultiplePreview() {
+            const preview = document.getElementById('preview');
+            preview.innerHTML = '';
+            
+            selectedMultipleFiles.forEach(file => {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                preview.appendChild(img);
+                
+                const info = document.createElement('div');
+                info.className = 'file-info';
+                info.innerHTML = `
+                    <strong>${file.name}</strong><br>
+                    Size: ${(file.size / 1024 / 1024).toFixed(2)} MB<br>
+                    Type: ${file.type}
+                `;
+                preview.appendChild(info);
+            });
+        }
+        
+        function updateSingleButton() {
+            const button = document.getElementById('uploadSingle');
+            button.disabled = selectedFiles.length === 0;
+        }
+        
+        function updateMultipleButton() {
+            const button = document.getElementById('uploadMultiple');
+            button.disabled = selectedMultipleFiles.length === 0;
+        }
+        
+        function showResult(message, isSuccess = true) {
+            const result = document.getElementById('result');
+            result.className = `result ${isSuccess ? 'success' : 'error'}`;
+            result.innerHTML = message;
+        }
+        
+        async function uploadSingle() {
+            if (selectedFiles.length === 0) return;
+            
+            const file = selectedFiles[0];
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('folder', '3migs-test');
+            
+            try {
+                showResult('Uploading...', true);
+                
+                const response = await fetch('/api/v1/images/upload', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult(`
+                        <h4>Upload Successful!</h4>
+                        <p><strong>Public ID:</strong> ${result.data.public_id}</p>
+                        <p><strong>URL:</strong> <a href="${result.data.url}" target="_blank">${result.data.url}</a></p>
+                        <p><strong>Thumbnail:</strong> <img src="${result.data.thumbnail_url}" style="max-width: 100px;"></p>
+                        <p><strong>Size:</strong> ${result.data.width}x${result.data.height}</p>
+                        <p><strong>Format:</strong> ${result.data.format}</p>
+                        <p><strong>File Size:</strong> ${(result.data.bytes / 1024).toFixed(2)} KB</p>
+                    `, true);
+                } else {
+                    showResult(`Upload failed: ${result.message}`, false);
+                }
+            } catch (error) {
+                showResult(`Error: ${error.message}`, false);
+            }
+        }
+        
+        async function uploadMultiple() {
+            if (selectedMultipleFiles.length === 0) return;
+            
+            const formData = new FormData();
+            selectedMultipleFiles.forEach(file => {
+                formData.append('images[]', file);
+            });
+            formData.append('folder', '3migs-test');
+            
+            try {
+                showResult('Uploading multiple images...', true);
+                
+                const response = await fetch('/api/v1/images/upload-multiple', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    let html = '<h4>Multiple Upload Results:</h4>';
+                    html += `<p><strong>Successfully uploaded:</strong> ${result.data.total_uploaded}</p>`;
+                    html += `<p><strong>Failed:</strong> ${result.data.total_failed}</p>`;
+                    
+                    if (result.data.successful_uploads.length > 0) {
+                        html += '<h5>Successful Uploads:</h5>';
+                        result.data.successful_uploads.forEach(upload => {
+                            html += `
+                                <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 4px;">
+                                    <p><strong>Image ${upload.index + 1}:</strong></p>
+                                    <p>Public ID: ${upload.public_id}</p>
+                                    <p>URL: <a href="${upload.url}" target="_blank">${upload.url}</a></p>
+                                    <img src="${upload.thumbnail_url}" style="max-width: 100px;">
+                                </div>
+                            `;
+                        });
+                    }
+                    
+                    if (result.data.failed_uploads.length > 0) {
+                        html += '<h5>Failed Uploads:</h5>';
+                        result.data.failed_uploads.forEach(failed => {
+                            html += `<p>Image ${failed.index + 1}: ${failed.error}</p>`;
+                        });
+                    }
+                    
+                    showResult(html, true);
+                } else {
+                    showResult(`Upload failed: ${result.message}`, false);
+                }
+            } catch (error) {
+                showResult(`Error: ${error.message}`, false);
+            }
+        }
+    </script>
+</body>
+</html>
+

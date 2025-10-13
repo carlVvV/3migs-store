@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>My Orders - 3Migs Gowns & Barong</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body class="bg-gray-100">
+    <!-- Main Header Navigation -->
+    @include('layouts.header')
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Breadcrumb -->
+        <nav class="flex mb-8" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                <li class="inline-flex items-center">
+                    <a href="{{ route('home') }}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-home mr-2"></i>
+                        Home
+                    </a>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                        <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2">My Orders</span>
+                    </div>
+                </li>
+            </ol>
+        </nav>
+
+        <!-- Page Header -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800">My Orders</h1>
+                    <p class="text-gray-600 mt-2">Track and manage your orders</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-blue-600">{{ Auth::user()->orders()->count() }}</div>
+                        <div class="text-sm text-gray-600">Total Orders</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-green-600">{{ Auth::user()->orders()->where('status', 'completed')->count() }}</div>
+                        <div class="text-sm text-gray-600">Completed</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Filters -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <div class="flex flex-wrap items-center justify-between">
+                <div class="flex items-center space-x-4 mb-4 md:mb-0">
+                    <span class="text-sm font-medium text-gray-700">Filter by status:</span>
+                    <div class="flex space-x-2">
+                        <button class="filter-btn px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800" data-status="all">All</button>
+                        <button class="filter-btn px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800" data-status="pending">Pending</button>
+                        <button class="filter-btn px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800" data-status="processing">Processing</button>
+                        <button class="filter-btn px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800" data-status="completed">Completed</button>
+                        <button class="filter-btn px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800" data-status="cancelled">Cancelled</button>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm font-medium text-gray-700">Sort by:</span>
+                    <select id="sort-select" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="latest">Latest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="amount-high">Amount: High to Low</option>
+                        <option value="amount-low">Amount: Low to High</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Orders List -->
+        <div id="orders-container">
+            @if(Auth::user()->orders()->count() > 0)
+                @foreach(Auth::user()->orders()->latest()->get() as $order)
+                <div class="order-card bg-white rounded-lg shadow-md p-6 mb-6" data-status="{{ $order->status }}">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-box text-gray-600"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800">Order #{{ $order->order_number }}</h3>
+                                <p class="text-sm text-gray-600">Placed on {{ $order->created_at->format('M d, Y \a\t g:i A') }}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xl font-bold text-gray-800">₱{{ number_format($order->total_amount, 2) }}</p>
+                            <span class="inline-block px-3 py-1 text-sm rounded-full 
+                                @if($order->status === 'completed') bg-green-100 text-green-800
+                                @elseif($order->status === 'pending') bg-yellow-100 text-yellow-800
+                                @elseif($order->status === 'processing') bg-blue-100 text-blue-800
+                                @elseif($order->status === 'cancelled') bg-red-100 text-red-800
+                                @else bg-gray-100 text-gray-800 @endif">
+                                {{ ucfirst($order->status) }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Order Items -->
+                    <div class="space-y-3 mb-4">
+                        @foreach($order->orderItems as $item)
+                        <div class="flex items-center space-x-4 bg-gray-50 p-4 rounded-lg">
+                            <img src="{{ asset($item->product->images[0] ?? 'images/placeholder.jpg') }}" alt="{{ $item->product->name }}" class="w-16 h-16 object-cover rounded-lg">
+                            <div class="flex-1">
+                                <h4 class="font-semibold text-gray-800">{{ $item->product->name }}</h4>
+                                <p class="text-sm text-gray-600">Quantity: {{ $item->quantity }}</p>
+                                <p class="text-sm text-gray-600">Price: ₱{{ number_format((float) ($item->unit_price ?? ($item->price ?? 0)), 2) }}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold text-gray-800">₱{{ number_format((float) ($item->total_price ?? ((($item->unit_price ?? 0) * $item->quantity))), 2) }}</p>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+
+                    <!-- Order Details -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                        <div>
+                            <h5 class="font-semibold text-gray-700 mb-2">Shipping Address</h5>
+                            @php
+                                $raw = $order->shipping_address ?? [];
+                                $addr = is_array($raw) ? $raw : (json_decode($raw, true) ?: []);
+                                $formatted = collect([
+                                    $addr['name'] ?? null,
+                                    $addr['line1'] ?? null,
+                                    $addr['line2'] ?? null,
+                                    $addr['city'] ?? null,
+                                    $addr['province'] ?? null,
+                                    $addr['postal_code'] ?? null,
+                                    $addr['country'] ?? null,
+                                ])->filter()->join(', ');
+                            @endphp
+                            <p class="text-sm text-gray-600">{{ $formatted ?: 'N/A' }}</p>
+                        </div>
+                        <div>
+                            <h5 class="font-semibold text-gray-700 mb-2">Payment Method</h5>
+                            <p class="text-sm text-gray-600">{{ ucfirst(str_replace('_', ' ', $order->payment_method)) }}</p>
+                        </div>
+                    </div>
+
+                    @if($order->notes)
+                    <div class="mb-4 p-4 bg-blue-50 rounded-lg">
+                        <h5 class="font-semibold text-gray-700 mb-2">Order Notes</h5>
+                        <p class="text-sm text-gray-600">{{ $order->notes }}</p>
+                    </div>
+                    @endif
+
+                    <!-- Order Actions -->
+                    <div class="flex justify-end space-x-4">
+                        <button class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 view-order-btn" data-order-id="{{ $order->id }}">
+                            <i class="fas fa-eye mr-2"></i>View Details
+                        </button>
+                        @if($order->status === 'pending')
+                        <button class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 cancel-order-btn" data-order-id="{{ $order->id }}">
+                            <i class="fas fa-times mr-2"></i>Cancel Order
+                        </button>
+                        <button class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 pay-order-btn" data-order-id="{{ $order->id }}">
+                            <i class="fas fa-credit-card mr-2"></i>Pay Now
+                        </button>
+                        @endif
+                        @if($order->status === 'completed')
+                        <button class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 review-order-btn" data-order-id="{{ $order->id }}">
+                            <i class="fas fa-star mr-2"></i>Write Review
+                        </button>
+                        @endif
+                    </div>
+                </div>
+                @endforeach
+            @else
+                <div class="bg-white rounded-lg shadow-md p-12 text-center">
+                    <i class="fas fa-box text-6xl text-gray-400 mb-4"></i>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">No orders yet</h3>
+                    <p class="text-gray-600 mb-6">Start shopping to see your orders here</p>
+                    <a href="{{ route('home') }}" class="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 inline-block">
+                        <i class="fas fa-shopping-bag mr-2"></i>Start Shopping
+                    </a>
+                </div>
+            @endif
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-black text-white py-12 px-4 mt-12">
+        <div class="container mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+                <h3 class="text-2xl font-bold mb-4">3Migs Gowns & Barong</h3>
+                <p class="text-sm mb-2">Subscribe</p>
+                <p class="text-xs mb-4">Get 10% off your first order</p>
+                <div class="flex">
+                    <input type="email" placeholder="Enter your email" class="bg-black text-white text-sm px-4 py-2 rounded-l-md focus:outline-none border border-white flex-grow">
+                    <button class="bg-red-500 px-4 py-2 rounded-r-md hover:bg-red-600 border border-red-500">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold mb-4">Support</h3>
+                <p class="text-sm">Pandi, Bulacan</p>
+                <p class="text-sm">3migs@gmail.com</p>
+                <p class="text-sm">+639*********</p>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold mb-4">Account</h3>
+                <ul>
+                    <li class="mb-2"><a href="#" class="text-sm hover:underline">My Account</a></li>
+                    <li class="mb-2"><a href="{{ route('login') }}" class="text-sm hover:underline">Login / Register</a></li>
+                    <li class="mb-2"><a href="{{ route('cart') }}" class="text-sm hover:underline">Cart</a></li>
+                    <li class="mb-2"><a href="{{ route('wishlist') }}" class="text-sm hover:underline">Wishlist</a></li>
+                    <li class="mb-2"><a href="#products" class="text-sm hover:underline">Shop</a></li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold mb-4">Quick Link</h3>
+                <ul>
+                    <li class="mb-2"><a href="#" class="text-sm hover:underline">Privacy Policy</a></li>
+                    <li class="mb-2"><a href="#" class="text-sm hover:underline">Terms Of Use</a></li>
+                    <li class="mb-2"><a href="#" class="text-sm hover:underline">FAQ</a></li>
+                    <li class="mb-2"><a href="#contact" class="text-sm hover:underline">Contact</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="text-center text-xs mt-8">
+            <p class="text-gray-500">Copyright Group 6 2025. All right reserved</p>
+        </div>
+    </footer>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Profile dropdown functionality
+        const profileBtn = document.getElementById('profile-btn');
+        const profileMenu = document.getElementById('profileMenu');
+
+        if (profileBtn && profileMenu) {
+            profileBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                profileMenu.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', function() {
+                profileMenu.classList.add('hidden');
+            });
+
+            profileMenu.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        }
+
+        // Filter functionality
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const orderCards = document.querySelectorAll('.order-card');
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const status = this.getAttribute('data-status');
+                
+                // Update button styles
+                filterBtns.forEach(b => {
+                    b.classList.remove('bg-blue-100', 'text-blue-800');
+                    b.classList.add('bg-gray-100', 'text-gray-800');
+                });
+                this.classList.remove('bg-gray-100', 'text-gray-800');
+                this.classList.add('bg-blue-100', 'text-blue-800');
+
+                // Filter orders
+                orderCards.forEach(card => {
+                    if (status === 'all' || card.getAttribute('data-status') === status) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
+
+        // Sort functionality
+        const sortSelect = document.getElementById('sort-select');
+        sortSelect.addEventListener('change', function() {
+            const sortBy = this.value;
+            const container = document.getElementById('orders-container');
+            const cards = Array.from(container.querySelectorAll('.order-card'));
+
+            cards.sort((a, b) => {
+                switch(sortBy) {
+                    case 'latest':
+                        return new Date(b.querySelector('p').textContent.split('Placed on ')[1]) - new Date(a.querySelector('p').textContent.split('Placed on ')[1]);
+                    case 'oldest':
+                        return new Date(a.querySelector('p').textContent.split('Placed on ')[1]) - new Date(b.querySelector('p').textContent.split('Placed on ')[1]);
+                    case 'amount-high':
+                        return parseFloat(b.querySelector('.text-xl').textContent.replace('₱', '').replace(',', '')) - parseFloat(a.querySelector('.text-xl').textContent.replace('₱', '').replace(',', ''));
+                    case 'amount-low':
+                        return parseFloat(a.querySelector('.text-xl').textContent.replace('₱', '').replace(',', '')) - parseFloat(b.querySelector('.text-xl').textContent.replace('₱', '').replace(',', ''));
+                    default:
+                        return 0;
+                }
+            });
+
+            cards.forEach(card => container.appendChild(card));
+        });
+
+        // Cancel order functionality (popup)
+        document.querySelectorAll('.cancel-order-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const orderId = this.getAttribute('data-order-id');
+                openCancelOrderModal(orderId);
+            });
+        });
+
+        // View order details functionality
+        document.querySelectorAll('.view-order-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const orderId = this.getAttribute('data-order-id');
+                viewOrderDetails(orderId);
+            });
+        });
+
+        // Pay order functionality
+        document.querySelectorAll('.pay-order-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const orderId = this.getAttribute('data-order-id');
+                startBuxCheckout(orderId);
+            });
+        });
+
+        // Review order functionality
+        document.querySelectorAll('.review-order-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const orderId = this.getAttribute('data-order-id');
+                // This would open a review modal
+                showNotification('Review functionality coming soon!', 'info');
+            });
+        });
+
+        function cancelOrder(orderId) {
+            fetch(`/api/v1/orders/${orderId}/cancel`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Order cancelled successfully', 'success');
+                    location.reload();
+                } else {
+                    showNotification(data.message || 'Failed to cancel order', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('An error occurred', 'error');
+            });
+        }
+
+        function openCancelOrderModal(orderId) {
+            let modal = document.getElementById('order-cancel-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'order-cancel-modal';
+                modal.className = 'fixed inset-0 z-50 hidden';
+                modal.innerHTML = `
+                    <div class=\"absolute inset-0 bg-black bg-opacity-20\"></div>
+                    <div class=\"absolute inset-0 flex items-center justify-center p-4\">
+                        <div class=\"bg-white w-full max-w-md rounded-lg shadow-xl overflow-hidden\">
+                            <div class=\"px-6 py-4 border-b\">
+                                <h3 class=\"text-lg font-semibold text-gray-800\">Cancel Order</h3>
+                            </div>
+                            <div class=\"px-6 py-5\">
+                                <p class=\"text-sm text-gray-700\">Are you sure you want to cancel this order? This action cannot be undone.</p>
+                                <div id=\"ord-cancel-error\" class=\"hidden mt-3 text-sm text-red-600\"></div>
+                            </div>
+                            <div class=\"px-6 py-4 border-t flex justify-end space-x-2\">
+                                <button id=\"ord-cancel-close\" class=\"px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-gray-700\">No, keep order</button>
+                                <button id=\"ord-cancel-confirm\" class=\"px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700\">Yes, cancel</button>
+                            </div>
+                        </div>
+                    </div>`;
+                document.body.appendChild(modal);
+                const close = () => modal.classList.add('hidden');
+                modal.querySelector('#ord-cancel-close').addEventListener('click', close);
+                modal.addEventListener('click', e => { if (e.target === modal) close(); });
+            }
+            const errBox = modal.querySelector('#ord-cancel-error');
+            errBox.classList.add('hidden');
+            errBox.textContent = '';
+            modal.classList.remove('hidden');
+            modal.querySelector('#ord-cancel-confirm').onclick = async () => {
+                try {
+                    await cancelOrder(orderId);
+                    modal.classList.add('hidden');
+                } catch (e) {
+                    errBox.textContent = e?.message || 'Failed to cancel order';
+                    errBox.classList.remove('hidden');
+                }
+            };
+        }
+
+        function viewOrderDetails(orderId) {
+            const modal = createOrGetOrderModal();
+            const loading = modal.querySelector('#ord-loading');
+            const content = modal.querySelector('#ord-content');
+            modal.classList.remove('hidden');
+            loading.classList.remove('hidden');
+            content.classList.add('hidden');
+
+            fetch(`/api/v1/orders/${orderId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (!data || data.success === false) throw new Error('Failed to load');
+                const order = data.data || data;
+                renderOrderIntoModal(order);
+                loading.classList.add('hidden');
+                content.classList.remove('hidden');
+            })
+            .catch(err => {
+                console.error(err);
+                loading.innerHTML = '<span class="text-red-600">Failed to load order details.</span>';
+            });
+        }
+
+        function createOrGetOrderModal() {
+            let modal = document.getElementById('order-details-modal');
+            if (modal) return modal;
+            modal = document.createElement('div');
+            modal.id = 'order-details-modal';
+            modal.className = 'fixed inset-0 z-50 hidden';
+            modal.innerHTML = `
+                <div class="absolute inset-0 bg-black bg-opacity-20"></div>
+                <div class="absolute inset-0 flex items-center justify-center p-4">
+                    <div class="bg-white w-full max-w-3xl rounded-lg shadow-xl overflow-hidden">
+                        <div class="flex items-center justify-between px-6 py-4 border-b">
+                            <div>
+                                <h3 id="ord-title" class="text-lg font-semibold text-gray-800">Order Details</h3>
+                                <p id="ord-subtitle" class="text-sm text-gray-500"></p>
+                            </div>
+                            <button id="ord-close" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
+                        </div>
+                        <div class="px-6 py-4 max-h-[70vh] overflow-y-auto">
+                            <div id="ord-loading" class="py-10 text-center text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Loading...</div>
+                            <div id="ord-content" class="hidden space-y-6">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="p-4 bg-gray-50 rounded">
+                                        <h4 class="font-semibold text-gray-700 mb-2">Customer</h4>
+                                        <p id="ord-cust-name" class="text-sm text-gray-800">-</p>
+                                        <p id="ord-cust-email" class="text-sm text-gray-600">-</p>
+                                        <p id="ord-cust-phone" class="text-sm text-gray-600"></p>
+                                    </div>
+                                    <div class="p-4 bg-gray-50 rounded">
+                                        <h4 class="font-semibold text-gray-700 mb-2">Payment</h4>
+                                        <p id="ord-payment" class="text-sm text-gray-800">-</p>
+                                        <p id="ord-status" class="text-sm"></p>
+                                        <p id="ord-payment-status" class="text-xs text-gray-500"></p>
+                                    </div>
+                                    <div class="p-4 bg-gray-50 rounded">
+                                        <h4 class="font-semibold text-gray-700 mb-2">Placed</h4>
+                                        <p id="ord-date" class="text-sm text-gray-800">-</p>
+                                        <p id="ord-number" class="text-sm text-gray-600">-</p>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="p-4 bg-gray-50 rounded">
+                                        <h4 class="font-semibold text-gray-700 mb-2">Shipping Address</h4>
+                                        <p id="ord-ship" class="text-sm text-gray-700">-</p>
+                                    </div>
+                                    <div class="p-4 bg-gray-50 rounded">
+                                        <h4 class="font-semibold text-gray-700 mb-2">Billing Address</h4>
+                                        <p id="ord-bill" class="text-sm text-gray-700">-</p>
+                                    </div>
+                                </div>
+                                <div class="p-4 bg-white border rounded">
+                                    <h4 class="font-semibold text-gray-700 mb-3">Items</h4>
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full table-fixed divide-y divide-gray-200">
+                                            <thead class="bg-gray-50">
+                                                <tr>
+                                                    <th class="px-4 py-2 w-3/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                                                    <th class="px-4 py-2 w-2/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+                                                    <th class="px-4 py-2 w-1/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
+                                                    <th class="px-4 py-2 w-1/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Color</th>
+                                                    <th class="px-4 py-2 w-1/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                                                    <th class="px-4 py-2 w-2/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                                                    <th class="px-4 py-2 w-2/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="ord-items" class="bg-white divide-y divide-gray-200"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="p-4 bg-gray-50 rounded">
+                                        <h4 class="font-semibold text-gray-700 mb-2">Order Notes</h4>
+                                        <p id="ord-notes" class="text-sm text-gray-700">—</p>
+                                    </div>
+                                    <div class="p-4 bg-gray-50 rounded">
+                                        <h4 class="font-semibold text-gray-700 mb-2">Summary</h4>
+                                        <div class="text-sm text-gray-600">Subtotal: <span id="ord-subtotal" class="font-medium text-gray-800">₱0.00</span></div>
+                                        <div class="text-sm text-gray-600">Shipping: <span id="ord-shipping" class="font-medium text-gray-800">₱0.00</span></div>
+                                        <div class="text-sm text-gray-600">Discount: <span id="ord-discount" class="font-medium text-gray-800">₱0.00</span></div>
+                                        <div class="text-sm text-gray-600">Tax: <span id="ord-tax" class="font-medium text-gray-800">₱0.00</span></div>
+                                        <div class="mt-1 text-base text-gray-800 font-semibold">Grand Total: <span id="ord-total" class="text-gray-900">₱0.00</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="px-6 py-4 border-t flex justify-end">
+                            <button id="ord-close-bottom" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-gray-700">Close</button>
+                        </div>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+            const close = () => modal.classList.add('hidden');
+            modal.querySelector('#ord-close').addEventListener('click', close);
+            modal.querySelector('#ord-close-bottom').addEventListener('click', close);
+            modal.addEventListener('click', e => { if (e.target === modal) close(); });
+            return modal;
+        }
+
+        function renderOrderIntoModal(order) {
+            const modal = document.getElementById('order-details-modal');
+            modal.querySelector('#ord-title').textContent = `Order #${order.order_number ?? order.id}`;
+            modal.querySelector('#ord-subtitle').textContent = order.created_at ? new Date(order.created_at).toLocaleString() : '';
+            modal.querySelector('#ord-cust-name').textContent = (order.user && (order.user.name || order.user.full_name)) || 'Guest';
+            modal.querySelector('#ord-cust-email').textContent = (order.user && order.user.email) || 'N/A';
+            modal.querySelector('#ord-payment').textContent = formatText(order.payment_method);
+            modal.querySelector('#ord-status').innerHTML = renderStatusPill(order.status);
+            modal.querySelector('#ord-payment-status').textContent = order.payment_status ? `Payment: ${formatText(order.payment_status)}` : '';
+            modal.querySelector('#ord-date').textContent = order.created_at ? new Date(order.created_at).toLocaleString() : '—';
+            modal.querySelector('#ord-number').textContent = `#${order.order_number ?? order.id}`;
+            modal.querySelector('#ord-ship').textContent = formatAddress(order.shipping_address);
+            modal.querySelector('#ord-bill').textContent = formatAddress(order.billing_address);
+            modal.querySelector('#ord-cust-phone').textContent = inferPhone(order);
+            modal.querySelector('#ord-notes').textContent = order.notes || '—';
+
+            const tbody = modal.querySelector('#ord-items');
+            tbody.innerHTML = '';
+            let subtotal = 0;
+            (order.order_items || order.items || []).forEach(it => {
+                const unit = toNumber(it.unit_price ?? it.price ?? 0);
+                const qty = toNumber(it.quantity ?? 0);
+                const line = unit * qty;
+                subtotal += line;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-4 py-2 text-sm text-blue-700">${escapeHtml((it.product && it.product.name) || it.name || 'Item')}</td>
+                    <td class="px-4 py-2 text-sm text-gray-600">${escapeHtml(it.product_sku || (it.product && it.product.sku) || '—')}</td>
+                    <td class="px-4 py-2 text-sm text-gray-600">${escapeHtml(it.size || '—')}</td>
+                    <td class="px-4 py-2 text-sm text-gray-600">${escapeHtml(it.color || '—')}</td>
+                    <td class="px-4 py-2 text-sm text-gray-600">${qty}</td>
+                    <td class="px-4 py-2 text-sm text-gray-600">₱${formatMoney(unit)}</td>
+                    <td class="px-4 py-2 text-sm text-gray-800 font-medium">₱${formatMoney(line)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            const shippingFee = toNumber(order.shipping_fee ?? order.shipping_amount ?? 0);
+            const discount = toNumber(order.discount ?? order.discount_amount ?? 0);
+            const tax = toNumber(order.tax_amount ?? 0);
+            const grand = toNumber(order.total_amount ?? (subtotal + shippingFee - discount + tax));
+            modal.querySelector('#ord-subtotal').textContent = `₱${formatMoney(subtotal)}`;
+            modal.querySelector('#ord-shipping').textContent = `₱${formatMoney(shippingFee)}`;
+            const discountEl = modal.querySelector('#ord-discount');
+            if (discountEl) discountEl.textContent = `₱${formatMoney(discount)}`;
+            const taxEl = modal.querySelector('#ord-tax');
+            if (taxEl) taxEl.textContent = `₱${formatMoney(tax)}`;
+            modal.querySelector('#ord-total').textContent = `₱${formatMoney(grand)}`;
+        }
+
+        function inferPhone(order) {
+            const ship = (typeof order.shipping_address === 'string') ? (JSON.parse(order.shipping_address || '{}') || {}) : (order.shipping_address || {});
+            const bill = (typeof order.billing_address === 'string') ? (JSON.parse(order.billing_address || '{}') || {}) : (order.billing_address || {});
+            return ship.phone || bill.phone || (order.user && (order.user.phone || order.user.mobile)) || '';
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-20 right-4 z-50 p-4 rounded-lg shadow-lg ${
+                type === 'success' ? 'bg-green-500 text-white' : 
+                type === 'error' ? 'bg-red-500 text-white' : 
+                'bg-blue-500 text-white'
+            }`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        function updateCartCount() {
+            fetch('/api/v1/cart')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const cartCount = document.getElementById('cart-count');
+                        if (cartCount) {
+                            cartCount.textContent = data.data.length;
+                        }
+                    }
+                })
+                .catch(error => console.error('Error updating cart count:', error));
+        }
+
+        async function startBuxCheckout(orderId) {
+            try {
+                const res = await fetch(`/api/v1/orders/${orderId}/bux-checkout`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                });
+                const data = await res.json();
+                if (!res.ok || data.success === false) {
+                    throw new Error(data.message || 'Failed to start checkout');
+                }
+                const url = data.data.checkout_url || data.data.url || data.data.redirect_url;
+                if (url) {
+                    window.location.href = url;
+                } else {
+                    showNotification('Checkout URL missing from response', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showNotification(e.message || 'Payment failed', 'error');
+            }
+        }
+
+        // Initialize cart count on page load
+        updateCartCount();
+    });
+    </script>
+    
+    @include('layouts.footer')
+</body>
+</html>

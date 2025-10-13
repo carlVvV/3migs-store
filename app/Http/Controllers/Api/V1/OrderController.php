@@ -1,0 +1,368 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\BarongProduct;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use App\Services\BuxService;
+
+class OrderController extends Controller
+{
+    /**
+     * Get user orders
+     */
+    public function index(Request $request)
+    {
+        try {
+            $perPage = $request->get('per_page', 10);
+            $status = $request->get('status');
+            
+            $query = Auth::user()->orders()->with(['orderItems.product']);
+            
+            if ($status) {
+                $query->where('status', $status);
+            }
+            
+            $orders = $query->latest()->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'data' => $orders
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch orders',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get specific order details
+     */
+    public function show($id)
+    {
+        try {
+            $order = Auth::user()->orders()
+                ->with(['orderItems.product'])
+                ->findOrFail($id);
+
+            return response()->json([
+                'success' => true,
+                'data' => $order
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found',
+                'error' => $e->getMessage()
+            ], 404);
+        }
+    }
+
+    /**
+     * Cancel an order
+     */
+    public function cancel($id)
+    {
+        try {
+            $order = Auth::user()->orders()->findOrFail($id);
+
+            if ($order->status === 'cancelled') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order is already cancelled'
+                ], 400);
+            }
+
+            if (in_array($order->status, ['shipped', 'delivered'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot cancel order that has been shipped or delivered'
+                ], 400);
+            }
+
+            DB::beginTransaction();
+
+            // Update order status
+            $order->update(['status' => 'cancelled']);
+
+            // Restore product stock
+            foreach ($order->orderItems as $item) {
+                $product = $item->product;
+                if ($product->has_variations && !empty($product->variations)) {
+                    // For products with variations, we need to restore variation stock
+                    $variations = $product->variations;
+                    // For simplicity, we'll restore to the first variation
+                    if (!empty($variations)) {
+                        $variations[0]['stock'] += $item->quantity;
+                        $product->variations = $variations;
+                        $product->save();
+                    }
+                } else {
+                    $product->increment('stock', $item->quantity);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order cancelled successfully'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to cancel order',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get order statistics for user
+     */
+    public function statistics()
+    {
+        try {
+            $user = Auth::user();
+            
+            $stats = [
+                'total_orders' => $user->orders()->count(),
+                'pending_orders' => $user->orders()->where('status', 'pending')->count(),
+                'processing_orders' => $user->orders()->where('status', 'processing')->count(),
+                'completed_orders' => $user->orders()->where('status', 'completed')->count(),
+                'cancelled_orders' => $user->orders()->where('status', 'cancelled')->count(),
+                'total_spent' => $user->orders()->where('status', 'completed')->sum('total_amount'),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $stats
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch order statistics',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Create a new order
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'full_name' => 'required|string|max:255',
+            'company_name' => 'nullable|string|max:255',
+            'street_address' => 'required|string|max:500',
+            'apartment' => 'nullable|string|max:255',
+            'city' => 'required|string|max:255',
+            'phone' => 'required|string|max:20',
+            'email' => 'required|email|max:255',
+            'save_info' => 'boolean',
+            'payment_method' => 'required|in:ewallet,cod'
+        ]);
+
+        try {
+            $user = Auth::user();
+            
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please log in to place an order'
+                ], 401);
+            }
+
+            // Get cart items
+            $cartItems = $user->cart()->with('product')->get();
+            
+            if ($cartItems->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your cart is empty'
+                ], 400);
+            }
+
+            // Calculate totals
+            $subtotal = $cartItems->sum(function ($item) {
+                return $item->price * $item->quantity;
+            });
+
+            // Apply coupon discount if any
+            $discount = 0;
+            $appliedCoupon = session('applied_coupon');
+            if ($appliedCoupon && isset($appliedCoupon['discount'])) {
+                $discount = $subtotal * $appliedCoupon['discount'];
+            }
+
+            $total = $subtotal - $discount;
+
+            DB::beginTransaction();
+
+            // Create order
+            $order = Order::create([
+                'user_id' => $user->id,
+                'order_number' => 'ORD-' . time() . '-' . rand(1000, 9999),
+                'status' => 'pending',
+                'payment_method' => $request->payment_method,
+                'payment_status' => $request->payment_method === 'cod' ? 'pending' : 'pending',
+                'subtotal' => $subtotal,
+                'discount' => $discount,
+                'shipping_fee' => 0, // Free shipping
+                'total_amount' => $total,
+                'billing_address' => [
+                    'full_name' => $request->full_name,
+                    'company_name' => $request->company_name,
+                    'street_address' => $request->street_address,
+                    'apartment' => $request->apartment,
+                    'city' => $request->city,
+                    'phone' => $request->phone,
+                    'email' => $request->email,
+                ],
+                'shipping_address' => [
+                    'full_name' => $request->full_name,
+                    'company_name' => $request->company_name,
+                    'street_address' => $request->street_address,
+                    'apartment' => $request->apartment,
+                    'city' => $request->city,
+                    'phone' => $request->phone,
+                    'email' => $request->email,
+                ]
+            ]);
+
+            // Create order items
+            foreach ($cartItems as $cartItem) {
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $cartItem->product_id,
+                    'product_name' => $cartItem->product->name,
+                    'product_sku' => $cartItem->product->sku,
+                    'quantity' => $cartItem->quantity,
+                    'unit_price' => $cartItem->price,
+                    'total_price' => $cartItem->price * $cartItem->quantity
+                ]);
+
+                // Update product stock
+                $product = $cartItem->product;
+                if ($product->has_variations && !empty($product->variations)) {
+                    // For products with variations, reduce variation stock
+                    $variations = $product->variations;
+                    if (!empty($variations)) {
+                        $variations[0]['stock'] = max(0, $variations[0]['stock'] - $cartItem->quantity);
+                        $product->variations = $variations;
+                        $product->save();
+                    }
+                } else {
+                    $product->decrement('stock', $cartItem->quantity);
+                }
+            }
+
+            // Clear user's cart
+            $user->cart()->delete();
+
+            // Clear applied coupon
+            session()->forget('applied_coupon');
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order placed successfully',
+                'data' => [
+                    'order' => $order,
+                    'order_number' => $order->order_number
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to place order',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate Bux.ph checkout URL for an order (authenticated user for own order).
+     */
+    public function buxCheckout(Request $request, $id, BuxService $bux)
+    {
+        $order = Order::with(['orderItems', 'user'])->findOrFail($id);
+
+        if (Auth::id() !== $order->user_id) {
+            return response()->json(['success' => false, 'message' => 'Not authorized'], 403);
+        }
+
+        $shipping = is_string($order->shipping_address) ? (json_decode($order->shipping_address, true) ?: []) : ($order->shipping_address ?? []);
+        $billing = is_string($order->billing_address) ? (json_decode($order->billing_address, true) ?: []) : ($order->billing_address ?? []);
+
+        // Match the JavaScript payload structure exactly
+        $payload = [
+            'req_id' => $order->order_number,
+            'amount' => (float) $order->total_amount,
+            'description' => 'Order #'.$order->order_number,
+            'email' => $order->user->email ?? ($shipping['email'] ?? null),
+            'expiry' => 2, // 2 hours expiry
+            'notification_url' => url('/api/v1/payments/bux/webhook'),
+            'redirect_url' => url('/orders'),
+            'name' => $order->user->name ?? ($shipping['full_name'] ?? null),
+            'contact' => $shipping['phone'] ?? $billing['phone'] ?? null,
+            'param1' => $order->order_number,
+        ];
+
+        $result = $bux->generateCheckoutUrl($payload);
+        if (!$result['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create checkout',
+                'error' => $result['error'] ?? 'Unknown error',
+            ], 400);
+        }
+
+        // Get the checkout URL from Bux response and redirect URL from service
+        $checkoutData = $result['data'];
+        $redirectUrl = $bux->getRedirectUrl();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'checkout_url' => $checkoutData['checkout_url'] ?? $redirectUrl,
+                'redirect_url' => $redirectUrl,
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+            ],
+        ]);
+    }
+
+    /**
+     * Webhook for Bux.ph payment events.
+     */
+    public function buxWebhook(Request $request)
+    {
+        $event = $request->all();
+        $orderId = data_get($event, 'metadata.order_id');
+        if ($orderId) {
+            $order = Order::find($orderId);
+            if ($order && data_get($event, 'status') === 'paid') {
+                $order->payment_status = 'paid';
+                if ($order->status === 'pending') {
+                    $order->status = 'processing';
+                }
+                $order->save();
+            }
+        }
+        return response()->json(['success' => true]);
+    }
+}

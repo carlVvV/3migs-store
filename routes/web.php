@@ -1,0 +1,128 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\AccountController;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "web" middleware group. Make something great!
+|
+*/
+
+// ============================================================================
+// PUBLIC ROUTES
+// ============================================================================
+
+// Redirect /homepage to root for consistency
+Route::redirect('/homepage', '/', 301);
+Route::redirect('/Homepage', '/', 301);
+
+// Homepage and main pages
+Route::get('/test-notifications', function () {
+    return view('test-notifications');
+});
+
+Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/cart', [HomeController::class, 'cart'])->name('cart');
+Route::get('/checkout', [HomeController::class, 'checkout'])->name('checkout');
+Route::get('/custom-design', [HomeController::class, 'customDesign'])->name('custom-design');
+Route::get('/product/{slug}', [HomeController::class, 'productDetails'])->name('product.details');
+
+// Category routes
+Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
+Route::get('/category/{slug}', [HomeController::class, 'category'])->name('category.show');
+Route::get('/category/{slug}/products', [CategoryController::class, 'products'])->name('category.products');
+
+// ============================================================================
+// AUTHENTICATED ROUTES
+// ============================================================================
+
+Route::middleware('auth')->group(function () {
+    // User account pages
+    Route::get('/wishlist', [HomeController::class, 'wishlist'])->name('wishlist');
+    Route::get('/profile', [HomeController::class, 'profile'])->name('profile');
+    Route::get('/orders', [HomeController::class, 'orders'])->name('orders');
+    
+    // Account management routes
+    Route::get('/account', [AccountController::class, 'index'])->name('account');
+    Route::post('/account/profile/update', [AccountController::class, 'updateProfile'])->name('account.profile.update');
+    Route::post('/account/password/update', [AccountController::class, 'updatePassword'])->name('account.password.update');
+    Route::post('/account/notifications/update', [AccountController::class, 'updateNotifications'])->name('account.notifications.update');
+});
+
+// ============================================================================
+// AUTHENTICATION ROUTES
+// ============================================================================
+
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+Route::get('/signup', [AuthController::class, 'showSignup'])->name('signup');
+Route::post('/signup', [AuthController::class, 'signup']);
+
+// ============================================================================
+// ADMIN ROUTES
+// ============================================================================
+
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/sales', [AdminController::class, 'sales'])->name('sales');
+    Route::get('/orders', [AdminController::class, 'orders'])->name('orders');
+    Route::put('/orders/{id}/status', [AdminController::class, 'updateOrderStatus'])->name('orders.update-status');
+    Route::get('/inventory', [AdminController::class, 'inventory'])->name('inventory');
+    Route::get('/coupons', [AdminController::class, 'coupons'])->name('coupons');
+    Route::get('/reports', [AdminController::class, 'reports'])->name('reports');
+    Route::get('/reports/print', [AdminController::class, 'reportsPrint'])->name('reports.print');
+    Route::get('/reports/export/csv', [AdminController::class, 'reportsExportCsv'])->name('reports.export.csv');
+    // Helper route to seed a test delivered order for analytics
+    Route::get('/reports/seed', [AdminController::class, 'seedTestDelivery'])->name('reports.seed');
+    // Seed multiple random delivered orders across months (for chart testing)
+    Route::get('/reports/seed-random', [AdminController::class, 'seedRandomOrders'])->name('reports.seed.random');
+
+    // Seed random test products (clears existing products first)
+    Route::get('/products/seed', [AdminController::class, 'seedTestProducts'])->name('products.seed');
+    Route::get('/users', [AdminController::class, 'users'])->name('users');
+    Route::get('/reviews', [AdminController::class, 'reviews'])->name('reviews');
+    Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
+    Route::post('/settings/change-password', [AdminController::class, 'changePassword'])->name('settings.change-password');
+    
+    // Barong Products Management (Replacing old products system)
+    Route::get('/products', [AdminController::class, 'barongProducts'])->name('products');
+    Route::get('/products/create', [AdminController::class, 'createBarongProduct'])->name('products.create');
+    Route::get('/products/{id}/edit', [AdminController::class, 'editBarongProduct'])->name('products.edit');
+    
+    // Admin API routes
+    Route::post('/products', [AdminController::class, 'storeBarongProduct'])->name('products.store');
+    Route::put('/products/{id}', [AdminController::class, 'updateBarongProduct'])->name('products.update');
+    Route::delete('/products/{id}', [AdminController::class, 'deleteBarongProduct'])->name('products.delete');
+});
+
+// ============================================================================
+// API ROUTES
+// ============================================================================
+
+Route::prefix('api')->group(function () {
+    
+    // Authentication API
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/signup', [AuthController::class, 'signup']);
+    Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth');
+    Route::get('/me', [AuthController::class, 'me'])->middleware('auth');
+    Route::put('/profile', [AuthController::class, 'updateProfile'])->middleware('auth');
+    Route::put('/change-password', [AuthController::class, 'changePassword'])->middleware('auth');
+
+    // Include other API routes
+    require __DIR__.'/api.php';
+});
+
+// Include Laravel Breeze auth routes
+require __DIR__.'/auth.php';

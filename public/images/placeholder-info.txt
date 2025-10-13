@@ -1,0 +1,8 @@
+# This is a placeholder for the default product image
+# This file should be replaced with an actual JPG image named 'placeholder.jpg'
+# Recommended size: 400x400 pixels
+# This image will be used when no product image is uploaded
+
+# For now, we'll use a data URI approach to avoid infinite loops
+# The actual image should be a proper JPEG file
+

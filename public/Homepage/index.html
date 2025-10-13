@@ -1,0 +1,2304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="">
+    <title>3Migs Gowns & Barong - Premium Filipino Fashion</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="/Homepage/style.css">
+    <style>
+        /* Enhanced chatbot message styling */
+        #chatMessages strong {
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        #chatMessages em {
+            font-style: italic;
+            color: #6b7280;
+        }
+        
+        #chatMessages br + br {
+            margin-top: 0.5rem;
+        }
+        
+        #chatMessages .self-start,
+        #chatMessages .self-end {
+            max-width: 280px;
+            word-wrap: break-word;
+        }
+        
+        /* Improve bullet point spacing */
+        #chatMessages br + • {
+            margin-left: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="bg-black text-white py-2">
+        <div class="container mx-auto flex items-center justify-center relative px-4">
+            <span class="absolute left-0"></span>
+            <span class="text-xs mx-auto">Summer Sale For All Gown & Barong And Free Express Delivery <a href="#" class="underline">ShopNow</a></span>
+            <div class="absolute right-0">
+                <div class="relative inline-block">
+                    <button id="lang-dropdown-btn" class="bg-black text-white text-xs border-none px-2 py-1 rounded focus:outline-none flex items-center">
+                        <span id="selected-lang">English</span>
+                        <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div id="lang-dropdown-menu" class="hidden absolute right-0 mt-1 w-28 bg-white text-black rounded shadow-lg z-50">
+                        <button class="block w-full text-left px-4 py-2 hover:bg-gray-200" data-lang="en">English</button>
+                        <button class="block w-full text-left px-4 py-2 hover:bg-gray-200" data-lang="fil">Filipino</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+        <!-- Header -->
+        <header class="bg-white shadow-md">
+            <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+                <div class="flex items-center space-x-8">
+                    <a href="/Homepage" class="text-2xl font-bold text-gray-800">3Migs Gowns & Barong</a>
+                    <nav class="hidden md:flex space-x-6">
+                        <a href="/" class="text-gray-600 hover:text-gray-900 font-medium">Home</a>
+                        <a href="/Cart" class="text-gray-600 hover:text-gray-900 font-medium">Cart</a>
+                        <a href="/Account" class="text-gray-600 hover:text-gray-900 font-medium">Account</a>
+                        <!-- Login button for guests -->
+                        <button id="login-btn" class="text-gray-600 hover:text-gray-900 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors">Login</button>
+                    </nav>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <input type="text" placeholder="What are you looking for?" class="border border-gray-300 rounded-md py-2 px-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                    <div class="flex items-center space-x-4 text-gray-600 text-lg">
+                        <a href="/Wishlist" class="relative">
+                            <i class="far fa-heart"></i>
+                            <span id="wishlist-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+                        </a>
+                        <a href="/Cart" class="relative">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span id="cart-count" class="cart-count absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                        </a>
+                        <div class="relative">
+                          <button id="profile-btn" class="focus:outline-none"><i class="far fa-user"></i></button>
+                          <div id="profileMenu" class="absolute right-0 mt-3 w-56 bg-gray-800 text-white rounded-md shadow-lg py-2 hidden z-50">
+                              <!-- Guest menu items -->
+                              <div id="guest-menu" class="">
+                                  <a href="/login" class="flex items-center px-4 py-2 hover:bg-gray-700">
+                                      <i class="fas fa-sign-in-alt mr-3"></i>
+                                      <span>Log in</span>
+                                  </a>
+                                  <a href="/register" class="flex items-center px-4 py-2 hover:bg-gray-700">
+                                      <i class="fas fa-user-plus mr-3"></i>
+                                      <span>Sign up</span>
+                                  </a>
+                              </div>
+                              <!-- Logged-in user menu items -->
+                              <div id="user-menu" class="hidden">
+                                  <div class="px-4 py-2 border-b border-gray-700">
+                                      <div class="text-sm text-gray-300">Welcome back!</div>
+                                      <div id="user-name" class="font-semibold"></div>
+                                  </div>
+                                  <a href="/profile" class="flex items-center px-4 py-2 hover:bg-gray-700">
+                                      <i class="fas fa-user mr-3"></i>
+                                      <span>Profile</span>
+                                  </a>
+                                  <a href="/orders" class="flex items-center px-4 py-2 hover:bg-gray-700">
+                                      <i class="fas fa-shopping-bag mr-3"></i>
+                                      <span>My Orders</span>
+                                  </a>
+                                  <div class="border-t border-gray-700 my-2"></div>
+                                  <button id="logout-btn" class="w-full text-left flex items-center px-4 py-2 hover:bg-gray-700 text-red-400">
+                                      <i class="fas fa-sign-out-alt mr-3"></i>
+                                      <span>Logout</span>
+                                  </button>
+                              </div>
+                          </div>
+                        </div>
+                        <!-- Welcome message moved to far right -->
+                        <div id="user-info" class="text-sm text-gray-600 hidden">
+                            <span class="cart-count">Cart (0)</span>
+                        </div>
+                                            <button id="chatbotButton" class="focus:outline-none ml-2" title="Chatbot"><i class="fas fa-robot"></i></button>
+
+    <!-- Chatbox Component -->
+    <div id="chatboxContainer" class="fixed bottom-6 right-6 z-50 w-96 max-w-full bg-transparent hidden">
+        <div class="rounded-lg shadow-lg border border-gray-300 bg-white overflow-hidden">
+            <div class="bg-black text-white flex items-center justify-between px-4 py-2">
+                <span class="font-bold">MigsBot</span>
+                <div class="flex items-center space-x-2">
+                    <button title="Alert" class="text-orange-400 hover:text-orange-600 focus:outline-none">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </button>
+                    <button id="closeChatbox" title="Close" class="text-blue-300 hover:text-blue-500 focus:outline-none">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 flex flex-col gap-3" style="height: 320px; overflow-y: auto;" id="chatMessages">
+                <div class="self-start bg-white border border-gray-300 rounded-lg px-3 py-2 shadow-sm max-w-xs relative">
+                    <span>Hello! I'm MigsBot, your AI assistant for 3Migs Gowns & Barong. How can I help you today?</span>
+                </div>
+            </div>
+            <div class="px-4 py-2 bg-white border-t border-gray-200 flex items-center gap-2">
+                <input type="text" placeholder="Type your message here..." class="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none" id="chatInput" />
+                <button class="text-gray-500 hover:text-gray-700 focus:outline-none" id="attachBtn" title="Attach file">
+                    <i class="far fa-image"></i>
+                </button>
+                <button class="bg-black text-white rounded-full px-4 py-2 ml-2 hover:bg-gray-800 focus:outline-none" id="sendBtn">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-200 py-2">
+                <!-- Language and currency dropdowns removed as requested -->
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-grow container mx-auto px-4 py-8">
+            <div class="flex flex-col lg:flex-row gap-8">
+                <!-- Left Sidebar Navigation -->
+                <aside class="w-full lg:w-1/4 bg-white p-4 rounded-lg shadow-md">
+                    <ul class="space-y-2">
+                        <li><a href="#" class="block py-2 px-3 hover:bg-gray-100 rounded-md text-gray-700 font-medium flex justify-between items-center">Gowns & Lady Barong <i class="fas fa-chevron-right text-xs"></i></a></li>
+                        <li><a href="#" class="block py-2 px-3 hover:bg-gray-100 rounded-md text-gray-700 font-medium flex justify-between items-center">Barong <i class="fas fa-chevron-right text-xs"></i></a></li>
+                        <li><a href="#" class="block py-2 px-3 hover:bg-gray-100 rounded-md text-gray-700 font-medium flex justify-between items-center">Pants <i class="fas fa-chevron-right text-xs"></i></a></li>
+                        <li><a href="#" class="block py-2 px-3 hover:bg-gray-100 rounded-md text-gray-700 font-medium flex justify-between items-center">Other Formal Wear <i class="fas fa-chevron-right text-xs"></i></a></li>
+                    </ul>
+                </aside>
+
+                <!-- Hero Section (Right Main Content) -->
+                <section class="w-full lg:w-3/4 bg-black rounded-lg shadow-md flex items-center justify-center p-8 relative overflow-hidden h-96">
+                    <div class="text-white text-center z-10">
+                        <p class="text-sm">3Migs Gowns & Barong</p>
+                        <h2 class="text-4xl font-bold mt-2">Up to 10% off Voucher</h2>
+                        <a href="../Login/index.html" class="inline-block bg-green-500 text-white px-6 py-3 rounded-md mt-4 hover:bg-green-600">Shop Now</a>
+                    </div>
+                    <img src="https://via.placeholder.com/600x400/333333/FFFFFF?text=Product+Image" alt="Product Image" class="absolute inset-0 w-full h-full object-cover opacity-50">
+                </section>
+            </div>
+            <!-- Flash Sales Section -->
+            <!-- Flash Sales Section -->
+            <section class="mt-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                        <span class="w-2 h-8 bg-red-500 mr-3 rounded-sm"></span> Today's Flash Sales
+                    </h2>
+                    <div class="flex items-center space-x-2 text-gray-700">
+                        <span class="text-lg font-bold">03</span> D
+                        <span class="text-lg font-bold">23</span> H
+                        <span class="text-lg font-bold">19</span> M
+                        <span class="text-lg font-bold">56</span> S
+                        <button class="ml-4 p-2 rounded-full bg-white shadow-md text-gray-600 hover:bg-gray-200"><i class="fas fa-arrow-left"></i></button>
+                        <button class="p-2 rounded-full bg-white shadow-md text-gray-600 hover:bg-gray-200"><i class="fas fa-arrow-right"></i></button>
+                    </div>
+                </div>
+                <div id="flash-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                    <!-- Product Card 1 -->
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden relative product-card">
+                        <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-40%</div>
+                        <img src="https://via.placeholder.com/200x250?text=Product+1" alt="Product 1" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="font-semibold text-gray-800">Lady Barong With Ethnic Sleeves</h3>
+                            <div class="flex items-center mt-2">
+                                <span class="text-red-500 font-bold">₱1000</span>
+                                <span class="text-gray-500 text-sm line-through ml-2">₱1600</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600 mt-1">
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                <span class="ml-1">(88)</span>
+                            </div>
+                            <button class="mt-4 w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 block text-center add-to-cart-btn" data-product-id="1">Add To Cart</button>
+                        </div>
+                    </div>
+                    <!-- Product Card 2 -->
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden relative product-card">
+                        <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-40%</div>
+                        <img src="https://via.placeholder.com/200x250?text=Product+2" alt="Product 2" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="font-semibold text-gray-800">Contemporary Style Barong</h3>
+                            <div class="flex items-center mt-2">
+                                <span class="text-red-500 font-bold">₱1000</span>
+                                <span class="text-gray-500 text-sm line-through ml-2">₱1600</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600 mt-1">
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                <span class="ml-1">(96)</span>
+                            </div>
+                            <button class="mt-4 w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 block text-center add-to-cart-btn" data-product-id="1">Add To Cart</button>
+                        </div>
+                    </div>
+                    <!-- Product Card 3 -->
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden relative product-card">
+                        <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-40%</div>
+                        <img src="https://via.placeholder.com/200x250?text=Product+3" alt="Product 3" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="font-semibold text-gray-800">Modern Style Barong</h3>
+                            <div class="flex items-center mt-2">
+                                <span class="text-red-500 font-bold">₱1000</span>
+                                <span class="text-gray-500 text-sm line-through ml-2">₱1600</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600 mt-1">
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                <span class="ml-1">(86)</span>
+                            </div>
+                            <a href="../Login/index.html" class="mt-10 w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 block text-center add-to-cart-btn">Add To Cart</a>
+                        </div>
+                    </div>
+                    <!-- Product Card 4 -->
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden relative product-card">
+                        <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-40%</div>
+                        <img src="https://via.placeholder.com/200x250?text=Product+4" alt="Product 4" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="font-semibold text-gray-800">Embroidered Kimono</h3>
+                            <div class="flex items-center mt-2">
+                                <span class="text-red-500 font-bold">₱1000</span>
+                                <span class="text-gray-500 text-sm line-through ml-2">₱1600</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600 mt-1">
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                <span class="ml-1">(40)</span>
+                            </div>
+                            <a href="../Login/index.html" class="mt-10 w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 block text-center add-to-cart-btn">Add To Cart</a>
+                        </div>
+                    </div>
+                    <!-- Product Card 5 -->
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden relative product-card">
+                        <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-40%</div>
+                        <img src="https://via.placeholder.com/200x250?text=Product+5" alt="Product 5" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="font-semibold text-gray-800">Modern Style Barong</h3>
+                            <div class="flex items-center mt-2">
+                                <span class="text-red-500 font-bold">₱1000</span>
+                                <span class="text-gray-500 text-sm line-through ml-2">₱1600</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600 mt-1">
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                <span class="ml-1">(96)</span>
+                            </div>
+                            <a href="../Login/index.html" class="mt-10 w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 block text-center add-to-cart-btn">Add To Cart</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center mt-8">
+                    <button class="bg-red-500 text-white px-8 py-3 rounded-md hover:bg-red-600 font-medium">View All Products</button>
+                </div>
+            </section>
+            <!-- Best Selling Products Section -->
+            <section class="mt-12">
+                <div class="flex items-center mb-4">
+                    <span class="w-2 h-8 bg-red-500 mr-3 rounded-sm"></span>
+                    <h2 class="text-2xl font-bold text-gray-800">Best Selling Products</h2>
+                    <button class="ml-auto bg-red-500 text-white px-6 py-2 rounded-md hover:bg-red-600 font-medium">View All</button>
+                </div>
+                <div id="best-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                    <!-- Product Card 1 -->
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden relative product-card">
+                        <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-40%</div>
+                        <img src="https://via.placeholder.com/200x250?text=Product+A" alt="Product A" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="font-semibold text-gray-800">Lady Barong With Ethnic Sleeves</h3>
+                            <div class="flex items-center mt-2">
+                                <span class="text-red-500 font-bold">₱1000</span>
+                                <span class="text-gray-500 text-sm line-through ml-2">₱1600</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600 mt-1">
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                <span class="ml-1">(88)</span>
+                            </div>
+                            <button class="mt-4 w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 block text-center add-to-cart-btn" data-product-id="1">Add To Cart</button>
+                        </div>
+                    </div>
+                    <!-- Product Card 2 -->
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden relative product-card">
+                        <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-40%</div>
+                        <img src="https://via.placeholder.com/200x250?text=Product+B" alt="Product B" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="font-semibold text-gray-800">Contemporary Style Barong</h3>
+                            <div class="flex items-center mt-2">
+                                <span class="text-red-500 font-bold">₱1000</span>
+                                <span class="text-gray-500 text-sm line-through ml-2">₱1600</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600 mt-1">
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                <span class="ml-1">(96)</span>
+                            </div>
+                            <button class="mt-4 w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 block text-center add-to-cart-btn" data-product-id="1">Add To Cart</button>
+                        </div>
+                    </div>
+                    <!-- Product Card 3 -->
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden relative product-card">
+                        <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-40%</div>
+                        <img src="https://via.placeholder.com/200x250?text=Product+C" alt="Product C" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="font-semibold text-gray-800">Modern Style Barong</h3>
+                            <div class="flex items-center mt-2">
+                                <span class="text-red-500 font-bold">₱1000</span>
+                                <span class="text-gray-500 text-sm line-through ml-2">₱1600</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600 mt-1">
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                <span class="ml-1">(86)</span>
+                            </div>
+                            <a href="../Login/index.html" class="mt-10 w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 block text-center add-to-cart-btn">Add To Cart</a>
+                        </div>
+                    </div>
+                    <!-- Product Card 4 -->
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden relative product-card">
+                        <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-40%</div>
+                        <img src="https://via.placeholder.com/200x250?text=Product+D" alt="Product D" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="font-semibold text-gray-800">Embroidered Kimono</h3>
+                            <div class="flex items-center mt-2">
+                                <span class="text-red-500 font-bold">₱1000</span>
+                                <span class="text-gray-500 text-sm line-through ml-2">₱1600</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600 mt-1">
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                <span class="ml-1">(40)</span>
+                            </div>
+                            <a href="../Login/index.html" class="mt-10 w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 block text-center add-to-cart-btn">Add To Cart</a>
+                        </div>
+                    </div>
+                    <!-- Product Card 5 -->
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden relative product-card">
+                        <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-40%</div>
+                        <img src="https://via.placeholder.com/200x250?text=Product+E" alt="Product E" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="font-semibold text-gray-800">Modern Style Barong</h3>
+                            <div class="flex items-center mt-2">
+                                <span class="text-red-500 font-bold">₱1000</span>
+                                <span class="text-gray-500 text-sm line-through ml-2">₱1600</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600 mt-1">
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                <span class="ml-1">(96)</span>
+                            </div>
+                            <a href="../Login/index.html" class="mt-10 w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 block text-center add-to-cart-btn">Add To Cart</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Elegance Banner -->
+            <section class="mt-12 bg-black rounded-lg shadow-md flex items-center justify-center p-8 relative overflow-hidden h-96">
+                <div class="text-white text-center z-10">
+                    <h2 class="text-4xl font-bold mt-2">Step Into Elegance With 3-Migs Gowns & Barong</h2>
+                        <a href="../Login/index.html" class="inline-block bg-green-500 text-white px-6 py-3 rounded-md mt-4 hover:bg-green-600">Shop Now</a>
+                </div>
+                <img src="https://via.placeholder.com/800x600/333333/FFFFFF?text=Elegant+Barong" alt="Elegant Barong" class="absolute inset-0 w-full h-full object-cover opacity-50">
+            </section>
+            <!-- Categories Section -->
+            <section class="mt-12">
+                <div class="flex items-center mb-4">
+                    <span class="w-2 h-8 bg-red-500 mr-3 rounded-sm"></span>
+                    <h2 class="text-2xl font-bold text-gray-800">Categories</h2>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                    <!-- Category Item 1 -->
+                    <div class="bg-white p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-tshirt text-4xl mb-3"></i>
+                        <p class="font-medium text-center">Formal & Evening</p>
+                    </div>
+                    <!-- Category Item 2 -->
+                    <div class="bg-white p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-ring text-4xl mb-3"></i>
+                        <p class="font-medium text-center">Bridal & Wedding</p>
+                    </div>
+                    <!-- Category Item 3 -->
+                    <div class="bg-white p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-cocktail text-4xl mb-3"></i>
+                        <p class="font-medium text-center">Party & Cocktail</p>
+                    </div>
+                    <!-- Category Item 4 -->
+                    <div class="bg-red-500 text-white p-6 rounded-lg shadow-md flex flex-col items-center justify-center">
+                        <i class="fas fa-hat-cowboy text-4xl mb-3"></i>
+                        <p class="font-medium text-center">Cultural & Traditional</p>
+                    </div>
+                    <!-- Category Item 5 -->
+                    <div class="bg-white p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-briefcase text-4xl mb-3"></i>
+                        <p class="font-medium text-center">Corporate & Office</p>
+                    </div>
+                    <!-- Category Item 6 -->
+                    <div class="bg-white p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-shopping-bag text-4xl mb-3"></i>
+                        <p class="font-medium text-center">Casual & Modern</p>
+                    </div>
+                </div>
+            </section>
+            <!-- Explore Our Products Section -->
+            <section class="mt-12">
+                <div class="flex items-center mb-4">
+                    <span class="w-2 h-8 bg-red-500 mr-3 rounded-sm"></span>
+                    <h2 class="text-2xl font-bold text-gray-800">Explore Our Products</h2>
+                    <button class="ml-auto bg-red-500 text-white px-6 py-2 rounded-md hover:bg-red-600 font-medium">View All</button>
+                </div>
+                <div id="explore-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                    <!-- Product Card 1 -->
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden relative product-card">
+                        <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-40%</div>
+                        <img src="https://via.placeholder.com/200x250?text=Product+F" alt="Product F" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="font-semibold text-gray-800">Lady Barong With Ethnic Sleeves</h3>
+                            <div class="flex items-center mt-2">
+                                <span class="text-red-500 font-bold">₱1000</span>
+                                <span class="text-gray-500 text-sm line-through ml-2">₱1600</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600 mt-1">
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                <span class="ml-1">(88)</span>
+                            </div>
+                            <button class="mt-4 w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 block text-center add-to-cart-btn" data-product-id="1">Add To Cart</button>
+                        </div>
+                    </div>
+                    <!-- Product Card 2 -->
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden relative product-card">
+                        <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-40%</div>
+                        <img src="https://via.placeholder.com/200x250?text=Product+G" alt="Product G" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="font-semibold text-gray-800">Contemporary Style Barong</h3>
+                            <div class="flex items-center mt-2">
+                                <span class="text-red-500 font-bold">₱1000</span>
+                                <span class="text-gray-500 text-sm line-through ml-2">₱1600</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600 mt-1">
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                <span class="ml-1">(96)</span>
+                            </div>
+                            <button class="mt-4 w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 block text-center add-to-cart-btn" data-product-id="1">Add To Cart</button>
+                        </div>
+                    </div>
+                    <!-- Product Card 3 -->
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden relative product-card">
+                        <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-40%</div>
+                        <img src="https://via.placeholder.com/200x250?text=Product+H" alt="Product H" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="font-semibold text-gray-800">Modern Style Barong</h3>
+                            <div class="flex items-center mt-2">
+                                <span class="text-red-500 font-bold">₱1000</span>
+                                <span class="text-gray-500 text-sm line-through ml-2">₱1600</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600 mt-1">
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                <span class="ml-1">(86)</span>
+                            </div>
+                            <a href="../Login/index.html" class="mt-10 w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 block text-center add-to-cart-btn">Add To Cart</a>
+                        </div>
+                    </div>
+                    <!-- Product Card 4 -->
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden relative product-card">
+                        <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-40%</div>
+                        <img src="https://via.placeholder.com/200x250?text=Product+I" alt="Product I" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="font-semibold text-gray-800">Embroidered Kimono</h3>
+                            <div class="flex items-center mt-2">
+                                <span class="text-red-500 font-bold">₱1000</span>
+                                <span class="text-gray-500 text-sm line-through ml-2">₱1600</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600 mt-1">
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                <span class="ml-1">(40)</span>
+                            </div>
+                            <a href="../Login/index.html" class="mt-10 w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 block text-center add-to-cart-btn">Add To Cart</a>
+                        </div>
+                    </div>
+                    <!-- Product Card 5 -->
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden relative product-card">
+                        <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-40%</div>
+                        <img src="https://via.placeholder.com/200x250?text=Product+J" alt="Product J" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="font-semibold text-gray-800">Modern Style Barong</h3>
+                            <div class="flex items-center mt-2">
+                                <span class="text-red-500 font-bold">₱1000</span>
+                                <span class="text-gray-500 text-sm line-through ml-2">₱1600</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600 mt-1">
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                <span class="ml-1">(96)</span>
+                            </div>
+                            <a href="../Login/index.html" class="mt-10 w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 block text-center add-to-cart-btn">Add To Cart</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- New Arrival Section -->
+            <section class="mt-12">
+                <div class="flex items-center mb-4">
+                    <span class="w-2 h-8 bg-red-500 mr-3 rounded-sm"></span>
+                    <h2 class="text-2xl font-bold text-gray-800">New Arrival</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Large Block -->
+                    <div class="bg-black text-white rounded-lg shadow-md p-8 flex flex-col items-start justify-center relative h-96 overflow-hidden">
+                        <h3 class="text-3xl font-bold z-10">Men's Collections</h3>
+                        <p class="mt-2 text-sm max-w-sm z-10">Elegant gowns and Filipiniana pieces crafted for formal wear and formal occasions.</p>
+                        <a href="../Login/index.html" class="inline-block bg-green-500 text-white px-6 py-3 rounded-md mt-4 hover:bg-green-600 z-10">Shop Now</a>
+                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMCAxMkMxNi42ODYzIDEyIDE0IDE0LjY4NjMgMTQgMThDMTQgMjEuMzEzNyAxNi42ODYzIDI0IDIwIDI0QzIzLjMxMzcgMjQgMjYgMjEuMzEzNyAyNiAxOEMyNiAxNC42ODYzIDIzLjMxMzcgMTIgMjAgMTJaIiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik0xMiAyOEMxMiAyNi44OTU0IDEyLjg5NTQgMjYgMTQgMjZIMjZDMjcuMTA0NiAyNiAyOCAyNi44OTU0IDI4IDI4VjMwSDI4VjI4SDEyVjI4WiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4K" alt="Men's Collection" class="absolute inset-0 w-full h-full object-cover opacity-30">
+                    </div>
+
+                    <!-- Small Blocks Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <!-- Small Block 1 -->
+                        <div class="bg-black text-white rounded-lg shadow-md p-6 flex flex-col items-start justify-center relative h-44 overflow-hidden">
+                            <h3 class="text-xl font-bold z-10">Women's Collections</h3>
+                            <p class="mt-1 text-xs max-w-xs z-10">Elegant gowns and Filipiniana pieces crafted for formal wear and formal occasions.</p>
+                            <a href="../Login/index.html" class="inline-block bg-green-500 text-white px-4 py-2 rounded-md mt-3 text-sm hover:bg-green-600 z-10">Shop Now</a>
+                            <img src="/images/placeholder.jpg" alt="Women's Collection" class="absolute inset-0 w-full h-full object-cover opacity-30">
+                        </div>
+                        <!-- Small Block 2 -->
+                        <div class="bg-black text-white rounded-lg shadow-md p-6 flex flex-col items-start justify-center relative h-44 overflow-hidden">
+                            <h3 class="text-xl font-bold z-10">Pants</h3>
+                            <p class="mt-1 text-xs max-w-xs z-10">Tailored trousers to match your barong or gown, perfect for any formal occasion.</p>
+                            <a href="../Login/index.html" class="inline-block bg-green-500 text-white px-4 py-2 rounded-md mt-3 text-sm hover:bg-green-600 z-10">Shop Now</a>
+                            <img src="/images/placeholder.jpg" alt="Pants" class="absolute inset-0 w-full h-full object-cover opacity-30">
+                        </div>
+                        <!-- Small Block 3 -->
+                        <div class="bg-black text-white rounded-lg shadow-md p-6 flex flex-col items-start justify-center relative h-44 overflow-hidden">
+                            <h3 class="text-xl font-bold z-10">Other Formal Wear</h3>
+                            <p class="mt-1 text-xs max-w-xs z-10">Complete your look with belts, ties, and other accessories for any formal occasion.</p>
+                            <a href="../Login/index.html" class="inline-block bg-green-500 text-white px-4 py-2 rounded-md mt-3 text-sm hover:bg-green-600 z-10">Shop Now</a>
+                            <img src="/images/placeholder.jpg" alt="Accessories" class="absolute inset-0 w-full h-full object-cover opacity-30">
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+        <!-- Footer Top Section -->
+        <section class="bg-white py-10 border-t border-gray-200">
+            <div class="container mx-auto px-4 flex justify-around text-center flex-wrap gap-5">
+                <div class="flex flex-col items-center">
+                    <div class="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-2 flex items-center justify-center text-xl">
+                        <i class="fas fa-book text-gray-800"></i>
+                    </div>
+                    <h4 class="font-bold text-gray-800">FREE AND FAST DELIVERY</h4>
+                    <p class="text-sm text-gray-600">Free delivery for all orders over ₱???</p>
+                </div>
+                <div class="flex flex-col items-center">
+                    <div class="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-2 flex items-center justify-center text-xl">
+                        <i class="fas fa-phone-alt text-gray-800"></i>
+                    </div>
+                    <h4 class="font-bold text-gray-800">CUSTOMER SERVICE</h4>
+                    <p class="text-sm text-gray-600">Friendly customer support</p>
+                </div>
+                <div class="flex flex-col items-center">
+                    <div class="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-2 flex items-center justify-center text-xl">
+                        <i class="fas fa-shield-alt text-gray-800"></i>
+                    </div>
+                    <h4 class="font-bold text-gray-800">MONEY BACK GUARANTEE</h4>
+                    <p class="text-sm text-gray-600">We return money within 30 days</p>
+                </div>
+            </div>
+            <div class="text-right mt-8 mr-8">
+                <button class="bg-gray-800 text-white rounded-full p-3 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-700 focus:ring-opacity-50">
+                    <i class="fas fa-arrow-up"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- Main Footer -->
+    <footer id="main-footer" class="bg-black text-white py-12 px-4">
+            <div class="container mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-2xl font-bold mb-4">3Migs Gowns & Barong</h3>
+                    <p class="text-sm mb-2">Subscribe</p>
+                    <p class="text-xs mb-4">Get 10% off your first order</p>
+                    <div class="flex">
+                        <input type="email" placeholder="Enter your email" class="bg-black text-white text-sm px-4 py-2 rounded-l-md focus:outline-none border border-white flex-grow">
+                        <button class="bg-red-500 px-4 py-2 rounded-r-md hover:bg-red-600 border border-red-500">
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold mb-4">Support</h3>
+                    <p class="text-sm">Pandi, Bulacan</p>
+                    <p class="text-sm">3migs@gmail.com</p>
+                    <p class="text-sm">+639*********</p>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold mb-4">Account</h3>
+                    <ul>
+                        <li class="mb-2"><a href="#" class="text-sm hover:underline">My Account</a></li>
+                        <li class="mb-2"><a href="#" class="text-sm hover:underline">Login / Register</a></li>
+                        <li class="mb-2"><a href="#" class="text-sm hover:underline">Cart</a></li>
+                        <li class="mb-2"><a href="#" class="text-sm hover:underline">Wishlist</a></li>
+                        <li class="mb-2"><a href="#" class="text-sm hover:underline">Shop</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold mb-4">Quick Link</h3>
+                    <ul>
+                        <li class="mb-2"><a href="#" class="text-sm hover:underline">Privacy Policy</a></li>
+                        <li class="mb-2"><a href="#" class="text-sm hover:underline">Terms Of Use</a></li>
+                        <li class="mb-2"><a href="#" class="text-sm hover:underline">FAQ</a></li>
+                        <li class="mb-2"><a href="#" class="text-sm hover:underline">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="text-center text-xs mt-8">
+                <p class="text-gray-500">Copyright Group 6 2025. All right reserved</p>
+            </div>
+        </footer>
+    </div>
+</body>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chatbotBtn = document.getElementById('chatbotButton');
+    const chatbox = document.getElementById('chatboxContainer');
+    const closeBtn = document.getElementById('closeChatbox');
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const chatMessages = document.getElementById('chatMessages');
+
+    // Chatbot toggle functionality
+    if (chatbotBtn && chatbox) {
+        chatbotBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            chatbox.classList.toggle('hidden');
+            if (!chatbox.classList.contains('hidden')) {
+                chatInput.focus();
+            }
+        });
+    }
+
+    if (closeBtn && chatbox) {
+        closeBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            chatbox.classList.add('hidden');
+        });
+    }
+
+    // Send message functionality
+    async function sendMessage() {
+        const message = chatInput.value.trim();
+        if (!message) return;
+
+        // Add user message to chat
+        addMessage(message, 'user');
+        chatInput.value = '';
+
+        // Show typing indicator
+        const typingIndicator = document.createElement('div');
+        typingIndicator.className = 'self-start bg-white border border-gray-300 rounded-lg px-3 py-2 shadow-sm max-w-xs relative';
+        typingIndicator.innerHTML = '<span class="text-gray-500 italic">MigsBot is typing...</span>';
+        chatMessages.appendChild(typingIndicator);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        try {
+            // Generate bot response with conversation memory
+            console.log('Generating MigsBot response with memory...');
+            const response = await generateBotResponse(message);
+            console.log('Response generated:', response);
+            
+            // Add to conversation memory
+            conversationMemory.addMessage(message, response);
+            
+            addMessage(response, 'bot');
+        } catch (error) {
+            console.error('Error generating response:', error);
+            console.error('Error stack:', error.stack);
+            addMessage('I apologize, but I encountered an error. Please try again or contact our store directly.', 'bot');
+        } finally {
+            // Remove typing indicator
+            typingIndicator.remove();
+        }
+    }
+
+    function addMessage(text, sender) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `self-${sender === 'user' ? 'end' : 'start'} bg-white border border-gray-300 rounded-lg px-3 py-2 shadow-sm max-w-xs relative`;
+        
+        // Process text for better formatting
+        const formattedText = formatMessageText(text);
+        messageDiv.innerHTML = formattedText;
+
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function formatMessageText(text) {
+        // Convert markdown-style formatting to HTML
+        let formatted = text
+            // Bold text **text** -> <strong>text</strong>
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            // Line breaks \n\n -> <br><br>
+            .replace(/\n\n/g, '<br><br>')
+            // Single line breaks \n -> <br>
+            .replace(/\n/g, '<br>')
+            // Bullet points • -> <br>•
+            .replace(/•/g, '<br>•')
+            // Italic text *text* -> <em>text</em>
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            // Clean up extra breaks at the start
+            .replace(/^<br>/, '');
+        
+        return formatted;
+    }
+
+    // Web Search Tool Implementation
+    async function searchWeb(query) {
+        try {
+            // Simulate web search API call
+            // In a real implementation, you would use an actual search API like:
+            // - Google Custom Search API
+            // - Bing Search API
+            // - SerpAPI
+            // - DuckDuckGo API
+            
+            const searchResults = await simulateWebSearch(query);
+            return searchResults;
+        } catch (error) {
+            console.error('Web search error:', error);
+            return null;
+        }
+    }
+
+    // Simulated web search function (replace with actual API call)
+    function simulateWebSearch(query) {
+        return new Promise((resolve) => {
+            // Simulate API delay
+            setTimeout(() => {
+                const mockResults = {
+                    'formal event attire': 'For formal events, choose attire that matches the dress code. Black tie events require tuxedos or formal gowns, while business formal calls for suits or professional dresses. Consider the venue, time of day, and cultural context when selecting your outfit.',
+                    'barong maintenance': 'Proper barong care includes gentle hand washing or dry cleaning, storing in breathable garment bags, avoiding direct sunlight, and pressing with low heat. Different fabrics require specific care instructions.',
+                    'filipiniana styling': 'Modern filipiniana styling combines traditional elements with contemporary fashion. Accessorize with statement jewelry, choose complementary colors, and select appropriate footwear for different occasions.',
+                    'wedding attire trends 2024': 'Current wedding attire trends include sustainable fabrics, minimalist designs, bold colors for non-traditional weddings, and personalized details. Eco-friendly materials and vintage-inspired pieces are particularly popular.',
+                    'corporate dress code': 'Corporate dress codes vary by industry and company culture. Generally, professional attire includes well-fitted suits, conservative colors, and polished accessories. When in doubt, it\'s better to be slightly overdressed than underdressed.'
+                };
+                
+                const result = mockResults[query.toLowerCase()] || 
+                    `I found some general information about "${query}", but I recommend contacting our store directly for specific guidance on our products and services.`;
+                
+                resolve({
+                    query: query,
+                    result: result,
+                    source: 'Web Search',
+                    timestamp: new Date().toISOString()
+                });
+            }, 1000); // Simulate 1-second API delay
+        });
+    }
+
+    // Enhanced MigsBot System Prompt and Instructions
+    const MIGSBOT_SYSTEM_PROMPT = `
+    You are MigsBot, an expert personal shopper and style advisor for 3-Migs Gowns and Barong. Your mission is to provide seamless, personalized, and accurate guidance to customers seeking formal wear.
+
+    CORE IDENTITY:
+    - Friendly, knowledgeable, and professional personal shopper
+    - Expert in Filipino formal wear (gowns and barongs)
+    - Representative of 3-Migs Gowns and Barong brand
+    - Located in Pandi, Bulacan
+
+    KNOWLEDGE HIERARCHY (in order of priority):
+    1. INTERNAL KNOWLEDGE BASE: Always check your comprehensive internal KB first
+    2. WEB SEARCH: Use web search only when internal KB doesn't have the answer
+    3. STORE REFERRAL: Direct customers to store when specific guidance is needed
+
+    WEB SEARCH GUIDELINES:
+    - Use web search for: trends, latest fashion, maintenance tips, general styling advice
+    - DO NOT use web search for: specific product details, pricing, store policies, custom orders
+    - Always synthesize web results into your own words
+    - Always cite that information came from external sources
+    - Always connect web information back to 3-Migs products/services
+
+    RESPONSE SYNTHESIS RULES:
+    - Never copy-paste raw search results
+    - Always maintain MigsBot's friendly, helpful tone
+    - Connect external information to 3-Migs context
+    - Provide actionable advice when possible
+    - End with relevant follow-up questions or store recommendations
+
+    PERSONA MAINTENANCE:
+    - Stay enthusiastic about Filipino formal wear
+    - Be encouraging and supportive
+    - Use emojis appropriately (🌿✨👔💒💼)
+    - Maintain professional expertise while being approachable
+    - Always represent 3-Migs Gowns and Barong positively
+
+    STORE INTEGRATION:
+    - Frequently mention the store location (Pandi, Bulacan)
+    - Encourage in-person visits for fittings and consultations
+    - Highlight the expertise of store staff
+    - Promote the personalized service experience
+    `;
+
+    // Enhanced response generation with conversation memory
+    async function generateBotResponse(userMessage) {
+        try {
+            console.log('MigsBot: Processing message:', userMessage);
+            const message = userMessage.toLowerCase();
+            
+            // Extract and update user preferences
+            const newPreferences = conversationMemory.extractPreferencesFromMessage(userMessage);
+            if (Object.keys(newPreferences).length > 0) {
+                conversationMemory.updateUserPreferences(newPreferences);
+            }
+
+            // Get conversation context
+            const context = conversationMemory.getConversationContext();
+            console.log('Conversation context:', context);
+
+            // Check for follow-up questions based on previous conversation
+            const followUpResponse = handleFollowUpQuestions(userMessage, context);
+            if (followUpResponse) {
+                return followUpResponse;
+            }
+
+            // Priority 1: Compound queries (most specific first)
+            if ((message.includes('fabric') || message.includes('material')) && 
+                (message.includes('cold') || message.includes('winter') || message.includes('cool'))) {
+                return "**Cold Weather Fabric Selection** ❄️\n\nFor colder weather, I recommend:\n\n**Best Cold Weather Fabrics:**\n• **Organza** - Provides structure and insulation\n• **Jusi** - Smooth texture with better warmth retention\n• **Inabel** - Traditional handwoven fabric, naturally insulating\n\n**Avoid for Cold Weather:**\n• **Piña** - Too lightweight and breathable for cold climates\n\n**Cold Weather Tips:**\n• Layer with traditional Filipino accessories\n• Consider longer sleeves and higher necklines\n• Choose darker colors that absorb heat\n\nWhat type of cold weather event are you planning for?";
+            }
+            
+            if ((message.includes('fabric') || message.includes('material')) && 
+                (message.includes('hot') || message.includes('summer') || message.includes('warm'))) {
+                return "**Hot Weather Fabric Selection** ☀️\n\nFor hot, humid weather, I recommend:\n\n**Best Hot Weather Fabrics:**\n• **Piña** - Extremely breathable, perfect for tropical climates\n• **Jusi** - Lightweight and moisture-wicking\n• **Barong** - Natural fibers, excellent ventilation\n\n**Hot Weather Tips:**\n• Choose lighter colors (white, cream, light blue)\n• Opt for shorter sleeves or sleeveless designs\n• Consider moisture-wicking properties\n\nWhat's the climate like for your event?";
+            }
+            
+            // Priority 2: Duration and comfort queries
+            if ((message.includes('long') || message.includes('duration') || message.includes('hours')) && 
+                (message.includes('event') || message.includes('wear') || message.includes('comfort'))) {
+                return "**Long Event Comfort Guide** ⏰\n\n**For Extended Wear (4+ hours):**\n• **Jusi** - Most comfortable for long periods, wrinkle-resistant\n• **Piña** - Breathable, won't feel heavy over time\n• **Organza** - Maintains structure, doesn't lose shape\n\n**Comfort Features:**\n• Choose fabrics that don't wrinkle easily\n• Opt for breathable materials\n• Consider stretch or give in the fabric\n• Select comfortable cuts and fits\n\n**Long Event Tips:**\n• Bring a backup outfit for very long events\n• Choose darker colors that hide minor stains\n• Consider removable accessories\n\nHow long is your event? I can suggest the most comfortable options!";
+            }
+            
+            // Priority 3: Specific occasion queries
+            if (message.includes('wedding')) {
+                return "**Wedding Attire Recommendations** 💒\n\n**For Brides:**\n• **Organza** gowns for elegant structure and flow\n• **Piña** for traditional Filipino elegance\n• Custom embroidery for personal touches\n\n**For Grooms:**\n• **Jusi** barongs for comfort and elegance\n• **Piña** for special ceremonial moments\n• Traditional pointed collar for formal ceremonies\n\n**Weather Considerations:**\nFor outdoor weddings, I recommend breathable fabrics like piña or jusi to stay comfortable.\n\nWhat's your wedding style? Traditional, modern, or cultural?";
+            }
+            
+            if (message.includes('corporate') || message.includes('business') || message.includes('office')) {
+                return "**Corporate Attire Recommendations** 💼\n\n**Professional Barongs:**\n• **Jusi** fabric - lightweight and professional\n• Mandarin or traditional pointed collar\n• Classic colors: white, cream, light blue\n• Subtle embroidery for elegance\n\n**Business Gowns:**\n• **Jusi** or **piña** for comfort\n• Conservative cuts and lengths\n• Professional color palette\n\nWhat's your workplace dress code?";
+            }
+            
+            if (message.includes('semi-formal') || message.includes('semi formal') || message.includes('cocktail') || message.includes('business casual')) {
+                return "**Semi-Formal Event Attire** 🥂\n\n**Perfect for Semi-Formal Events:**\n• **Jusi** barongs - Versatile and elegant\n• **Piña** with subtle embroidery - Sophisticated yet comfortable\n• **Organza** gowns - Structured and elegant\n\n**Semi-Formal Styling Tips:**\n• **Colors**: Navy blue, charcoal, deep burgundy, or classic white\n• **Collar**: Mandarin or modern pointed collar\n• **Accessories**: Minimalist jewelry, leather shoes\n• **Fabric**: Choose breathable materials for comfort\n\n**Event Examples:**\n• Cocktail parties\n• Business dinners\n• Gallery openings\n• Award ceremonies\n\nWhat type of semi-formal event are you attending? I can suggest specific styling!";
+            }
+            
+            // Priority 4: Sizing and measurements
+            if (message.includes('size') || message.includes('measurement') || message.includes('fit') || message.includes('sizing')) {
+                return "**Sizing & Measurements Guide** 📏\n\n**Barong Measurements:**\n• **Chest** - Measure fullest part of chest over a well-fitted shirt\n• **Shoulder** - Shoulder to shoulder across the back\n• **Sleeve** - Shoulder to wrist length\n• **Length** - Shoulder to desired length\n\n**Filipiniana Measurements:**\n• **Bust** - Fullest part of bust over undergarments\n• **Waist** - Natural waistline\n• **Hips** - Fullest part of hips\n• **Length** - Shoulder to desired length\n\n**Sizing Tips:**\n• We offer custom sizing for perfect fit\n• Free alterations available\n• Professional fitting consultations at our store\n\nNeed help with measurements? Visit our store in Pandi, Bulacan for professional fitting!";
+            }
+            
+            // Priority 5: Pricing and costs
+            if (message.includes('price') || message.includes('cost') || message.includes('expensive') || message.includes('budget')) {
+                return "**Pricing Information** 💰\n\n**Price Ranges:**\n• **Ready-to-wear** - Starting from ₱2,500\n• **Custom designs** - ₱5,000 - ₱15,000\n• **Premium fabrics** (Piña) - ₱8,000 - ₱25,000\n• **Custom embroidery** - Additional ₱2,000 - ₱8,000\n\n**Value Features:**\n• Free alterations within 30 days\n• Professional consultation included\n• Quality guarantee on all products\n• Payment plans available\n\n**Current Promotions:**\n• 10% off for first-time customers\n• Bundle discounts for multiple items\n• Flash sale items up to 30% off\n\nWhat's your budget range? I can suggest the best options!";
+            }
+            
+            // Priority 6: Customization options
+            if (message.includes('custom') || message.includes('customize') || message.includes('personalize') || message.includes('modify')) {
+                return "**Customization Options** ✨\n\n**Available Customizations:**\n• **Embroidery** - Traditional Filipino patterns, monograms, custom designs\n• **Collar Styles** - Traditional pointed, mandarin, modern variations\n• **Fabric Combinations** - Mix and match different materials\n• **Color Variations** - Custom dyeing and color matching\n• **Fit Adjustments** - Perfect tailoring to your measurements\n\n**Customization Process:**\n• Free design consultation\n• 3D visualization of your design\n• 2-3 week production time\n• Unlimited revisions until satisfaction\n\n**Popular Customizations:**\n• Wedding date embroidery\n• Family crest integration\n• Cultural pattern incorporation\n\nWhat would you like to customize? I can guide you through the process!";
+            }
+            
+            // Priority 7: Care instructions
+            if (message.includes('care') || message.includes('wash') || message.includes('maintenance') || message.includes('clean')) {
+                return "**Fabric Care Instructions** 🧺\n\n**Piña Fabric:**\n• Dry clean only\n• Store in cool, dry place\n• Avoid direct sunlight\n• Iron on low heat with pressing cloth\n\n**Jusi Fabric:**\n• Machine wash gentle cycle\n• Air dry recommended\n• Iron on medium heat\n• Wrinkle-resistant properties\n\n**Organza Fabric:**\n• Dry clean only\n• Store hanging to maintain shape\n• Handle with care to prevent snags\n• Professional pressing recommended\n\n**General Care Tips:**\n• Always check care labels\n• Spot clean stains immediately\n• Use proper hangers for storage\n• Professional cleaning for special occasions\n\nNeed specific care instructions for your fabric? Ask me!";
+            }
+            
+            // Priority 8: Colors and availability
+            if (message.includes('color') || message.includes('colour') || message.includes('available')) {
+                return "**Color Options** 🎨\n\n**Classic Colors:**\n• **White** - Traditional, elegant, versatile\n• **Cream/Ecru** - Warm, sophisticated\n• **Off-white** - Modern, clean\n• **Light Blue** - Professional, refreshing\n\n**Seasonal Colors:**\n• **Navy Blue** - Corporate, formal\n• **Charcoal** - Sophisticated, modern\n• **Champagne** - Elegant, celebratory\n• **Gold** - Luxurious, special occasions\n\n**Custom Colors:**\n• Color matching available\n• Custom dyeing services\n• Seasonal color collections\n• Trend-based color recommendations\n\n**Color Selection Tips:**\n• Consider the occasion and season\n• Think about your skin tone\n• Match with accessories and shoes\n\nWhat occasion are you planning for? I can suggest the perfect colors!";
+            }
+            
+            // Priority 9: Shipping and delivery
+            if (message.includes('delivery') || message.includes('shipping') || message.includes('ship') || message.includes('arrive')) {
+                return "**Delivery & Shipping** 🚚\n\n**Delivery Options:**\n• **In-store pickup** - Free, same day if ready\n• **Metro Manila** - 2-3 business days, ₱150\n• **Luzon** - 3-5 business days, ₱250\n• **Visayas/Mindanao** - 5-7 business days, ₱350\n\n**Free Shipping:**\n• Orders over ₱5,000\n• First-time customers\n• Bulk orders (5+ items)\n\n**Delivery Features:**\n• Professional packaging\n• Insurance included\n• Tracking number provided\n• Delivery confirmation\n\n**Store Location:**\nVisit us at Pandi, Bulacan for immediate pickup and fittings!\n\nNeed rush delivery? We offer same-day service for urgent orders!";
+            }
+            
+            // Priority 10: Return policy
+            if (message.includes('return') || message.includes('exchange') || message.includes('refund') || message.includes('policy')) {
+                return "**Return & Exchange Policy** 📋\n\n**Standard Items:**\n• **30-day return policy**\n• Items must be unworn with original tags\n• Full refund or exchange available\n• Free return shipping\n\n**Custom Items:**\n• **Final sale** - no returns\n• We work closely with you to ensure satisfaction\n• Free alterations if needed\n• Unlimited design revisions\n\n**Return Process:**\n• Contact us within 30 days\n• Return to store or arrange pickup\n• Refund processed within 5 business days\n• Exchange items shipped immediately\n\n**Quality Guarantee:**\n• 100% satisfaction guarantee\n• Quality assurance on all products\n• Professional alterations included\n\nNeed to return something? I can help you with the process!";
+            }
+            
+            // Priority 11: General fabric queries
+            if (message.includes('fabric') || message.includes('material')) {
+                return "**Our Fabric Collection** 🌿\n\n**Piña** - Luxurious pineapple fiber, breathable and elegant\n**Jusi** - Smooth, versatile, ideal for all occasions\n**Organza** - Crisp, structured, perfect for formal events\n**Inabel** - Traditional handwoven, durable and cultural\n**Barong** - Traditional Filipino formal wear fabric\n\n**Fabric Selection Tips:**\n• Consider the weather and season\n• Think about the formality of the event\n• Factor in care requirements\n\nWhat type of event are you planning for? I can recommend the perfect fabric!";
+            }
+            
+            // Priority 12: Weather-specific queries
+            if (message.includes('cold') || message.includes('winter')) {
+                return "**Cold Weather Styling** ❄️\n\nFor colder weather, I recommend:\n• **Organza** or **Jusi** fabrics for better insulation\n• Longer sleeves and higher necklines\n• Darker colors that absorb heat\n• Layer with traditional Filipino accessories\n\nWould you like suggestions for specific cold-weather styling or fabric selection?";
+            }
+            
+            if (message.includes('hot') || message.includes('summer')) {
+                return "**Hot Weather Styling** ☀️\n\nFor hot weather, I recommend:\n• **Piña** or **Jusi** for maximum breathability\n• Lighter colors (white, cream, light blue)\n• Shorter sleeves or sleeveless designs\n• Moisture-wicking properties\n\nWhat type of hot weather event are you planning for?";
+            }
+            
+            // Priority 13: Discounts and promotions
+            if (message.includes('discount') || message.includes('sale') || message.includes('promo') || message.includes('cheap')) {
+                return "**Current Promotions & Discounts** 🎉\n\n**Active Promotions:**\n• **First-time customers** - 10% off entire order\n• **Bundle deals** - Buy 2 get 1 free on selected items\n• **Flash sales** - Up to 30% off limited time\n• **Student discount** - 15% off with valid ID\n• **Senior citizen** - 20% off (60+ years)\n\n**Seasonal Sales:**\n• **Wedding season** - Special packages\n• **Holiday collections** - Limited edition discounts\n• **Clearance items** - Up to 50% off\n\n**How to Get Discounts:**\n• Sign up for our newsletter\n• Follow us on social media\n• Visit our store for exclusive deals\n\nWhat type of discount are you looking for? I can help you find the best deals!";
+            }
+            
+            // Priority 14: Fabric comparison
+            if (message.includes('difference') || message.includes('compare') || message.includes('versus') || message.includes('vs')) {
+                return "**Fabric Comparison Guide** 🔍\n\n**Piña vs Jusi:**\n• **Piña** - More luxurious, breathable, traditional\n• **Jusi** - More affordable, versatile, easier care\n\n**Organza vs Inabel:**\n• **Organza** - Structured, formal, elegant\n• **Inabel** - Cultural, durable, handwoven\n\n**Fabric Selection Matrix:**\n• **Formal Events** - Organza, Piña\n• **Daily Wear** - Jusi, Barong\n• **Cultural Events** - Inabel, Piña\n• **Hot Weather** - Piña, Jusi\n• **Cold Weather** - Organza, Inabel\n\n**Care Comparison:**\n• **Easy Care** - Jusi (machine washable)\n• **Professional Care** - Piña, Organza (dry clean)\n\nNeed help choosing between specific fabrics? Ask me!";
+            }
+            
+            // Priority 15: Greetings
+            if (message.includes('hey') || message.includes('hello') || message.includes('hi')) {
+                return "Hello! Welcome to 3Migs Gowns & Barong! I'm your personal style advisor MigsBot. I can help you with fabric selection, sizing, customization, pricing, delivery, and finding the perfect formal wear for any occasion. How can I assist you today?";
+            }
+            
+            // Default response with web search fallback
+            return await searchWebForUnknownQuery(userMessage);
+            
+        } catch (error) {
+            console.error('Error in generateBotResponse:', error);
+            return "I apologize, but I encountered an error. Please try again!";
+        }
+    }
+
+    // Conversation Memory & Context Management
+    class ConversationMemory {
+        constructor() {
+            this.conversationHistory = [];
+            this.userPreferences = {};
+            this.currentContext = {};
+            this.sessionId = this.generateSessionId();
+        }
+
+        generateSessionId() {
+            return 'migsbot_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        addMessage(userMessage, botResponse) {
+            this.conversationHistory.push({
+                timestamp: new Date().toISOString(),
+                user: userMessage,
+                bot: botResponse,
+                context: { ...this.currentContext }
+            });
+            
+            // Keep only last 10 messages to manage memory
+            if (this.conversationHistory.length > 10) {
+                this.conversationHistory = this.conversationHistory.slice(-10);
+            }
+            
+            this.saveToStorage();
+        }
+
+        updateUserPreferences(preferences) {
+            this.userPreferences = { ...this.userPreferences, ...preferences };
+            this.saveToStorage();
+        }
+
+        updateContext(context) {
+            this.currentContext = { ...this.currentContext, ...context };
+        }
+
+        getConversationContext() {
+            return {
+                history: this.conversationHistory,
+                preferences: this.userPreferences,
+                context: this.currentContext,
+                sessionId: this.sessionId
+            };
+        }
+
+        extractPreferencesFromMessage(message) {
+            const preferences = {};
+            const lowerMessage = message.toLowerCase();
+
+            // Extract event type
+            if (lowerMessage.includes('wedding')) preferences.eventType = 'wedding';
+            else if (lowerMessage.includes('corporate') || lowerMessage.includes('business')) preferences.eventType = 'corporate';
+            else if (lowerMessage.includes('semi-formal') || lowerMessage.includes('cocktail')) preferences.eventType = 'semi-formal';
+            else if (lowerMessage.includes('formal')) preferences.eventType = 'formal';
+
+            // Extract gender preference
+            if (lowerMessage.includes('men') || lowerMessage.includes('barong')) preferences.gender = 'men';
+            else if (lowerMessage.includes('women') || lowerMessage.includes('gown')) preferences.gender = 'women';
+
+            // Extract fabric preference
+            if (lowerMessage.includes('piña')) preferences.fabric = 'piña';
+            else if (lowerMessage.includes('jusi')) preferences.fabric = 'jusi';
+            else if (lowerMessage.includes('organza')) preferences.fabric = 'organza';
+
+            // Extract color preference
+            if (lowerMessage.includes('navy') || lowerMessage.includes('blue')) preferences.color = 'navy';
+            else if (lowerMessage.includes('charcoal') || lowerMessage.includes('dark')) preferences.color = 'charcoal';
+            else if (lowerMessage.includes('white') || lowerMessage.includes('cream')) preferences.color = 'white';
+
+            return preferences;
+        }
+
+        saveToStorage() {
+            try {
+                localStorage.setItem('migsbot_memory', JSON.stringify({
+                    conversationHistory: this.conversationHistory,
+                    userPreferences: this.userPreferences,
+                    currentContext: this.currentContext,
+                    sessionId: this.sessionId
+                }));
+            } catch (error) {
+                console.error('Error saving conversation memory:', error);
+            }
+        }
+
+        loadFromStorage() {
+            try {
+                const saved = localStorage.getItem('migsbot_memory');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    this.conversationHistory = data.conversationHistory || [];
+                    this.userPreferences = data.userPreferences || {};
+                    this.currentContext = data.currentContext || {};
+                    this.sessionId = data.sessionId || this.generateSessionId();
+                }
+            } catch (error) {
+                console.error('Error loading conversation memory:', error);
+            }
+        }
+
+        clearMemory() {
+            this.conversationHistory = [];
+            this.userPreferences = {};
+            this.currentContext = {};
+            localStorage.removeItem('migsbot_memory');
+        }
+    }
+
+    // Initialize conversation memory
+    const conversationMemory = new ConversationMemory();
+    conversationMemory.loadFromStorage();
+
+    // Handle follow-up questions based on conversation context
+    function handleFollowUpQuestions(userMessage, context) {
+        const message = userMessage.toLowerCase();
+        const preferences = context.preferences;
+        const history = context.history;
+
+        // If user is answering a previous question about event type
+        if (message.includes('business') || message.includes('corporate') || message.includes('office')) {
+            // Update context to remember this is a corporate event
+            conversationMemory.updateContext({ eventType: 'corporate', eventDetails: 'business dinner' });
+            
+            return "**Perfect! For corporate formal events, I recommend:**\n\n**Men**: Our **Jusi barongs** in navy blue or charcoal - professional yet comfortable for long meetings\n**Women**: Our **Organza gowns** in classic colors - elegant and structured\n\n**Corporate Styling Tips:**\n• Choose conservative colors (navy, charcoal, white)\n• Opt for clean, minimalist designs\n• Ensure comfort for all-day wear\n\nWould you like me to show you specific styles or help with sizing?";
+        }
+
+        if (message.includes('wedding') || message.includes('ceremony')) {
+            if (preferences.eventType === 'formal') {
+                return "**Excellent choice! For wedding ceremonies, I recommend:**\n\n**Men**: Our **Piña barongs** with traditional elegance - perfect for special moments\n**Women**: Our **Organza gowns** with custom embroidery - sophisticated and memorable\n\n**Wedding Styling Tips:**\n• Traditional colors: white, cream, ecru\n• Consider cultural elements and family traditions\n• Plan for comfort during long ceremonies\n\nAre you the bride, groom, or a guest? This will help me suggest the perfect style!";
+            }
+        }
+
+        if (message.includes('comfort') || message.includes('long') || message.includes('hours')) {
+            return "**Great priority! For comfort during long events, I recommend:**\n\n**Best Comfort Fabrics:**\n• **Jusi** - Most comfortable for extended wear, wrinkle-resistant\n• **Piña** - Breathable, won't feel heavy over time\n• **Organza** - Maintains structure without discomfort\n\n**Comfort Features:**\n• Choose fabrics that don't wrinkle easily\n• Opt for breathable materials\n• Consider stretch or give in the fabric\n\nWhat type of long event are you planning for?";
+        }
+
+        if (message.includes('elegance') || message.includes('special') || message.includes('luxury')) {
+            return "**Perfect! For elegance and luxury, I recommend:**\n\n**Premium Options:**\n• **Piña** - Luxurious pineapple fiber, perfect for special occasions\n• **Organza** - Structured elegance with sophisticated drape\n• **Custom embroidery** - Add personal touches for uniqueness\n\n**Elegance Features:**\n• Premium fabric quality\n• Custom design options\n• Professional tailoring\n\nWhat type of special occasion are you planning for?";
+        }
+
+        // Handle color questions with context awareness
+        if (message.includes('color') || message.includes('colour')) {
+            const currentContext = context.context;
+            
+            if (currentContext.eventType === 'corporate') {
+                return "**For your business dinner, here are the perfect corporate colors:**\n\n**Recommended Corporate Colors:**\n• **Navy Blue** - Professional, trustworthy, perfect for business\n• **Charcoal** - Sophisticated, modern, versatile\n• **White** - Clean, classic, always appropriate\n• **Light Blue** - Professional yet approachable\n\n**Why these colors work for business dinners:**\n• Project professionalism and competence\n• Work well in corporate settings\n• Easy to coordinate with accessories\n• Appropriate for any business occasion\n\nWould you like to see specific styles in these colors?";
+            }
+            
+            if (currentContext.eventType === 'wedding') {
+                return "**For wedding ceremonies, here are the perfect colors:**\n\n**Traditional Wedding Colors:**\n• **White/Cream** - Classic, elegant, timeless\n• **Ecru** - Warm, sophisticated, traditional\n• **Champagne** - Elegant, celebratory, luxurious\n• **Gold** - Rich, special occasion, memorable\n\n**Why these colors work for weddings:**\n• Honor traditional wedding customs\n• Photograph beautifully\n• Complement wedding themes\n• Appropriate for ceremonial occasions\n\nAre you the bride, groom, or a guest? This will help me suggest the perfect color!";
+            }
+        }
+
+        return null; // No follow-up response needed
+    }
+    async function searchWebForUnknownQuery(query) {
+        try {
+            console.log('MigsBot: Searching web for unknown query:', query);
+            
+            // Simulate web search API call
+            const searchResults = await simulateWebSearch(query);
+            
+            if (searchResults && searchResults.length > 0) {
+                // Synthesize web search results with MigsBot persona
+                return synthesizeWebResultsWithPersona(searchResults, query);
+            } else {
+                // Fallback if web search fails
+                return "I don't have specific information about that in my knowledge base, and I'm unable to search for current information right now. For detailed assistance with your request, I recommend contacting our store directly at our location in Pandi, Bulacan or speaking with one of our human representatives who can provide personalized guidance.\n\nIs there anything else I can help you with regarding our products, fabrics, sizing, or services?";
+            }
+        } catch (error) {
+            console.error('Error in web search:', error);
+            return "I apologize, but I encountered an error while searching for information. Please try again or contact our store directly for assistance.";
+        }
+    }
+
+    // Real web search API integration
+    async function simulateWebSearch(query) {
+        try {
+            // Enhanced search query formulation for better results
+            const searchQuery = formulateEnhancedSearchQuery(query);
+            console.log('MigsBot: Enhanced search query:', searchQuery);
+            
+            // Use DuckDuckGo Instant Answer API (free, no API key required)
+            const searchUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(searchQuery)}&format=json&no_html=1&skip_disambig=1`;
+            
+            const response = await fetch(searchUrl);
+            const data = await response.json();
+            
+            // Process DuckDuckGo results
+            const results = [];
+            
+            // Add abstract if available
+            if (data.Abstract) {
+                results.push({
+                    title: data.Heading || "Fashion and Style Information",
+                    snippet: data.Abstract,
+                    url: data.AbstractURL || "https://duckduckgo.com"
+                });
+            }
+            
+            // Add related topics
+            if (data.RelatedTopics && data.RelatedTopics.length > 0) {
+                data.RelatedTopics.slice(0, 2).forEach(topic => {
+                    if (topic.Text && topic.FirstURL) {
+                        results.push({
+                            title: topic.Text.split('.')[0] || "Related Information",
+                            snippet: topic.Text,
+                            url: topic.FirstURL
+                        });
+                    }
+                });
+            }
+            
+            // Fallback to enhanced mock results if API fails
+            if (results.length === 0) {
+                return await generateEnhancedMockResults(query);
+            }
+            
+            return results.slice(0, 3); // Limit to 3 results
+            
+        } catch (error) {
+            console.error('Web search API error:', error);
+            // Fallback to enhanced mock results
+            return await generateEnhancedMockResults(query);
+        }
+    }
+
+    // Enhanced search query formulation
+    function formulateEnhancedSearchQuery(query) {
+        let searchQuery = query
+            .replace(/[^\w\s]/g, '') // Remove special characters
+            .replace(/\s+/g, ' ') // Normalize spaces
+            .trim();
+        
+        // Add contextual keywords for better search results
+        if (searchQuery.includes('formal') || searchQuery.includes('attire') || searchQuery.includes('dress')) {
+            searchQuery += ' fashion guidelines 2024';
+        }
+        
+        if (searchQuery.includes('fabric') || searchQuery.includes('material')) {
+            searchQuery += ' textile selection guide';
+        }
+        
+        if (searchQuery.includes('color') || searchQuery.includes('colour')) {
+            searchQuery += ' color trends fashion';
+        }
+        
+        if (searchQuery.includes('event') || searchQuery.includes('party') || searchQuery.includes('wedding')) {
+            searchQuery += ' event attire dress code';
+        }
+        
+        return searchQuery;
+    }
+
+    // Enhanced mock results as fallback
+    async function generateEnhancedMockResults(query) {
+        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API delay
+        
+        const mockResults = [];
+        const lowerQuery = query.toLowerCase();
+        
+        if (lowerQuery.includes('formal') || lowerQuery.includes('attire')) {
+            mockResults.push({
+                title: "Formal Attire Guidelines 2024",
+                snippet: "Formal attire typically includes dark suits, elegant dresses, and sophisticated accessories. For semi-formal events, consider cocktail dresses or dress shirts with blazers. Modern trends emphasize comfort, sustainability, and personal expression.",
+                url: "https://example.com/formal-attire-guide"
+            });
+        }
+        
+        if (lowerQuery.includes('fashion') || lowerQuery.includes('trend') || lowerQuery.includes('style')) {
+            mockResults.push({
+                title: "Current Fashion Trends for Formal Events",
+                snippet: "Modern formal fashion emphasizes comfort, sustainability, and personal expression. Popular trends include minimalist designs, sustainable fabrics, versatile pieces, and inclusive sizing. Color trends favor earth tones and classic neutrals.",
+                url: "https://example.com/fashion-trends"
+            });
+        }
+        
+        if (lowerQuery.includes('event') || lowerQuery.includes('party') || lowerQuery.includes('wedding')) {
+            mockResults.push({
+                title: "Event Attire Guide: What to Wear",
+                snippet: "Event attire depends on the occasion, venue, and time of day. Consider the dress code, weather, and duration when selecting your outfit. Semi-formal events allow for more creativity while maintaining elegance.",
+                url: "https://example.com/event-attire"
+            });
+        }
+        
+        if (lowerQuery.includes('fabric') || lowerQuery.includes('material')) {
+            mockResults.push({
+                title: "Fabric Selection Guide for Formal Wear",
+                snippet: "Choosing the right fabric is crucial for comfort and appearance. Consider breathability, care requirements, and the formality of the event. Natural fibers like cotton and silk offer comfort, while synthetic blends provide durability.",
+                url: "https://example.com/fabric-guide"
+            });
+        }
+        
+        // Generic result if no specific matches
+        if (mockResults.length === 0) {
+            mockResults.push({
+                title: "General Fashion and Style Information",
+                snippet: "Fashion and style are constantly evolving. Consider current trends, personal preferences, and the specific occasion when making style choices. Professional guidance can help you make the best decisions for your needs.",
+                url: "https://example.com/fashion-guide"
+            });
+        }
+        
+        return mockResults;
+    }
+
+    // Enhanced synthesis with actionable, customer-focused responses
+    function synthesizeWebResultsWithPersona(searchResults, originalQuery) {
+        const results = searchResults.slice(0, 2); // Limit to 2 results
+        const query = originalQuery.toLowerCase();
+        
+        // Extract key insights from web results
+        const insights = extractActionableInsights(results, query);
+        
+        let response = "**Based on current fashion guidance, here's what I recommend for you:** 💡\n\n";
+        
+        // Provide specific, actionable recommendations
+        if (query.includes('formal') || query.includes('attire')) {
+            response += "**For Formal Events, I recommend:**\n";
+            response += "• **Men**: Our **Jusi barongs** in navy blue or charcoal - professional yet comfortable\n";
+            response += "• **Women**: Our **Organza gowns** in classic colors - elegant and structured\n";
+            response += "• **Fabric advantage**: Our Filipino fabrics offer unique elegance while maintaining comfort\n\n";
+            
+            response += "**What type of formal event are you attending?**\n";
+            response += "• Business dinner/corporate event\n";
+            response += "• Wedding ceremony\n";
+            response += "• Award ceremony/gala\n";
+            response += "• Other formal occasion\n\n";
+            
+            response += "Tell me more about your event so I can suggest the perfect style!";
+            
+        } else if (query.includes('fabric') || query.includes('material')) {
+            response += "**For Fabric Selection, here's my expert advice:**\n";
+            response += "• **Piña** - Luxurious, breathable, perfect for special occasions\n";
+            response += "• **Jusi** - Versatile, comfortable, ideal for long events\n";
+            response += "• **Organza** - Structured, elegant, great for formal events\n\n";
+            
+            response += "**What's your priority?**\n";
+            response += "• Comfort for long events\n";
+            response += "• Elegance for special occasions\n";
+            response += "• Easy care and maintenance\n";
+            response += "• Weather-appropriate (hot/cold)\n\n";
+            
+            response += "Let me know your needs and I'll recommend the perfect fabric!";
+            
+        } else if (query.includes('color') || query.includes('trend')) {
+            response += "**For Colors & Trends, here are my recommendations:**\n";
+            response += "• **Classic**: White, cream, navy blue - timeless and versatile\n";
+            response += "• **Trending**: Deep burgundy, charcoal, champagne - modern and sophisticated\n";
+            response += "• **Seasonal**: We offer custom color matching for any preference\n\n";
+            
+            response += "**What's your style preference?**\n";
+            response += "• Traditional and classic\n";
+            response += "• Modern and trendy\n";
+            response += "• Bold and statement-making\n";
+            response += "• Subtle and understated\n\n";
+            
+            response += "Share your style and I'll suggest the perfect colors!";
+            
+        } else if (query.includes('event') || query.includes('occasion')) {
+            response += "**For Event Attire, here's my personalized guidance:**\n";
+            response += "• **Wedding**: Piña barongs/gowns with traditional elegance\n";
+            response += "• **Corporate**: Jusi in professional colors\n";
+            response += "• **Semi-formal**: Organza with modern styling\n";
+            response += "• **Cultural**: Inabel with traditional patterns\n\n";
+            
+            response += "**Tell me about your event:**\n";
+            response += "• What type of event?\n";
+            response += "• Indoor or outdoor?\n";
+            response += "• Time of day?\n";
+            response += "• Your role (guest, host, etc.)?\n\n";
+            
+            response += "I'll create the perfect outfit recommendation for you!";
+            
+        } else {
+            // Generic but actionable response
+            response += "**Here's how I can help you:**\n";
+            response += "• **Fabric selection** - Choose the perfect material for your needs\n";
+            response += "• **Style guidance** - Find the right look for your occasion\n";
+            response += "• **Customization** - Personalize your formal wear\n";
+            response += "• **Sizing** - Ensure the perfect fit\n\n";
+            
+            response += "**What would you like help with?**\n";
+            response += "• Choosing fabric for a specific event\n";
+            response += "• Finding the right style\n";
+            response += "• Customization options\n";
+            response += "• Sizing and measurements\n";
+            response += "• Pricing and delivery\n\n";
+            
+            response += "Just let me know what you need!";
+        }
+        
+        // Add web insights if available
+        if (insights.length > 0) {
+            response += "\n\n**Current Fashion Insights:**\n";
+            insights.forEach(insight => {
+                response += `• ${insight}\n`;
+            });
+        }
+        
+        response += "\n\n*Note: This guidance combines current fashion trends with our expertise in Filipino formal wear. For personalized recommendations, visit our store in Pandi, Bulacan!*";
+        
+        return response;
+    }
+
+    // Extract actionable insights from web results
+    function extractActionableInsights(results, query) {
+        const insights = [];
+        
+        results.forEach(result => {
+            const text = result.snippet.toLowerCase();
+            
+            // Extract specific, actionable insights
+            if (text.includes('comfort') && text.includes('sustainability')) {
+                insights.push("Modern formal wear emphasizes comfort and sustainability");
+            }
+            if (text.includes('minimalist') || text.includes('clean lines')) {
+                insights.push("Clean, minimalist designs are trending for formal events");
+            }
+            if (text.includes('versatile') || text.includes('multi-purpose')) {
+                insights.push("Versatile pieces that work for multiple occasions are popular");
+            }
+            if (text.includes('personal expression') || text.includes('individual style')) {
+                insights.push("Personal expression through style choices is encouraged");
+            }
+        });
+        
+        return insights.slice(0, 3); // Limit to 3 insights
+    }
+
+    // Enhance responses with MigsBot persona
+    function enhanceResponseWithPersona(response, category) {
+        // Add contextual emojis based on category
+        const categoryEmojis = {
+            fabric: '🌿',
+            sizing: '📏',
+            customization: '✨',
+            wedding: '💒',
+            corporate: '💼',
+            general: '👔'
+        };
+        
+        const emoji = categoryEmojis[category] || '👔';
+        
+        // Ensure response maintains MigsBot's enthusiastic tone
+        if (!response.includes('!') && !response.includes('?')) {
+            response = response.replace(/\.$/, '!');
+        }
+        
+        return response;
+    }
+
+    // Enhanced synthesis with persona integration
+    function synthesizeWebSearchResultWithPersona(searchResult, originalQuery, category) {
+        const { result, source, timestamp } = searchResult;
+        
+        // Analyze the original query to provide context-appropriate response
+        let contextualResponse = '';
+        let enthusiasmLevel = '';
+        
+        if (originalQuery.includes('trend') || originalQuery.includes('latest')) {
+            contextualResponse = `Based on current fashion trends, ${result.toLowerCase()}`;
+            enthusiasmLevel = '✨';
+        } else if (originalQuery.includes('maintenance') || originalQuery.includes('care')) {
+            contextualResponse = `Here are some excellent care guidelines: ${result}`;
+            enthusiasmLevel = '🌿';
+        } else if (originalQuery.includes('formal') || originalQuery.includes('event')) {
+            contextualResponse = `For formal events, here's what I found: ${result}`;
+            enthusiasmLevel = '💒';
+        } else {
+            contextualResponse = `I found some helpful information: ${result}`;
+            enthusiasmLevel = '👔';
+        }
+        
+        // Add personalized recommendation with enhanced persona
+        let personalizedNote = '';
+        if (originalQuery.includes('barong') || originalQuery.includes('filipiniana')) {
+            personalizedNote = `For personalized advice on our beautiful barongs and filipiniana gowns, I highly recommend visiting our store in Pandi, Bulacan! Our expert stylists can help you choose the perfect piece and ensure the ideal fit! 🌟`;
+        } else {
+            personalizedNote = `For specific guidance on our products and services, please visit our store in Pandi, Bulacan or contact our friendly customer service team!`;
+        }
+        
+        return `${enthusiasmLevel} ${contextualResponse}\n\n*Note: This information was gathered from current resources.*\n\n${personalizedNote}\n\nIs there anything specific about our products I can help you with?`;
+    }
+
+    // Enhanced fallback responses based on query category with persona
+    function generateCategorySpecificFallback(category, originalQuery) {
+        const categoryEmojis = {
+            product: '👔',
+            fabric: '🌿',
+            sizing: '📏',
+            customization: '✨',
+            business: '💼',
+            occasion: '💒',
+            general: '👔'
+        };
+        
+        const emoji = categoryEmojis[category] || '👔';
+        
+        const fallbacks = {
+            product: `${emoji} I don't have specific information about that product in my knowledge base. You can browse our full collection on the homepage, or visit our store in Pandi, Bulacan to see our products in person!\n\nIs there a specific type of gown or barong you're looking for?`,
+            
+            fabric: `${emoji} I don't have detailed information about that specific fabric question. Our experts at the store in Pandi, Bulacan can provide detailed fabric information and help you choose the best material for your needs!\n\nWould you like to know about our main fabric types: piña, jusi, organza, or inabel?`,
+            
+            sizing: `${emoji} For detailed sizing information, I recommend visiting our store in Pandi, Bulacan for a professional fitting! Our experts can take accurate measurements and ensure the perfect fit.\n\nWould you like general measuring tips for barongs or filipiniana gowns?`,
+            
+            customization: `${emoji} Customization options vary depending on the specific design and requirements. Our design team at the store in Pandi, Bulacan can provide detailed information about available customization options and pricing!\n\nWhat type of customization are you interested in?`,
+            
+            business: `${emoji} For specific business information like payment methods, delivery options, or return policies, please contact our store directly or visit us in Pandi, Bulacan!\n\nIs there a particular service you'd like to know about?`,
+            
+            occasion: `${emoji} For specific occasion recommendations, our style consultants at the store in Pandi, Bulacan can provide personalized advice based on your event details and preferences!\n\nWhat type of event are you planning for?`,
+            
+            general: `${emoji} I don't have specific information about that in my knowledge base. For detailed assistance with your request, I recommend contacting our store directly at our location in Pandi, Bulacan or speaking with one of our human representatives who can provide personalized guidance!\n\nIs there anything else I can help you with regarding our products, fabrics, sizing, or services?`
+        };
+        
+        return fallbacks[category] || fallbacks.general;
+    }
+
+    // Internal Knowledge Base Check Function
+    function checkInternalKnowledgeBase(query) {
+        // Enhanced MigsBot Knowledge Base
+        const knowledgeBase = {
+            fabrics: {
+                'piña': {
+                    description: 'Piña is a luxurious fabric made from pineapple fibers, known for its delicate texture and natural sheen.',
+                    texture: 'Lightweight, breathable, with a subtle natural luster',
+                    bestFor: 'Formal occasions, weddings, special events',
+                    care: 'Dry clean only, store in cool dry place, avoid direct sunlight',
+                    weather: 'Perfect for hot, humid climates due to breathability'
+                },
+                'jusi': {
+                    description: 'Jusi is a fine, lightweight fabric with a smooth texture, often used for elegant barongs.',
+                    texture: 'Smooth, lightweight, drapes beautifully',
+                    bestFor: 'Business attire, formal events, everyday wear',
+                    care: 'Machine washable on gentle cycle, air dry',
+                    weather: 'Excellent for warm weather, very breathable'
+                },
+                'barong': {
+                    description: 'Traditional Filipino formal wear fabric, typically made from abaca or piña.',
+                    texture: 'Natural fiber texture, comfortable against skin',
+                    bestFor: 'Cultural events, formal occasions, traditional ceremonies',
+                    care: 'Hand wash or dry clean, press with low heat',
+                    weather: 'Great for tropical climates'
+                },
+                'inabel': {
+                    description: 'Inabel is a traditional handwoven fabric from the Ilocos region, known for its durability.',
+                    texture: 'Textured, sturdy, with traditional patterns',
+                    bestFor: 'Cultural events, traditional ceremonies, statement pieces',
+                    care: 'Hand wash in cold water, air dry',
+                    weather: 'Versatile for various weather conditions'
+                },
+                'organza': {
+                    description: 'Organza is a crisp, sheer fabric that adds elegance and structure to gowns.',
+                    texture: 'Crisp, sheer, holds shape well',
+                    bestFor: 'Evening gowns, bridal wear, formal events',
+                    care: 'Dry clean only, store hanging to maintain shape',
+                    weather: 'Best for indoor events or cooler weather'
+                }
+            },
+            sizing: {
+                barong: {
+                    measurements: ['Chest (inches)', 'Shoulder width (inches)', 'Sleeve length (inches)', 'Length (inches)'],
+                    guide: 'Measure over a well-fitted shirt. Chest: fullest part of chest. Shoulder: shoulder to shoulder. Sleeve: shoulder to wrist. Length: shoulder to desired length.'
+                },
+                filipiniana: {
+                    measurements: ['Bust (inches)', 'Waist (inches)', 'Hips (inches)', 'Length (inches)'],
+                    guide: 'Measure over undergarments. Bust: fullest part. Waist: natural waistline. Hips: fullest part. Length: shoulder to desired length.'
+                }
+            },
+            customization: {
+                embroidery: {
+                    options: ['Traditional geometric patterns', 'Floral motifs', 'Custom monograms', 'Cultural symbols'],
+                    cost: 'Starting from ₱500 for basic patterns, custom designs quoted individually'
+                },
+                collar: {
+                    styles: ['Traditional pointed collar', 'Mandarin collar', 'Round collar', 'Custom collar design'],
+                    cost: 'Included in base price, custom designs may have additional charges'
+                }
+            },
+            business: {
+                payment: 'We offer in-store pickup and cash on delivery options for your convenience.',
+                returns: '30-day return policy for unworn items with tags. Custom items are final sale.',
+                location: 'Our physical store is located in Pandi, Bulacan. Visit us for fittings and consultations.',
+                delivery: 'Free delivery within Metro Manila, shipping available nationwide.'
+            }
+        };
+        
+        // Fabric-related responses
+        if (message.includes('fabric') || message.includes('material') || message.includes('textile')) {
+            if (message.includes('hot') || message.includes('humid') || message.includes('summer') || message.includes('warm')) {
+                return "For hot and humid weather, I highly recommend **piña** or **jusi** fabrics! 🌿\n\n**Piña** is perfect because it's made from pineapple fibers - it's incredibly breathable and naturally moisture-wicking. It has a delicate texture with natural sheen that looks elegant while keeping you cool.\n\n**Jusi** is another excellent choice - it's lightweight, smooth, and drapes beautifully while being very breathable.\n\nBoth fabrics are ideal for tropical climates and will keep you comfortable throughout your event. Would you like to know more about care instructions or see some specific styles in these fabrics?";
+            }
+            
+            if (message.includes('piña') || message.includes('pina')) {
+                const fabric = knowledgeBase.fabrics.piña;
+                return `**Piña Fabric Details** 🌿\n\n• **Description**: ${fabric.description}\n• **Texture**: ${fabric.texture}\n• **Best For**: ${fabric.bestFor}\n• **Care Instructions**: ${fabric.care}\n• **Weather**: ${fabric.weather}\n\nPiña is perfect for special occasions and gives an authentic Filipino elegance to your formal wear!`;
+            }
+            
+            if (message.includes('jusi')) {
+                const fabric = knowledgeBase.fabrics.jusi;
+                return `**Jusi Fabric Details** ✨\n\n• **Description**: ${fabric.description}\n• **Texture**: ${fabric.texture}\n• **Best For**: ${fabric.bestFor}\n• **Care Instructions**: ${fabric.care}\n• **Weather**: ${fabric.weather}\n\nJusi is versatile and elegant - perfect for both formal and semi-formal occasions!`;
+            }
+            
+            return "We offer several beautiful fabric options! Here are our main types:\n\n🌿 **Piña** - Luxurious pineapple fiber, perfect for special occasions\n✨ **Jusi** - Lightweight and elegant, great for formal wear\n👔 **Barong** - Traditional Filipino formal wear fabric\n🎨 **Inabel** - Handwoven traditional fabric with beautiful patterns\n💎 **Organza** - Crisp and sheer, perfect for elegant gowns\n\nWhat type of event are you dressing for? I can recommend the best fabric for your needs!";
+        }
+        
+        // Sizing and fitting responses
+        if (message.includes('size') || message.includes('measurement') || message.includes('fit') || message.includes('fitting')) {
+            if (message.includes('barong')) {
+                return `**Barong Sizing Guide** 👔\n\n**Key Measurements**:\n• Chest (inches) - fullest part of chest\n• Shoulder width (inches) - shoulder to shoulder\n• Sleeve length (inches) - shoulder to wrist\n• Length (inches) - shoulder to desired length\n\n**Measuring Tips**:\nMeasure over a well-fitted shirt for accuracy. For the best fit, I recommend visiting our store in Pandi, Bulacan for a professional fitting!\n\nWould you like help with specific measurements or scheduling a fitting appointment?`;
+            }
+            
+            if (message.includes('filipiniana') || message.includes('gown')) {
+                return `**Filipiniana Sizing Guide** 👗\n\n**Key Measurements**:\n• Bust (inches) - fullest part of bust\n• Waist (inches) - natural waistline\n• Hips (inches) - fullest part of hips\n• Length (inches) - shoulder to desired length\n\n**Measuring Tips**:\nMeasure over undergarments for accuracy. We offer custom alterations to ensure the perfect fit!\n\nNeed help with measurements or want to schedule a fitting? I'm here to help!`;
+            }
+            
+            return "I can help you with sizing for both barongs and filipiniana gowns! 📏\n\n**For Barongs**: We need chest, shoulder width, sleeve length, and overall length measurements.\n**For Filipiniana**: We need bust, waist, hips, and length measurements.\n\nWould you like detailed measuring instructions for a specific type of garment? Or would you prefer to visit our store in Pandi, Bulacan for a professional fitting?";
+        }
+        
+        // Customization responses
+        if (message.includes('custom') || message.includes('embroidery') || message.includes('personalize')) {
+            return `**Customization Options** ✨\n\n**Embroidery Details**:\n• Traditional geometric patterns\n• Floral motifs\n• Custom monograms\n• Cultural symbols\n• Starting from ₱500 for basic patterns\n\n**Collar Styles**:\n• Traditional pointed collar\n• Mandarin collar\n• Round collar\n• Custom collar designs\n• Included in base price\n\n**Custom Designs**:\nWe can create unique pieces tailored to your vision! Custom embroidery and designs are quoted individually.\n\nWhat type of customization are you interested in? I'd love to help you create something truly special!`;
+        }
+        
+        // Business information responses
+        if (message.includes('payment') || message.includes('delivery') || message.includes('pickup')) {
+            return `**Payment & Delivery Options** 🚚\n\n**Payment Methods**:\n• In-store pickup (pay when you collect)\n• Cash on delivery\n• Online payment options\n\n**Delivery**:\n• Free delivery within Metro Manila\n• Nationwide shipping available\n• Professional packaging for safe delivery\n\n**Store Location**:\nVisit us at our physical store in Pandi, Bulacan for fittings, consultations, and immediate pickup!\n\nWould you like more details about any of these services?`;
+        }
+        
+        if (message.includes('return') || message.includes('exchange') || message.includes('policy')) {
+            return `**Return Policy** 📋\n\n**Standard Items**:\n• 30-day return policy\n• Items must be unworn with original tags\n• Full refund or exchange available\n\n**Custom Items**:\n• Final sale - no returns\n• We work closely with you to ensure satisfaction\n• Alterations available if needed\n\n**Process**:\nSimply bring your item to our store in Pandi, Bulacan or contact us for return instructions.\n\nNeed help with a return or have questions about our policy?`;
+        }
+        
+        // Occasion-specific recommendations
+        if (message.includes('wedding') || message.includes('bridal')) {
+            return "**Wedding Attire Recommendations** 💒\n\n**For Brides**:\n• **Organza** gowns for elegant structure and flow\n• **Piña** for traditional Filipino elegance\n• Custom embroidery for personal touches\n\n**For Grooms**:\n• **Jusi** barongs for comfort and elegance\n• **Piña** for special ceremonial moments\n• Traditional pointed collar for formal ceremonies\n\n**Weather Considerations**:\nFor outdoor weddings, I recommend breathable fabrics like piña or jusi to stay comfortable.\n\nWhat's your wedding style? Traditional, modern, or cultural? I can suggest specific designs!";
+        }
+        
+        if (message.includes('corporate') || message.includes('business') || message.includes('office')) {
+            return "**Corporate Attire Recommendations** 💼\n\n**Professional Barongs**:\n• **Jusi** fabric - lightweight and professional\n• Mandarin or traditional pointed collar\n• Classic colors: white, cream, light blue\n• Subtle embroidery for elegance\n\n**Business Gowns**:\n• **Jusi** or **piña** for comfort\n• Conservative cuts and lengths\n• Professional color palette\n\n**Key Features**:\n• Wrinkle-resistant fabrics\n• Easy care instructions\n• Comfortable for all-day wear\n\nWhat's your workplace dress code? I can recommend the perfect professional look!";
+        }
+        
+        // Product-related responses
+        if (message.includes('product') || message.includes('item') || message.includes('gown') || message.includes('barong')) {
+            return "We have a beautiful collection of gowns and barongs! You can browse our products on the homepage or use the search bar to find specific items. Would you like me to help you find something specific?";
+        }
+        
+        if (message.includes('price') || message.includes('cost') || message.includes('expensive')) {
+            return "Our prices vary depending on the product and customization level. You can see the current prices on each product page. We also have sales and discounts available! Check out our 'Flash Sale' section for great deals.";
+        }
+        
+        // Order-related responses
+        if (message.includes('order') || message.includes('buy') || message.includes('purchase')) {
+            return "To place an order, simply add items to your cart and proceed to checkout. We accept various payment methods including GCash. Need help with the ordering process?";
+        }
+        
+        if (message.includes('cart') || message.includes('shopping')) {
+            return "You can add items to your cart by clicking the 'Add to Cart' button on any product. View your cart by clicking the cart icon in the header. Need help managing your cart?";
+        }
+        
+        // Shipping and delivery
+        if (message.includes('shipping') || message.includes('delivery') || message.includes('ship')) {
+            return "We offer free shipping on orders over a certain amount! Delivery times vary by location. You can track your order once it's shipped. Any specific delivery questions?";
+        }
+        
+        // General help
+        if (message.includes('help') || message.includes('support')) {
+            return "I'm here to help! I can assist with product information, fabric selection, sizing, customization, orders, shipping, and general questions about 3Migs Gowns & Barong. What would you like to know?";
+        }
+        
+        if (message.includes('contact') || message.includes('phone') || message.includes('email')) {
+            return "You can contact us through our customer service. Check the footer for contact information, or you can reach out through our social media channels.";
+        }
+        
+        // Default responses
+        if (message.includes('hello') || message.includes('hi') || message.includes('hey')) {
+            return "Hello! Welcome to 3Migs Gowns & Barong! I'm your personal style advisor MigsBot. I can help you with fabric selection, sizing, customization, and finding the perfect formal wear for any occasion. How can I assist you today?";
+        }
+        
+        if (message.includes('thank') || message.includes('thanks')) {
+            return "You're welcome! Is there anything else I can help you with today? I'm here to make your formal wear shopping experience perfect!";
+        }
+        
+        // Note: Trend/fashion queries now go to web search fallback for real-time information
+
+        // Color-specific responses with enhanced knowledge
+        if (message.includes('color') || message.includes('colour')) {
+            if (message.includes('wedding')) {
+                return "That's a great question! For traditional weddings, popular colors for gowns and barongs include **ecru** and **off-white**. If you're looking for something more modern or with a cultural touch, we also offer custom designs in shades of **champagne** or **gold**. Are you looking for a recommendation for the groom's barong or the bride's gown?";
+            }
+            
+            if (message.includes('corporate') || message.includes('business')) {
+                return "For corporate events, I recommend classic colors like **white**, **cream**, **light blue**, or **navy blue**. These colors project professionalism while maintaining elegance. **Charcoal** is also a sophisticated choice for formal business occasions.";
+            }
+            
+            return "We offer a wide range of colors for different occasions! For weddings: ecru, off-white, champagne, gold. For corporate events: white, cream, light blue, navy blue. For cultural events: traditional patterns and earth tones. What type of event are you planning for?";
+        }
+
+        // Fallback response
+        return "I don't have specific information about that in my knowledge base. For detailed assistance with your request, I recommend contacting our store directly at our location in Pandi, Bulacan or speaking with one of our human representatives who can provide personalized guidance.\n\nIs there anything else I can help you with regarding our products, fabrics, sizing, or services?";
+    }
+
+    // Enhanced RAG Pipeline Helper Functions
+    
+    // Determine if web search is needed based on query analysis
+    function shouldUseWebSearch(query) {
+        // High-priority web search triggers
+        const highPriorityTriggers = [
+            'trend', 'latest', '2024', '2025', '2026', 'current',
+            'maintenance', 'care', 'styling', 'fashion', 'modern',
+            'formal event', 'dress code', 'etiquette', 'protocol',
+            'how to', 'what is', 'when to', 'where to', 'why'
+        ];
+        
+        // Medium-priority triggers (context-dependent)
+        const mediumPriorityTriggers = [
+            'best', 'recommend', 'suggest', 'advice', 'tips',
+            'compare', 'difference', 'versus', 'vs'
+        ];
+        
+        // Check for high-priority triggers
+        const hasHighPriority = highPriorityTriggers.some(keyword => query.includes(keyword));
+        
+        // Check for medium-priority triggers with context
+        const hasMediumPriority = mediumPriorityTriggers.some(keyword => 
+            query.includes(keyword) && (
+                query.includes('formal') || 
+                query.includes('attire') || 
+                query.includes('event') ||
+                query.includes('wedding') ||
+                query.includes('corporate')
+            )
+        );
+        
+        return hasHighPriority || hasMediumPriority;
+    }
+
+    // Enhanced search query formulation
+    function formulateSearchQuery(message) {
+        // Clean the query
+        let query = message
+            .replace(/[^\w\s]/g, '') // Remove special characters
+            .replace(/\s+/g, ' ') // Normalize spaces
+            .trim();
+        
+        // Add contextual keywords based on content
+        if (query.includes('barong') || query.includes('filipiniana')) {
+            query += ' philippines formal wear';
+        }
+        
+        if (query.includes('wedding') || query.includes('bridal')) {
+            query += ' attire guidelines';
+        }
+        
+        if (query.includes('corporate') || query.includes('business')) {
+            query += ' dress code professional';
+        }
+        
+        if (query.includes('maintenance') || query.includes('care')) {
+            query += ' instructions tips';
+        }
+        
+        // Optimize query length (web search APIs work better with concise queries)
+        const words = query.split(' ');
+        if (words.length > 8) {
+            query = words.slice(0, 8).join(' ');
+        }
+        
+        return query;
+    }
+
+    // Enhanced synthesis of web search results
+    function synthesizeWebSearchResult(searchResult, originalQuery) {
+        const { result, source, timestamp } = searchResult;
+        
+        // Analyze the original query to provide context-appropriate response
+        let contextualResponse = '';
+        
+        if (originalQuery.includes('trend') || originalQuery.includes('latest')) {
+            contextualResponse = `Based on current fashion trends, ${result.toLowerCase()}\n\n`;
+        } else if (originalQuery.includes('maintenance') || originalQuery.includes('care')) {
+            contextualResponse = `Here are some general care guidelines: ${result}\n\n`;
+        } else if (originalQuery.includes('formal') || originalQuery.includes('event')) {
+            contextualResponse = `For formal events, here's what I found: ${result}\n\n`;
+        } else {
+            contextualResponse = `I found some helpful information: ${result}\n\n`;
+        }
+        
+        // Add personalized recommendation based on 3-Migs context
+        let personalizedNote = '';
+        if (originalQuery.includes('barong') || originalQuery.includes('filipiniana')) {
+            personalizedNote = `For personalized advice on our specific barongs and filipiniana gowns, I recommend visiting our store in Pandi, Bulacan where our experts can help you choose the perfect piece!`;
+        } else {
+            personalizedNote = `For specific guidance on our products and services, please visit our store in Pandi, Bulacan or contact our customer service team.`;
+        }
+        
+        return `${contextualResponse}*Note: This information was gathered from current resources.*\n\n${personalizedNote}\n\nIs there anything specific about our products I can help you with?`;
+    }
+
+    // Query Classification for Better Response Routing
+    function classifyQuery(query) {
+        const classifications = {
+            product: ['product', 'item', 'gown', 'barong', 'filipiniana'],
+            fabric: ['fabric', 'material', 'textile', 'piña', 'jusi', 'organza'],
+            sizing: ['size', 'measurement', 'fit', 'fitting', 'dimension'],
+            customization: ['custom', 'embroidery', 'personalize', 'modify'],
+            business: ['payment', 'delivery', 'return', 'policy', 'store'],
+            occasion: ['wedding', 'corporate', 'formal', 'event', 'ceremony'],
+            general: ['trend', 'fashion', 'style', 'advice', 'tips']
+        };
+        
+        for (const [category, keywords] of Object.entries(classifications)) {
+            if (keywords.some(keyword => query.includes(keyword))) {
+                return category;
+            }
+        }
+        
+        return 'general';
+    }
+
+    // Event listeners
+    if (sendBtn) {
+        sendBtn.addEventListener('click', sendMessage);
+    }
+
+    if (chatInput) {
+        chatInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    }
+
+    // Close chatbox when clicking outside
+    document.addEventListener('click', function(e) {
+        if (chatbox && !chatbox.classList.contains('hidden') && !chatbox.contains(e.target) && e.target !== chatbotBtn) {
+            chatbox.classList.add('hidden');
+        }
+    });
+});
+</script>
+<script>
+// Dynamic product rendering for Homepage
+(function () {
+    const apiBase = '/api/v1/products';
+
+    function cardTemplate(p) {
+        const price = (p.sale_price ?? p.base_price) ?? 0;
+        const oldPrice = p.sale_price ? `<span class=\"text-gray-500 text-sm line-through ml-2\">₱${Number(p.base_price).toLocaleString()}</span>` : '';
+        const saleBadge = p.sale_price ? '<div class=\"absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded\">Sale</div>' : '';
+        const img = (p.main_image || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMCAxMkMxNi42ODYzIDEyIDE0IDE0LjY4NjMgMTQgMThDMTQgMjEuMzEzNyAxNi42ODYzIDI0IDIwIDI0QzIzLjMxMzcgMjQgMjYgMjEuMzEzNyAyNiAxOEMyNiAxNC42ODYzIDIzLjMxMzcgMTIgMjAgMTJaIiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik0xMiAyOEMxMiAyNi44OTU0IDEyLjg5NTQgMjYgMTQgMjZIMjZDMjcuMTA0NiAyNiAyOCAyNi44OTU0IDI4IDI4VjMwSDI4VjI4SDEyVjI4WiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4K');
+        return `
+        <div class=\"bg-white rounded-lg shadow-md overflow-hidden relative product-card hover:shadow-lg transition-shadow\">
+            ${saleBadge}
+            <a href=\"/ProductDetails?id=${p.id}\"><img src=\"${img}\" alt=\"${p.name}\" class=\"w-full h-48 object-cover hover:scale-105 transition-transform\"></a>
+            <div class=\"p-4\">
+                <h3 class=\"font-semibold text-gray-800 line-clamp-2\">${p.name}</h3>
+                <div class=\"flex items-center mt-2\">
+                    <span class=\"text-red-500 font-bold\">₱${Number(price).toLocaleString()}</span>
+                    ${oldPrice}
+                </div>
+                <div class=\"mt-4 flex space-x-2\">
+                    <button onclick=\"addToCart(${p.id})\" class=\"flex-1 bg-red-500 text-white py-2 rounded-md hover:bg-red-600 transition-colors text-sm font-medium\">
+                        <i class=\"fas fa-cart-plus mr-1\"></i>Add to Cart
+                    </button>
+                    <button onclick=\"addToWishlist(${p.id})\" class=\"bg-gray-200 text-gray-600 px-3 py-2 rounded-md hover:bg-gray-300 transition-colors\">
+                        <i class=\"far fa-heart\"></i>
+                    </button>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    function renderInto(id, products) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.innerHTML = products.map(cardTemplate).join('');
+    }
+
+    // Prefer newest first so newly-added items appear
+    fetch(`${apiBase}?per_page=12&sort=latest`)
+        .then(r => r.json())
+        .then(json => {
+            const items = (json && json.data && json.data.data) ? json.data.data : [];
+            const flash = items.filter(p => p.sale_price).slice(0, 5);
+            const best = items.slice(0, 5);
+            const explore = items.slice(0, 5);
+            renderInto('flash-grid', flash);
+            renderInto('best-grid', best);
+            renderInto('explore-grid', explore);
+            updateCartCount();
+        })
+        .catch(() => {
+            // leave static placeholders if API fails
+        });
+
+    // Cart and Wishlist functionality
+    window.addToCart = function(productId) {
+        fetch('/api/v1/cart/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            },
+            body: JSON.stringify({
+                product_id: productId,
+                quantity: 1
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateCartCount();
+                showNotification('Product added to cart!', 'success');
+            } else {
+                showNotification('Failed to add product to cart', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Error adding product to cart', 'error');
+        });
+    };
+
+    window.addToWishlist = function(productId) {
+        fetch('/api/v1/wishlist/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            },
+            body: JSON.stringify({
+                product_id: productId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateWishlistCount();
+                showNotification('Product added to wishlist!', 'success');
+            } else {
+                showNotification('Failed to add product to wishlist', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Error adding product to wishlist', 'error');
+        });
+    };
+
+    function updateCartCount() {
+        fetch('/api/v1/cart')
+            .then(response => response.json())
+            .then(data => {
+                const count = data.success ? data.data.length : 0;
+                const cartCountEl = document.getElementById('cart-count');
+                if (cartCountEl) {
+                    cartCountEl.textContent = count;
+                    cartCountEl.classList.toggle('hidden', count === 0);
+                }
+            })
+            .catch(() => {
+                // Handle error silently
+            });
+    }
+
+    function updateWishlistCount() {
+        fetch('/api/v1/wishlist')
+            .then(response => response.json())
+            .then(data => {
+                const count = data.success ? data.data.length : 0;
+                const wishlistCountEl = document.getElementById('wishlist-count');
+                if (wishlistCountEl) {
+                    wishlistCountEl.textContent = count;
+                    wishlistCountEl.classList.toggle('hidden', count === 0);
+                }
+            })
+            .catch(() => {
+                // Handle error silently
+            });
+    }
+
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white ${
+            type === 'success' ? 'bg-green-500' : 
+            type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+        }`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+})();
+</script>
+<script>
+// Placeholder image replacement disabled to prevent infinite loops
+// The placeholder.jpg file was causing infinite reloads
+// This script has been disabled for stability
+</script>
+<script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Language dropdown
+            const langBtn = document.getElementById('lang-dropdown-btn');
+            const langMenu = document.getElementById('lang-dropdown-menu');
+            const langOptions = langMenu ? langMenu.querySelectorAll('button[data-lang]') : [];
+            const selectedLang = document.getElementById('selected-lang');
+            if (langBtn && langMenu && selectedLang) {
+                langBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    langMenu.classList.toggle('hidden');
+                });
+                langOptions.forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        selectedLang.innerText = btn.innerText;
+                        langMenu.classList.add('hidden');
+                    });
+                });
+                document.addEventListener('click', function(e) {
+                    if (!langMenu.contains(e.target) && e.target !== langBtn) {
+                        langMenu.classList.add('hidden');
+                    }
+                });
+            }
+        });
+    </script>
+<script>
+    // Smooth scroll for Contact/About links
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('a[href="#main-footer"]').forEach(function(link) {
+            link.addEventListener('click', function(e) {
+                const target = document.getElementById('main-footer');
+                if (target) {
+                    e.preventDefault();
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+    });
+</script>
+
+<!-- Authentication and Cart Management Script -->
+<script>
+    // Authentication and Cart Management
+    class AuthCartManager {
+        constructor() {
+            this.isLoggedIn = false;
+            this.user = null;
+            this.cartCount = 0;
+            this.init();
+        }
+
+        async init() {
+            this.checkAuthStatus();
+            this.setupEventListeners();
+            this.updateUI();
+        }
+
+        checkAuthStatus() {
+            // Use authentication data injected by Laravel
+            if (window.authData) {
+                this.isLoggedIn = window.authData.isLoggedIn;
+                this.user = window.authData.user;
+                console.log('Auth status:', this.isLoggedIn ? 'Logged in as ' + this.user.name : 'Not logged in');
+            } else {
+                // Fallback to API call if no injected data
+                this.fallbackAuthCheck();
+            }
+        }
+
+        async fallbackAuthCheck() {
+            try {
+                const response = await fetch('/debug/auth-test');
+                if (response.ok) {
+                    const data = await response.json();
+                    this.isLoggedIn = data.authenticated;
+                    this.user = data.user;
+                }
+            } catch (error) {
+                console.log('User not authenticated');
+                this.isLoggedIn = false;
+            }
+        }
+
+        setupEventListeners() {
+            // Add to cart buttons
+            document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => this.handleAddToCart(e));
+            });
+
+            // Login button (for guests)
+            const loginBtn = document.getElementById('login-btn');
+            if (loginBtn) {
+                loginBtn.addEventListener('click', () => this.redirectToLogin());
+            }
+            
+            // Logout button (inside profile dropdown)
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', () => this.logout());
+            }
+
+            // Profile dropdown toggle
+            const profileBtn = document.getElementById('profile-btn');
+            const profileMenu = document.getElementById('profileMenu');
+            
+            if (profileBtn && profileMenu) {
+                profileBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    profileMenu.classList.toggle('hidden');
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!profileMenu.contains(e.target) && e.target !== profileBtn) {
+                        profileMenu.classList.add('hidden');
+                    }
+                });
+            }
+        }
+
+        async handleAddToCart(event) {
+            event.preventDefault();
+            
+            if (!this.isLoggedIn) {
+                this.showLoginPrompt();
+                return;
+            }
+
+            const productId = event.target.dataset.productId;
+            const quantity = 1; // Default quantity
+
+            try {
+                const csrfToken = window.authData?.csrfToken || document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                
+                const response = await fetch('/api/cart/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({
+                        product_id: productId,
+                        quantity: quantity
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    this.cartCount = data.cart_count;
+                    this.updateUI();
+                    this.showSuccessMessage('Item added to cart!');
+                } else {
+                    this.showErrorMessage(data.message);
+                }
+            } catch (error) {
+                console.error('Error adding to cart:', error);
+                this.showErrorMessage('Failed to add item to cart');
+            }
+        }
+
+        showLoginPrompt() {
+            const message = 'Please log in to add items to your cart.';
+            const loginChoice = confirm(message + '\n\nClick OK to go to login page, or Cancel to stay here.');
+            
+            if (loginChoice) {
+                this.redirectToLogin();
+            }
+        }
+
+        redirectToLogin() {
+            window.location.href = '/login';
+        }
+
+        async logout() {
+            try {
+                const csrfToken = window.authData?.csrfToken || document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                
+                const response = await fetch('/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    }
+                });
+
+                if (response.ok) {
+                    this.isLoggedIn = false;
+                    this.user = null;
+                    this.cartCount = 0;
+                    this.updateUI();
+                    this.showSuccessMessage('Logged out successfully');
+                    // Redirect to login page after logout
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 1000);
+                } else {
+                    this.showErrorMessage('Failed to logout');
+                }
+            } catch (error) {
+                console.error('Error logging out:', error);
+                this.showErrorMessage('Failed to logout');
+            }
+        }
+
+        updateUI() {
+            // Update login button visibility
+            const loginBtn = document.getElementById('login-btn');
+            const guestMenu = document.getElementById('guest-menu');
+            const userMenu = document.getElementById('user-menu');
+            const userInfo = document.getElementById('user-info');
+            const userName = document.getElementById('user-name');
+
+            if (this.isLoggedIn) {
+                // Hide login button and guest menu
+                if (loginBtn) loginBtn.style.display = 'none';
+                if (guestMenu) guestMenu.classList.add('hidden');
+                if (userMenu) userMenu.classList.remove('hidden');
+                if (userInfo) {
+                    userInfo.classList.remove('hidden');
+                    userInfo.innerHTML = `<span class="cart-count">Cart (${this.cartCount})</span>`;
+                }
+                if (userName) {
+                    userName.textContent = this.user.name;
+                }
+            } else {
+                // Show login button and guest menu
+                if (loginBtn) loginBtn.style.display = 'block';
+                if (guestMenu) guestMenu.classList.remove('hidden');
+                if (userMenu) userMenu.classList.add('hidden');
+                if (userInfo) {
+                    userInfo.classList.add('hidden');
+                }
+            }
+
+            // Update cart count in header
+            const cartCountElements = document.querySelectorAll('.cart-count');
+            cartCountElements.forEach(el => {
+                el.textContent = `Cart (${this.cartCount})`;
+            });
+        }
+
+        showSuccessMessage(message) {
+            this.showMessage(message, 'success');
+        }
+
+        showErrorMessage(message) {
+            this.showMessage(message, 'error');
+        }
+
+        showMessage(message, type) {
+            // Create a simple toast notification
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            toast.style.cssText = `
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                padding: 12px 20px;
+                border-radius: 4px;
+                color: white;
+                font-weight: bold;
+                z-index: 10000;
+                background-color: ${type === 'success' ? '#10B981' : '#EF4444'};
+            `;
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+    }
+
+    // Initialize when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        new AuthCartManager();
+    });
+</script>
+</html>
+
