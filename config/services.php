@@ -35,9 +35,14 @@ return [
         ],
     ],
 
-    // (removed) OpenAI config placeholder
-    // BUX_CHECKOUT_URL=https://api.bux.ph/v1/api/sandbox/open/checkout
-    // BUX_PAYMENT_BASE_URL=https://app.bux.ph/test/checkout
+    // OpenAI ChatGPT Configuration
+    'openai' => [
+        'key' => env('OPENAI_API_KEY'),
+        'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
+        'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
+        'max_tokens' => env('OPENAI_MAX_TOKENS', 500),
+        'temperature' => env('OPENAI_TEMPERATURE', 0.7),
+    ],
     
     // Bux.ph Payments
     'bux' => [

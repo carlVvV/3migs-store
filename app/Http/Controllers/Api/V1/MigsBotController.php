@@ -70,25 +70,32 @@ class MigsBotController extends Controller
             ]);
         }
 
-        // 4) Fallback to OpenAI (server-side only)
+        // 4) Fallback to OpenAI ChatGPT (enhanced)
         try {
             $openai = new OpenAIService();
-            $completion = $openai->chat([
-                ['role' => 'system', 'content' => 'You are MigsBot, a helpful assistant for a barong & gowns store. Be concise and friendly. Prices are in PHP. If asked about policies, reflect shipping: free over ₱2,000; returns in 7 days.'],
-                ['role' => 'user', 'content' => $message],
-            ]);
-            $reply = $completion['choices'][0]['message']['content'] ?? null;
+            
+            // Check if OpenAI is configured
+            if (!$openai->isConfigured()) {
+                throw new \Exception('OpenAI not configured');
+            }
+
+            // Build context for ChatGPT
+            $context = $this->buildContextForChatGPT($user, $message);
+            
+            // Generate response using enhanced ChatGPT
+            $reply = $openai->generateMigsBotResponse($message, $context);
+            
             if ($reply) {
                 return response()->json([
                     'success' => true,
                     'data' => [
                         'reply' => $reply,
-                        'source' => 'openai',
+                        'source' => 'chatgpt',
                     ],
                 ]);
             }
         } catch (\Throwable $e) {
-            \Log::warning('OpenAI fallback failed: ' . $e->getMessage());
+            \Log::warning('ChatGPT fallback failed: ' . $e->getMessage());
         }
 
         // 5) Last fallback web search
@@ -141,6 +148,56 @@ class MigsBotController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Build context for ChatGPT based on user and message
+     */
+    private function buildContextForChatGPT($user, string $message): array
+    {
+        $context = [
+            'store_name' => '3Migs Gowns & Barong',
+            'location' => 'Pandi, Bulacan',
+            'current_time' => now()->format('Y-m-d H:i:s'),
+        ];
+
+        // Add user context if authenticated
+        if ($user) {
+            $context['user'] = [
+                'name' => $user->name,
+                'email' => $user->email,
+                'is_authenticated' => true,
+            ];
+
+            // Add recent orders context
+            $recentOrders = Order::where('user_id', $user->id)
+                ->latest()
+                ->limit(3)
+                ->get(['order_number', 'status', 'total_amount', 'created_at']);
+
+            if ($recentOrders->isNotEmpty()) {
+                $context['recent_orders'] = $recentOrders->map(function ($order) {
+                    return [
+                        'order_number' => $order->order_number,
+                        'status' => $order->status,
+                        'total_amount' => $order->total_amount,
+                        'date' => $order->created_at->format('Y-m-d'),
+                    ];
+                })->toArray();
+            }
+        } else {
+            $context['user'] = [
+                'is_authenticated' => false,
+            ];
+        }
+
+        // Add product context if message mentions products
+        if (preg_match('/barong|gown|wedding|formal|casual|traditional|modern/', strtolower($message))) {
+            $context['available_categories'] = Category::pluck('name')->toArray();
+            $context['available_fabrics'] = ['Jusilyn', 'Hugo Boss', 'Piña Cocoon', 'Gusot Mayaman'];
+        }
+
+        return $context;
     }
 
     private function searchProducts(string $q): ?array
