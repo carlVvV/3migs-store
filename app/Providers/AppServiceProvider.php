@@ -11,8 +11,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Load Vite helper functions
-        require_once app_path('helpers/vite_helper.php');
+        //
     }
 
     /**
@@ -20,6 +19,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Force HTTPS for assets on production
+        if (env('FORCE_HTTPS', false) || env('APP_ENV') === 'production') {
+            \URL::forceScheme('https');
+        }
     }
 }
