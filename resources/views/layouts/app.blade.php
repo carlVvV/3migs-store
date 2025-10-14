@@ -15,29 +15,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Scripts -->
-    @php
-        $manifestPath = public_path('build/manifest.json');
-        $hasViteManifest = file_exists($manifestPath);
-    @endphp
-    
-    @if($hasViteManifest)
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @else
-        <!-- Fallback for production when Vite manifest is not available -->
-        <link rel="stylesheet" href="{{ asset('build/assets/app-CBVEsBFM.css') }}">
-        <script src="{{ asset('build/assets/app-CXDpL9bK.js') }}"></script>
-        
-        <!-- Additional fallback if build assets don't exist -->
-        @if(!file_exists(public_path('build/assets/app-CBVEsBFM.css')))
-            <style>
-                /* Basic styling fallback */
-                body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
-                .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
-                .btn { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-                .btn:hover { background: #0056b3; }
-            </style>
-        @endif
-    @endif
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     
     <style>
         body {
