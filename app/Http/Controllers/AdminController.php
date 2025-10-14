@@ -54,10 +54,10 @@ class AdminController extends Controller
             ->limit(5)
             ->get();
 
-        // Monthly sales data - SQLite compatible
+        // Monthly sales data - PostgreSQL compatible
         $monthlySales = Order::select(
-                DB::raw('strftime("%m", created_at) as month'),
-                DB::raw('strftime("%Y", created_at) as year'),
+                DB::raw('EXTRACT(MONTH FROM created_at) as month'),
+                DB::raw('EXTRACT(YEAR FROM created_at) as year'),
                 DB::raw('COUNT(*) as orders_count'),
                 DB::raw('SUM(total_amount) as total_sales')
             )
@@ -795,9 +795,9 @@ class AdminController extends Controller
      */
     public function reports(Request $request)
     {
-        // Sales by month (last 12 months) - portable across sqlite/mysql
+        // Sales by month (last 12 months) - PostgreSQL compatible
         $driver = DB::getDriverName();
-        $ymExpr = $driver === 'sqlite' ? 'strftime("%Y-%m", created_at)' : 'DATE_FORMAT(created_at, "%Y-%m")';
+        $ymExpr = $driver === 'pgsql' ? 'TO_CHAR(created_at, \'YYYY-MM\')' : 'DATE_FORMAT(created_at, "%Y-%m")';
 
         $sales_by_month = Order::select(
                 DB::raw($ymExpr . ' as ym'),
@@ -847,9 +847,9 @@ class AdminController extends Controller
      */
     public function reportsPrint(Request $request)
     {
-        // Sales by month (last 12 months) - portable across sqlite/mysql
+        // Sales by month (last 12 months) - PostgreSQL compatible
         $driver = DB::getDriverName();
-        $ymExpr = $driver === 'sqlite' ? 'strftime("%Y-%m", created_at)' : 'DATE_FORMAT(created_at, "%Y-%m")';
+        $ymExpr = $driver === 'pgsql' ? 'TO_CHAR(created_at, \'YYYY-MM\')' : 'DATE_FORMAT(created_at, "%Y-%m")';
 
         $sales_by_month = Order::select(
                 DB::raw($ymExpr . ' as ym'),
