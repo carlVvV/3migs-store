@@ -123,14 +123,44 @@
                     </div>
 
                     <!-- Order Details -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                        <!-- Customer Details -->
+                        <div>
+                            <h5 class="font-semibold text-gray-700 mb-2">Customer Details</h5>
+                            @php
+                                $user = $order->user;
+                            @endphp
+                            <dl class="text-sm text-gray-700 space-y-1">
+                                <div class="flex justify-between"><dt class="font-medium text-gray-600">Name</dt><dd class="text-gray-800">{{ $user->name ?? ($order->customer_name ?? 'N/A') }}</dd></div>
+                                <div class="flex justify-between"><dt class="font-medium text-gray-600">Email</dt><dd class="text-gray-800 break-all">{{ $user->email ?? ($order->customer_email ?? 'N/A') }}</dd></div>
+                                <div class="flex justify-between"><dt class="font-medium text-gray-600">Phone</dt><dd class="text-gray-800">{{ $user->phone ?? ($order->customer_phone ?? 'N/A') }}</dd></div>
+                                @php
+                                    // Fallback address on user
+                                    $uaddrRaw = $user->address ?? null;
+                                    $uaddr = is_array($uaddrRaw) ? $uaddrRaw : (json_decode($uaddrRaw, true) ?: []);
+                                    $uaddrFormatted = collect([
+                                        $uaddr['line1'] ?? ($uaddr['street'] ?? null),
+                                        $uaddr['line2'] ?? null,
+                                        $uaddr['city'] ?? null,
+                                        $uaddr['province'] ?? null,
+                                        $uaddr['postal_code'] ?? null,
+                                        $uaddr['country'] ?? null,
+                                    ])->filter()->join(', ');
+                                @endphp
+                                @if($uaddrFormatted)
+                                <div class="flex justify-between"><dt class="font-medium text-gray-600">Account Address</dt><dd class="text-gray-800 text-right ml-4">{{ $uaddrFormatted }}</dd></div>
+                                @endif
+                            </dl>
+                        </div>
+
+                        <!-- Shipping Address -->
                         <div>
                             <h5 class="font-semibold text-gray-700 mb-2">Shipping Address</h5>
                             @php
                                 $raw = $order->shipping_address ?? [];
                                 $addr = is_array($raw) ? $raw : (json_decode($raw, true) ?: []);
                                 $formatted = collect([
-                                    $addr['name'] ?? null,
+                                    $addr['name'] ?? ($user->name ?? null),
                                     $addr['line1'] ?? null,
                                     $addr['line2'] ?? null,
                                     $addr['city'] ?? null,
@@ -141,9 +171,25 @@
                             @endphp
                             <p class="text-sm text-gray-600">{{ $formatted ?: 'N/A' }}</p>
                         </div>
+
+                        <!-- Billing Address / Payment -->
                         <div>
-                            <h5 class="font-semibold text-gray-700 mb-2">Payment Method</h5>
-                            <p class="text-sm text-gray-600">{{ ucfirst(str_replace('_', ' ', $order->payment_method)) }}</p>
+                            <h5 class="font-semibold text-gray-700 mb-2">Billing & Payment</h5>
+                            @php
+                                $braw = $order->billing_address ?? [];
+                                $baddr = is_array($braw) ? $braw : (json_decode($braw, true) ?: []);
+                                $bformatted = collect([
+                                    $baddr['name'] ?? ($user->name ?? null),
+                                    $baddr['line1'] ?? null,
+                                    $baddr['line2'] ?? null,
+                                    $baddr['city'] ?? null,
+                                    $baddr['province'] ?? null,
+                                    $baddr['postal_code'] ?? null,
+                                    $baddr['country'] ?? null,
+                                ])->filter()->join(', ');
+                            @endphp
+                            <p class="text-sm text-gray-600"><span class="font-medium text-gray-700">Payment:</span> {{ ucfirst(str_replace('_', ' ', $order->payment_method)) }}</p>
+                            <p class="text-sm text-gray-600 mt-1"><span class="font-medium text-gray-700">Billing:</span> {{ $bformatted ?: 'N/A' }}</p>
                         </div>
                     </div>
 
@@ -156,9 +202,9 @@
 
                     <!-- Order Actions -->
                     <div class="flex justify-end space-x-4">
-                        <button class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 view-order-btn" data-order-id="{{ $order->id }}">
+                        <a href="{{ route('orders.details', $order->id) }}" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
                             <i class="fas fa-eye mr-2"></i>View Details
-                        </button>
+                        </a>
                         @if($order->status === 'pending')
                         <button class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 cancel-order-btn" data-order-id="{{ $order->id }}">
                             <i class="fas fa-times mr-2"></i>Cancel Order
@@ -187,51 +233,6 @@
             @endif
         </div>
     </main>
-
-    <!-- Footer -->
-    <footer class="bg-black text-white py-12 px-4 mt-12">
-        <div class="container mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-                <h3 class="text-2xl font-bold mb-4">3Migs Gowns & Barong</h3>
-                <p class="text-sm mb-2">Subscribe</p>
-                <p class="text-xs mb-4">Get 10% off your first order</p>
-                <div class="flex">
-                    <input type="email" placeholder="Enter your email" class="bg-black text-white text-sm px-4 py-2 rounded-l-md focus:outline-none border border-white flex-grow">
-                    <button class="bg-red-500 px-4 py-2 rounded-r-md hover:bg-red-600 border border-red-500">
-                        <i class="fas fa-arrow-right"></i>
-                    </button>
-                </div>
-            </div>
-            <div>
-                <h3 class="text-xl font-bold mb-4">Support</h3>
-                <p class="text-sm">Pandi, Bulacan</p>
-                <p class="text-sm">3migs@gmail.com</p>
-                <p class="text-sm">+639*********</p>
-            </div>
-            <div>
-                <h3 class="text-xl font-bold mb-4">Account</h3>
-                <ul>
-                    <li class="mb-2"><a href="#" class="text-sm hover:underline">My Account</a></li>
-                    <li class="mb-2"><a href="{{ route('login') }}" class="text-sm hover:underline">Login / Register</a></li>
-                    <li class="mb-2"><a href="{{ route('cart') }}" class="text-sm hover:underline">Cart</a></li>
-                    <li class="mb-2"><a href="{{ route('wishlist') }}" class="text-sm hover:underline">Wishlist</a></li>
-                    <li class="mb-2"><a href="#products" class="text-sm hover:underline">Shop</a></li>
-                </ul>
-            </div>
-            <div>
-                <h3 class="text-xl font-bold mb-4">Quick Link</h3>
-                <ul>
-                    <li class="mb-2"><a href="#" class="text-sm hover:underline">Privacy Policy</a></li>
-                    <li class="mb-2"><a href="#" class="text-sm hover:underline">Terms Of Use</a></li>
-                    <li class="mb-2"><a href="#" class="text-sm hover:underline">FAQ</a></li>
-                    <li class="mb-2"><a href="#contact" class="text-sm hover:underline">Contact</a></li>
-                </ul>
-            </div>
-        </div>
-        <div class="text-center text-xs mt-8">
-            <p class="text-gray-500">Copyright Group 6 2025. All right reserved</p>
-        </div>
-    </footer>
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -315,13 +316,6 @@
         });
 
         // View order details functionality
-        document.querySelectorAll('.view-order-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const orderId = this.getAttribute('data-order-id');
-                viewOrderDetails(orderId);
-            });
-        });
-
         // Pay order functionality
         document.querySelectorAll('.pay-order-btn').forEach(btn => {
             btn.addEventListener('click', function() {
@@ -419,9 +413,16 @@
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                }
+                },
+                credentials: 'same-origin'
             })
-            .then(r => r.json())
+            .then(async r => {
+                if (!r.ok) {
+                    const text = await r.text();
+                    throw new Error(`HTTP ${r.status}: ${text.substring(0,200)}`);
+                }
+                return r.json();
+            })
             .then(data => {
                 if (!data || data.success === false) throw new Error('Failed to load');
                 const order = data.data || data;
@@ -431,7 +432,7 @@
             })
             .catch(err => {
                 console.error(err);
-                loading.innerHTML = '<span class="text-red-600">Failed to load order details.</span>';
+                loading.innerHTML = '<span class="text-red-600">Failed to load order details. Please make sure you are logged in and try again.</span>';
             });
         }
 
@@ -444,71 +445,71 @@
             modal.innerHTML = `
                 <div class="absolute inset-0 bg-black bg-opacity-20"></div>
                 <div class="absolute inset-0 flex items-center justify-center p-4">
-                    <div class="bg-white w-full max-w-3xl rounded-lg shadow-xl overflow-hidden">
-                        <div class="flex items-center justify-between px-6 py-4 border-b">
+                    <div class="bg-white w-full max-w-5xl h-[75vh] rounded-lg shadow-xl overflow-hidden flex flex-col">
+                        <div class="flex items-center justify-between px-6 py-4 border-b flex-shrink-0">
                             <div>
                                 <h3 id="ord-title" class="text-lg font-semibold text-gray-800">Order Details</h3>
                                 <p id="ord-subtitle" class="text-sm text-gray-500"></p>
                             </div>
-                            <button id="ord-close" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
+                            <button id="ord-close" class="text-gray-500 hover:text-gray-700 p-2"><i class="fas fa-times text-lg"></i></button>
                         </div>
-                        <div class="px-6 py-4 max-h-[70vh] overflow-y-auto">
+                        <div class="px-6 py-4 flex-1 overflow-y-auto">
                             <div id="ord-loading" class="py-10 text-center text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Loading...</div>
-                            <div id="ord-content" class="hidden space-y-6">
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div class="p-4 bg-gray-50 rounded">
+                            <div id="ord-content" class="hidden space-y-4">
+                                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                    <div class="p-3 bg-gray-50 rounded">
                                         <h4 class="font-semibold text-gray-700 mb-2">Customer</h4>
                                         <p id="ord-cust-name" class="text-sm text-gray-800">-</p>
                                         <p id="ord-cust-email" class="text-sm text-gray-600">-</p>
                                         <p id="ord-cust-phone" class="text-sm text-gray-600"></p>
                                     </div>
-                                    <div class="p-4 bg-gray-50 rounded">
+                                    <div class="p-3 bg-gray-50 rounded">
                                         <h4 class="font-semibold text-gray-700 mb-2">Payment</h4>
                                         <p id="ord-payment" class="text-sm text-gray-800">-</p>
                                         <p id="ord-status" class="text-sm"></p>
                                         <p id="ord-payment-status" class="text-xs text-gray-500"></p>
                                     </div>
-                                    <div class="p-4 bg-gray-50 rounded">
+                                    <div class="p-3 bg-gray-50 rounded">
                                         <h4 class="font-semibold text-gray-700 mb-2">Placed</h4>
                                         <p id="ord-date" class="text-sm text-gray-800">-</p>
                                         <p id="ord-number" class="text-sm text-gray-600">-</p>
                                     </div>
                                 </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div class="p-4 bg-gray-50 rounded">
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                    <div class="p-3 bg-gray-50 rounded">
                                         <h4 class="font-semibold text-gray-700 mb-2">Shipping Address</h4>
                                         <p id="ord-ship" class="text-sm text-gray-700">-</p>
                                     </div>
-                                    <div class="p-4 bg-gray-50 rounded">
+                                    <div class="p-3 bg-gray-50 rounded">
                                         <h4 class="font-semibold text-gray-700 mb-2">Billing Address</h4>
                                         <p id="ord-bill" class="text-sm text-gray-700">-</p>
                                     </div>
                                 </div>
-                                <div class="p-4 bg-white border rounded">
-                                    <h4 class="font-semibold text-gray-700 mb-3">Items</h4>
+                                <div class="p-3 bg-white border rounded">
+                                    <h4 class="font-semibold text-gray-700 mb-2">Items</h4>
                                     <div class="overflow-x-auto">
-                                        <table class="min-w-full table-fixed divide-y divide-gray-200">
+                                        <table class="min-w-full table-fixed divide-y divide-gray-200 text-sm">
                                             <thead class="bg-gray-50">
                                                 <tr>
-                                                    <th class="px-4 py-2 w-3/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                                                    <th class="px-4 py-2 w-2/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
-                                                    <th class="px-4 py-2 w-1/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
-                                                    <th class="px-4 py-2 w-1/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Color</th>
-                                                    <th class="px-4 py-2 w-1/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
-                                                    <th class="px-4 py-2 w-2/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                                                    <th class="px-4 py-2 w-2/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                                    <th class="px-3 py-2 w-3/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                                                    <th class="px-3 py-2 w-2/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+                                                    <th class="px-3 py-2 w-1/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
+                                                    <th class="px-3 py-2 w-1/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Color</th>
+                                                    <th class="px-3 py-2 w-1/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                                                    <th class="px-3 py-2 w-2/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                                                    <th class="px-3 py-2 w-2/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="ord-items" class="bg-white divide-y divide-gray-200"></tbody>
                                         </table>
                                     </div>
                                 </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div class="p-4 bg-gray-50 rounded">
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                    <div class="p-3 bg-gray-50 rounded">
                                         <h4 class="font-semibold text-gray-700 mb-2">Order Notes</h4>
                                         <p id="ord-notes" class="text-sm text-gray-700">—</p>
                                     </div>
-                                    <div class="p-4 bg-gray-50 rounded">
+                                    <div class="p-3 bg-gray-50 rounded">
                                         <h4 class="font-semibold text-gray-700 mb-2">Summary</h4>
                                         <div class="text-sm text-gray-600">Subtotal: <span id="ord-subtotal" class="font-medium text-gray-800">₱0.00</span></div>
                                         <div class="text-sm text-gray-600">Shipping: <span id="ord-shipping" class="font-medium text-gray-800">₱0.00</span></div>
@@ -519,7 +520,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="px-6 py-4 border-t flex justify-end">
+                        <div class="px-6 py-4 border-t flex justify-end flex-shrink-0">
                             <button id="ord-close-bottom" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-gray-700">Close</button>
                         </div>
                     </div>
@@ -530,6 +531,79 @@
             modal.querySelector('#ord-close-bottom').addEventListener('click', close);
             modal.addEventListener('click', e => { if (e.target === modal) close(); });
             return modal;
+        }
+
+        // Utility functions
+        function formatAddress(address) {
+            if (!address) return 'Not provided';
+            if (typeof address === 'string') {
+                try {
+                    address = JSON.parse(address);
+                } catch (e) {
+                    return address; // Return as-is if not JSON
+                }
+            }
+            if (typeof address === 'object' && address !== null) {
+                const parts = [];
+                if (address.name || address.full_name) parts.push(address.name || address.full_name);
+                if (address.line1 || address.address) parts.push(address.line1 || address.address);
+                if (address.line2) parts.push(address.line2);
+                if (address.city) parts.push(address.city);
+                if (address.province || address.state) parts.push(address.province || address.state);
+                if (address.postal_code || address.zip) parts.push(address.postal_code || address.zip);
+                if (address.country) parts.push(address.country);
+                if (address.phone) parts.push(`Phone: ${address.phone}`);
+                return parts.join(', ') || 'Address not available';
+            }
+            return 'Address not available';
+        }
+
+        function formatText(text) {
+            if (!text) return '—';
+            return text.toString().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+
+        function formatMoney(amount) {
+            return parseFloat(amount || 0).toFixed(2);
+        }
+
+        function toNumber(value) {
+            return parseFloat(value || 0);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function renderStatusPill(status) {
+            const colors = {
+                'pending': 'bg-yellow-100 text-yellow-800',
+                'processing': 'bg-blue-100 text-blue-800',
+                'shipped': 'bg-purple-100 text-purple-800',
+                'delivered': 'bg-green-100 text-green-800',
+                'completed': 'bg-green-100 text-green-800',
+                'cancelled': 'bg-red-100 text-red-800',
+                'refunded': 'bg-gray-100 text-gray-800'
+            };
+            const colorClass = colors[status] || 'bg-gray-100 text-gray-800';
+            return `<span class="px-2 py-1 text-xs font-semibold rounded-full ${colorClass}">${formatText(status)}</span>`;
+        }
+
+        function inferPhone(order) {
+            if (order.user && order.user.phone) return order.user.phone;
+            if (order.shipping_address) {
+                const addr = typeof order.shipping_address === 'string' ? 
+                    JSON.parse(order.shipping_address || '{}') : order.shipping_address;
+                if (addr && addr.phone) return addr.phone;
+            }
+            if (order.billing_address) {
+                const addr = typeof order.billing_address === 'string' ? 
+                    JSON.parse(order.billing_address || '{}') : order.billing_address;
+                if (addr && addr.phone) return addr.phone;
+            }
+            return 'Not provided';
         }
 
         function renderOrderIntoModal(order) {
@@ -558,13 +632,13 @@
                 subtotal += line;
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td class="px-4 py-2 text-sm text-blue-700">${escapeHtml((it.product && it.product.name) || it.name || 'Item')}</td>
-                    <td class="px-4 py-2 text-sm text-gray-600">${escapeHtml(it.product_sku || (it.product && it.product.sku) || '—')}</td>
-                    <td class="px-4 py-2 text-sm text-gray-600">${escapeHtml(it.size || '—')}</td>
-                    <td class="px-4 py-2 text-sm text-gray-600">${escapeHtml(it.color || '—')}</td>
-                    <td class="px-4 py-2 text-sm text-gray-600">${qty}</td>
-                    <td class="px-4 py-2 text-sm text-gray-600">₱${formatMoney(unit)}</td>
-                    <td class="px-4 py-2 text-sm text-gray-800 font-medium">₱${formatMoney(line)}</td>
+                    <td class="px-3 py-2 text-sm text-blue-700">${escapeHtml((it.product && it.product.name) || it.name || 'Item')}</td>
+                    <td class="px-3 py-2 text-sm text-gray-600">${escapeHtml(it.product_sku || (it.product && it.product.sku) || '—')}</td>
+                    <td class="px-3 py-2 text-sm text-gray-600">${escapeHtml(it.size || '—')}</td>
+                    <td class="px-3 py-2 text-sm text-gray-600">${escapeHtml(it.color || '—')}</td>
+                    <td class="px-3 py-2 text-sm text-gray-600">${qty}</td>
+                    <td class="px-3 py-2 text-sm text-gray-600">₱${formatMoney(unit)}</td>
+                    <td class="px-3 py-2 text-sm text-gray-800 font-medium">₱${formatMoney(line)}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -579,12 +653,6 @@
             const taxEl = modal.querySelector('#ord-tax');
             if (taxEl) taxEl.textContent = `₱${formatMoney(tax)}`;
             modal.querySelector('#ord-total').textContent = `₱${formatMoney(grand)}`;
-        }
-
-        function inferPhone(order) {
-            const ship = (typeof order.shipping_address === 'string') ? (JSON.parse(order.shipping_address || '{}') || {}) : (order.shipping_address || {});
-            const bill = (typeof order.billing_address === 'string') ? (JSON.parse(order.billing_address || '{}') || {}) : (order.billing_address || {});
-            return ship.phone || bill.phone || (order.user && (order.user.phone || order.user.mobile)) || '';
         }
 
         function showNotification(message, type = 'info') {

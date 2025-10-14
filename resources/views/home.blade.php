@@ -40,20 +40,20 @@
     @include('layouts.header')
 
     <!-- Main Content -->
-    <main class="flex-grow container mx-auto px-4 py-8">
-        <div class="flex flex-col lg:flex-row gap-8">
+    <main class="flex-grow container mx-auto px-4 py-6">
+        <div class="flex flex-col lg:flex-row gap-6">
             <!-- Left Sidebar Navigation -->
             <aside class="w-full lg:w-1/4">
                 @include('layouts.categories-sidebar', ['categories' => $categories])
             </aside>
 
             <!-- Hero Section (Right Main Content) -->
-            <section class="w-full lg:w-3/4 bg-gradient-to-br from-red-600 to-red-800 rounded-lg shadow-md flex items-center justify-center p-8 relative overflow-hidden h-96">
+            <section class="w-full lg:w-3/4 bg-gradient-to-br from-red-600 to-red-800 rounded-lg shadow-md flex items-center justify-center p-6 relative overflow-hidden h-80">
                 <div class="text-white text-center z-10">
                     <p class="text-sm font-medium">Best Selling Product</p>
-                    <h2 class="text-4xl font-bold mt-2">Premium Barong Collection</h2>
-                    <p class="text-lg mt-2 opacity-90">Handcrafted Filipino Fashion</p>
-                    <a href="#products" class="inline-block bg-white text-red-600 px-8 py-3 rounded-lg mt-6 hover:bg-gray-100 font-semibold transition-colors" onclick="scrollToProducts()">Shop Now</a>
+                    <h2 class="text-3xl font-bold mt-2">Premium Barong Collection</h2>
+                    <p class="text-base mt-2 opacity-90">Handcrafted Filipino Fashion</p>
+                    <a href="#products" class="inline-block bg-white text-red-600 px-6 py-2 rounded-lg mt-4 hover:bg-gray-100 font-semibold transition-colors text-sm" onclick="scrollToProducts()">Shop Now</a>
                 </div>
                 <!-- Professional gradient background with pattern -->
                 <div class="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-800"></div>
@@ -63,16 +63,16 @@
         </div>
         
         <!-- All Products Section -->
-        <section class="mt-8" id="products">
-            <div class="flex items-center justify-between mb-6">
+        <section class="mt-6" id="products">
+            <div class="flex items-center justify-between mb-4">
                 <h2 class="text-2xl font-bold text-gray-800 flex items-center">
                     <span class="w-2 h-8 bg-red-500 mr-3 rounded-sm"></span> All Products
                 </h2>
                 <div class="flex items-center space-x-4">
-                    <span class="text-sm text-gray-600">{{ $featuredProducts->count() + $newArrivals->count() }} Products Available</span>
+                    <span class="text-sm text-gray-600">{{ $featuredProducts->count() + $newArrivals->count() }} Products</span>
                 </div>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 @foreach($featuredProducts->concat($newArrivals)->unique('id') as $product)
                 <a href="{{ route('product.details', $product->slug) }}" class="bg-white rounded-lg shadow-md overflow-hidden relative product-card hover:shadow-lg transition-shadow cursor-pointer">
                     @if($product->is_on_sale)
@@ -86,8 +86,8 @@
                         <i class="far fa-heart text-gray-600 text-sm"></i>
                     </button>
                     
-                    <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full h-48 object-cover">
-                    <div class="p-4">
+                    <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full h-40 object-cover">
+                    <div class="p-3">
                         <h3 class="font-semibold text-gray-800">{{ $product->name }}</h3>
                         <div class="flex items-center mt-2">
                             @if($product->is_on_sale)

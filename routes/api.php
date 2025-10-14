@@ -92,6 +92,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/check', [WishlistController::class, 'check']);
         Route::get('/count', [WishlistController::class, 'count']);
     });
+
+    // Orders: lightweight read-only detail for UI that relies on session auth
+    // Controller already restricts to the logged-in user's orders
+    Route::get('/orders/{id}', [OrderController::class, 'show']);
 });
 
 // ============================================================================
@@ -122,6 +126,9 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [OrderController::class, 'show']);
         Route::put('/{id}/cancel', [OrderController::class, 'cancel']);
         Route::post('/{id}/bux-checkout', [OrderController::class, 'buxCheckout']);
+        Route::post('/seed/sample', [OrderController::class, 'seedSample']);
+        // Simple GET alias for seeding in local/testing
+        Route::get('/seed/sample', [OrderController::class, 'seedSample']);
     });
 
     // Payments

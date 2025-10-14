@@ -49,8 +49,17 @@ class OrderController extends Controller
     public function show($id)
     {
         try {
-            $order = Auth::user()->orders()
-                ->with(['orderItems.product'])
+            // Use session-based auth instead of Auth::user() for public routes
+            $userId = auth()->id();
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Authentication required',
+                ], 401);
+            }
+
+            $order = Order::where('user_id', $userId)
+                ->with(['user', 'orderItems.product'])
                 ->findOrFail($id);
 
             return response()->json([
@@ -127,6 +136,96 @@ class OrderController extends Controller
     }
 
     /**
+     * Seed a sample order for the currently authenticated user (for testing UI)
+     */
+    public function seedSample(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+            }
+
+            // Pick a product to add; if none, create a simple placeholder product
+            $product = BarongProduct::query()->first();
+            if (!$product) {
+                $product = BarongProduct::create([
+                    'name' => 'Sample Barong',
+                    'slug' => 'sample-barong-'.strtolower(str()->random(6)),
+                    'description' => 'Auto-generated sample product for testing orders',
+                    'type' => 'Traditional Barong',
+                    'brand_id' => null,
+                    'category_id' => null,
+                    'images' => [],
+                    'base_price' => 2000,
+                    'stock' => 10,
+                    'is_available' => true,
+                    'is_featured' => false,
+                    'has_variations' => false,
+                    'sku' => 'SAMPLE-'.strtoupper(str()->random(5)),
+                ]);
+            }
+
+            // Create order
+            $order = new Order();
+            $order->user_id = $user->id;
+            $order->order_number = 'ORD-'.now()->format('YmdHis').'-'.strtoupper(str()->random(4));
+            $order->status = 'pending';
+            $order->payment_method = 'cod';
+            $order->shipping_address = json_encode([
+                'full_name' => $user->name,
+                'company_name' => null,
+                'street_address' => '123 Test Street',
+                'apartment' => null,
+                'city' => 'Pandi',
+                'province' => 'Bulacan',
+                'postal_code' => '3014',
+                'phone' => $user->phone ?? '09123456789',
+                'email' => $user->email,
+            ]);
+            $order->billing_address = $order->shipping_address;
+            $order->subtotal = 0; // required not-null columns
+            $order->shipping_fee = 0;
+            $order->discount = 0;
+            $order->total_amount = 0; // set after items
+            $order->save();
+
+            // Create one or two items
+            $quantity = 1;
+            $unitPrice = (float) ($product->base_price ?? 2000);
+            $total = $unitPrice * $quantity;
+
+            $item = new OrderItem();
+            $item->order_id = $order->id;
+            $item->product_id = $product->id;
+            $item->quantity = $quantity;
+            $item->unit_price = $unitPrice;
+            $item->total_price = $total;
+            $item->save();
+
+            // Update order totals
+            $order->subtotal = $total;
+            // Use only columns that exist: subtotal, shipping_fee, discount, total_amount
+            $order->total_amount = $total + (float) $order->shipping_fee - (float) $order->discount;
+            $order->save();
+
+            $order->load(['user','orderItems.product']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sample order created',
+                'data' => $order
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to seed order',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get order statistics for user
      */
     public function statistics()
@@ -167,6 +266,8 @@ class OrderController extends Controller
             'street_address' => 'required|string|max:500',
             'apartment' => 'nullable|string|max:255',
             'city' => 'required|string|max:255',
+            'province' => 'required|string|max:255',
+            'postal_code' => 'required|string|max:10',
             'phone' => 'required|string|max:20',
             'email' => 'required|email|max:255',
             'save_info' => 'boolean',
@@ -226,6 +327,8 @@ class OrderController extends Controller
                     'street_address' => $request->street_address,
                     'apartment' => $request->apartment,
                     'city' => $request->city,
+                    'province' => $request->province,
+                    'postal_code' => $request->postal_code,
                     'phone' => $request->phone,
                     'email' => $request->email,
                 ],
@@ -235,6 +338,8 @@ class OrderController extends Controller
                     'street_address' => $request->street_address,
                     'apartment' => $request->apartment,
                     'city' => $request->city,
+                    'province' => $request->province,
+                    'postal_code' => $request->postal_code,
                     'phone' => $request->phone,
                     'email' => $request->email,
                 ]

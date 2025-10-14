@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
@@ -101,6 +103,38 @@ class AuthController extends Controller
             'user' => $user,
             'redirect' => route('home')
         ]);
+    }
+
+    /**
+     * Redirect to Google for authentication
+     */
+    public function googleRedirect()
+    {
+        return Socialite::driver('google')->redirect();
+    }
+
+    /**
+     * Handle the Google callback
+     */
+    public function googleCallback()
+    {
+        try {
+            $googleUser = Socialite::driver('google')->user();
+        } catch (\Throwable $e) {
+            Log::error('Google OAuth failed', ['error' => $e->getMessage()]);
+            return redirect()->route('login')->with('error', 'Google sign-in failed. Please try again.');
+        }
+
+        $user = User::firstOrCreate(
+            ['email' => $googleUser->getEmail()],
+            [
+                'name' => $googleUser->getName() ?: ($googleUser->user['given_name'] ?? 'Google User'),
+                'password' => \Hash::make(\Str::random(32)),
+            ]
+        );
+
+        Auth::login($user, true);
+        return redirect('/');
     }
 
     /**

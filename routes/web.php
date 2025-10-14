@@ -51,6 +51,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/wishlist', [HomeController::class, 'wishlist'])->name('wishlist');
     Route::get('/profile', [HomeController::class, 'profile'])->name('profile');
     Route::get('/orders', [HomeController::class, 'orders'])->name('orders');
+    Route::get('/orders/{id}', [HomeController::class, 'orderDetails'])->name('orders.details');
     
     // Account management routes
     Route::get('/account', [AccountController::class, 'index'])->name('account');
@@ -68,6 +69,10 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::get('/signup', [AuthController::class, 'showSignup'])->name('signup');
 Route::post('/signup', [AuthController::class, 'signup']);
+
+// Google OAuth (Socialite) routes
+Route::get('/auth/google/redirect', [\App\Http\Controllers\AuthController::class, 'googleRedirect'])->name('auth.google.redirect');
+Route::get('/auth/google/callback', [\App\Http\Controllers\AuthController::class, 'googleCallback'])->name('auth.google.callback');
 
 // ============================================================================
 // ADMIN ROUTES

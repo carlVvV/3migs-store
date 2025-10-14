@@ -52,6 +52,19 @@ class BarongProduct extends Model
     ];
 
     /**
+     * Mutator to ensure size_stocks values are integers
+     */
+    public function setSizeStocksAttribute($value)
+    {
+        if (is_array($value)) {
+            // Convert all values to integers
+            $this->attributes['size_stocks'] = json_encode(array_map('intval', $value));
+        } else {
+            $this->attributes['size_stocks'] = $value;
+        }
+    }
+
+    /**
      * Boot method to generate slug and SKU automatically
      */
     protected static function boot()

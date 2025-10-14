@@ -1,15 +1,15 @@
 <!-- Categories Sidebar -->
-<div class="w-64 bg-white rounded-lg shadow-md p-6 mb-6">
-    <div class="flex items-center mb-4">
-        <span class="w-2 h-8 bg-red-500 mr-3 rounded-sm"></span>
-        <h3 class="text-lg font-semibold text-gray-800">Categories</h3>
+<div class="w-64 bg-white rounded-lg shadow-md p-4 h-80 flex flex-col">
+    <div class="flex items-center mb-3">
+        <span class="w-2 h-6 bg-red-500 mr-2 rounded-sm"></span>
+        <h3 class="text-base font-semibold text-gray-800">Categories</h3>
     </div>
-    <ul class="space-y-2">
+    <ul class="space-y-1 flex-1 overflow-y-auto">
         @foreach($categories as $category)
             <li>
                 <a href="{{ route('category.show', $category->slug) }}" 
-                   class="flex items-center justify-between text-gray-700 hover:text-red-600 hover:bg-red-50 px-3 py-2 rounded-md transition-colors duration-200 group">
-                    <span class="text-sm font-medium">{{ $category->name }}</span>
+                   class="flex items-center justify-between text-gray-700 hover:text-red-600 hover:bg-red-50 px-2 py-2 rounded-md transition-colors duration-200 group">
+                    <span class="text-xs font-medium">{{ $category->name }}</span>
                     <i class="fas fa-chevron-right text-xs text-gray-400 group-hover:text-red-600 transition-colors"></i>
                 </a>
             </li>
@@ -17,12 +17,12 @@
     </ul>
     
     <!-- Custom Barong Order Button -->
-    <div class="mt-4 pt-4 border-t border-gray-200">
+    <div class="mt-3 pt-3 border-t border-gray-200">
         <a href="{{ route('custom-design') }}" 
-           class="flex items-center justify-center bg-red-600 text-white hover:bg-red-700 text-sm font-medium py-3 px-4 rounded-md transition-colors duration-200">
-            <i class="fas fa-palette mr-2"></i>
+           class="flex items-center justify-center bg-red-600 text-white hover:bg-red-700 text-xs font-medium py-2 px-3 rounded-md transition-colors duration-200">
+            <i class="fas fa-palette mr-1 text-xs"></i>
             <span>Custom Barong Order</span>
-            <i class="fas fa-arrow-right ml-2 text-xs"></i>
+            <i class="fas fa-arrow-right ml-1 text-xs"></i>
         </a>
     </div>
 </div>

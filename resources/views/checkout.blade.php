@@ -132,6 +132,28 @@
                             <div id="city_error" class="text-red-500 text-xs mt-1 hidden"></div>
                         </div>
                         
+                        <!-- Province/Municipality -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Province/Municipality <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="province" id="province" required
+                                   class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                                   placeholder="Enter province or municipality">
+                            <div id="province_error" class="text-red-500 text-xs mt-1 hidden"></div>
+                        </div>
+                        
+                        <!-- Postal Code -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Postal Code <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="postal_code" id="postal_code" required
+                                   class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                                   placeholder="Enter postal code">
+                            <div id="postal_code_error" class="text-red-500 text-xs mt-1 hidden"></div>
+                        </div>
+                        
                         <!-- Phone Number -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -344,7 +366,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function setupFormValidation() {
         const form = document.getElementById('checkout-form');
-        const requiredFields = ['full_name', 'street_address', 'city', 'phone', 'email'];
+        const requiredFields = ['full_name', 'street_address', 'city', 'province', 'postal_code', 'phone', 'email'];
         
         requiredFields.forEach(fieldName => {
             const field = document.getElementById(fieldName);
@@ -381,6 +403,12 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
         
+        // Postal code validation
+        if (fieldName === 'postal_code' && !isValidPostalCode(value)) {
+            showFieldError(field, errorDiv, 'Please enter a valid postal code');
+            return false;
+        }
+        
         return true;
     }
 
@@ -400,8 +428,14 @@ document.addEventListener('DOMContentLoaded', function() {
         return phoneRegex.test(phone);
     }
 
+    function isValidPostalCode(postalCode) {
+        // Philippine postal codes are typically 4 digits
+        const postalCodeRegex = /^[0-9]{4}$/;
+        return postalCodeRegex.test(postalCode);
+    }
+
     function validateForm() {
-        const requiredFields = ['full_name', 'street_address', 'city', 'phone', 'email'];
+        const requiredFields = ['full_name', 'street_address', 'city', 'province', 'postal_code', 'phone', 'email'];
         let isValid = true;
         
         requiredFields.forEach(fieldName => {
@@ -484,6 +518,8 @@ document.addEventListener('DOMContentLoaded', function() {
             street_address: formData.get('street_address'),
             apartment: formData.get('apartment'),
             city: formData.get('city'),
+            province: formData.get('province'),
+            postal_code: formData.get('postal_code'),
             phone: formData.get('phone'),
             email: formData.get('email'),
             save_info: formData.get('save_info') === 'on',

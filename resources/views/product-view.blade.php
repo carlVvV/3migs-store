@@ -127,13 +127,40 @@
                         @php
                             $sizes = ['S', 'M', 'L', 'XL', 'XXL'];
                             $sizeStocks = $product->size_stocks ?? [];
+                            
+                            // Find the first available size, default to M if available
+                            $defaultSize = 'M';
+                            $selectedSize = null;
+                            foreach($sizes as $size) {
+                                if (($sizeStocks[$size] ?? 0) > 0) {
+                                    if ($size === $defaultSize) {
+                                        $selectedSize = $size;
+                                        break;
+                                    } elseif (!$selectedSize) {
+                                        $selectedSize = $size;
+                                    }
+                                }
+                            }
+                            // If no size is available, don't select any
+                            if (!$selectedSize) {
+                                $selectedSize = $defaultSize; // Will be disabled anyway
+                            }
+                            
+                            // Check if any size has stock
+                            $hasAnyStock = false;
+                            foreach($sizes as $size) {
+                                if (($sizeStocks[$size] ?? 0) > 0) {
+                                    $hasAnyStock = true;
+                                    break;
+                                }
+                            }
                         @endphp
                         
                         @foreach($sizes as $size)
                             @php
                                 $stock = $sizeStocks[$size] ?? 0;
                                 $isAvailable = $stock > 0;
-                                $isSelected = $size === 'M'; // Default to M
+                                $isSelected = $size === $selectedSize;
                             @endphp
                             
                             <button class="px-6 py-3 border rounded-lg transition-colors size-btn {{ $isSelected ? 'bg-black text-white' : 'border-gray-300 text-gray-700 hover:border-gray-400' }} {{ !$isAvailable ? 'opacity-50 cursor-not-allowed' : '' }}" 
@@ -162,7 +189,7 @@
                     @endif
                 </div>
                 
-                @if ($product->getTotalStock() > 0)
+                @if ($hasAnyStock)
                     <!-- Quantity and Action Buttons -->
                     <div class="flex items-center space-x-4 mb-6">
                         <div class="flex items-center border border-gray-300 rounded-lg">
@@ -220,7 +247,7 @@
 
 <script>
 let currentQuantity = 2;
-let selectedSize = 'M'; // Default size
+let selectedSize = '{{ $selectedSize }}'; // Default size (first available)
 let lastUpdateTime = '{{ $product->updated_at->toISOString() }}';
 let updateInterval;
 

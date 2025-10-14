@@ -322,8 +322,6 @@ class AdminController extends Controller
             'variations.*.sku' => 'nullable|string|max:255|unique:barong_products,sku,' . $id,
             'images' => 'nullable|array|max:8',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
-            'new_images' => 'nullable|array|max:8',
-            'new_images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
             'cover_image_index' => 'nullable|integer|min:0',
         ], [
             'name.unique' => 'A product with this name already exists. Please choose a different name.',
@@ -355,10 +353,6 @@ class AdminController extends Controller
             'images.*.image' => 'Uploaded files must be valid images.',
             'images.*.mimes' => 'Images must be in JPEG, PNG, JPG, or GIF format.',
             'images.*.max' => 'Each image must be smaller than 2MB.',
-            'new_images.max' => 'You can upload a maximum of 8 new images.',
-            'new_images.*.image' => 'Uploaded files must be valid images.',
-            'new_images.*.mimes' => 'Images must be in JPEG, PNG, JPG, or GIF format.',
-            'new_images.*.max' => 'Each image must be smaller than 2MB.',
             'video_url.url' => 'Please enter a valid video URL.',
         ]);
 
@@ -380,8 +374,8 @@ class AdminController extends Controller
             $allImages = $barongProduct->images ?? [];
             
             // Add new images
-            if ($request->hasFile('new_images')) {
-                foreach ($request->file('new_images') as $image) {
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $image) {
                     if ($image->isValid()) {
                         $result = $this->cloudinaryService->uploadImage($image, '3migs-products');
                         if ($result['success']) {
@@ -810,7 +804,7 @@ class AdminController extends Controller
                 DB::raw('COUNT(*) as orders_count'),
                 DB::raw('SUM(total_amount) as revenue')
             )
-            ->whereIn('status', ['completed', 'delivered'])
+            ->whereIn('status', ['completed', 'delivered', 'shipped'])
             ->where('created_at', '>=', now()->subMonths(12))
             ->groupBy('ym')
             ->orderBy('ym')
@@ -853,13 +847,49 @@ class AdminController extends Controller
      */
     public function reportsPrint(Request $request)
     {
-        // Reuse reports data (replace with your real aggregation)
+        // Sales by month (last 12 months) - portable across sqlite/mysql
+        $driver = DB::getDriverName();
+        $ymExpr = $driver === 'sqlite' ? 'strftime("%Y-%m", created_at)' : 'DATE_FORMAT(created_at, "%Y-%m")';
+
+        $sales_by_month = Order::select(
+                DB::raw($ymExpr . ' as ym'),
+                DB::raw('COUNT(*) as orders_count'),
+                DB::raw('SUM(total_amount) as revenue')
+            )
+            ->whereIn('status', ['completed', 'delivered', 'shipped'])
+            ->where('created_at', '>=', now()->subMonths(12))
+            ->groupBy('ym')
+            ->orderBy('ym')
+            ->get()
+            ->map(function ($row) {
+                return (object) [
+                    'month' => $row->ym,
+                    'orders_count' => (int) $row->orders_count,
+                    'revenue' => (float) $row->revenue,
+                ];
+            });
+
+        $total_revenue = (float) Order::whereIn('status', ['completed', 'delivered'])->sum('total_amount');
+        $total_orders = (int) Order::whereIn('status', ['completed', 'delivered'])->count();
+        $average_order_value = $total_orders > 0 ? $total_revenue / $total_orders : 0;
+
+        // Top customers by total spent
+        $top_customers = User::select('users.*')
+            ->selectRaw('COUNT(orders.id) as orders_count')
+            ->selectRaw('SUM(orders.total_amount) as total_spent')
+            ->join('orders', 'users.id', '=', 'orders.user_id')
+            ->whereIn('orders.status', ['completed', 'delivered'])
+            ->groupBy('users.id', 'users.name', 'users.email', 'users.created_at', 'users.updated_at')
+            ->orderByDesc('total_spent')
+            ->limit(10)
+            ->get();
+
         $salesReport = [
-            'total_revenue' => 0,
-            'total_orders' => 0,
-            'average_order_value' => 0,
-            'top_customers' => collect(),
-            'sales_by_month' => collect(),
+            'total_revenue' => $total_revenue,
+            'total_orders' => $total_orders,
+            'average_order_value' => $average_order_value,
+            'top_customers' => $top_customers,
+            'sales_by_month' => $sales_by_month,
         ];
 
         return view('admin.reports-print', compact('salesReport'));

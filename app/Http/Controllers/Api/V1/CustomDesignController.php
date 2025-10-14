@@ -111,7 +111,7 @@ class CustomDesignController extends Controller
     public function addToCart(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'fabric' => 'required|string|in:pina,jusi,cotton,linen,silk',
+            'fabric' => 'required|string|in:jusilyn,hugo_boss,pina_cocoon,gusot_mayaman',
             'color' => 'required|string|in:white,cream,ivory,beige,light-blue,light-pink',
             'embroidery' => 'nullable|string|in:none,simple,detailed,custom',
             'quantity' => 'required|integer|min:1|max:10',
@@ -121,6 +121,8 @@ class CustomDesignController extends Controller
             'measurements.length' => 'required|numeric|min:20|max:40',
             'measurements.shoulder_width' => 'required|numeric|min:12|max:25',
             'measurements.sleeve_length' => 'required|numeric|min:15|max:35',
+            'fabric_yardage' => 'required|numeric|min:1|max:10',
+            'pricing' => 'required|array',
             'additional_notes' => 'nullable|string|max:1000'
         ]);
 
@@ -133,30 +135,17 @@ class CustomDesignController extends Controller
         }
 
         try {
-            // Calculate pricing
-            $basePrices = [
-                'pina' => 2500,
-                'jusi' => 2000,
-                'cotton' => 1500,
-                'linen' => 1800,
-                'silk' => 3000
-            ];
-
-            $embroideryPrices = [
-                'none' => 0,
-                'simple' => 200,
-                'detailed' => 500,
-                'custom' => 1000
-            ];
-
-            $basePrice = $basePrices[$request->fabric];
-            $embroideryPrice = $embroideryPrices[$request->embroidery] ?? 0;
-            $unitPrice = $basePrice + $embroideryPrice;
+            // Use pricing from frontend calculation
+            $pricing = $request->pricing;
+            $unitPrice = $pricing['totalCost'] ?? 2000; // Fallback price
+            
+            // Note: Custom embroidery pricing varies based on design complexity
+            // Base price is ₱500, but can range from ₱500-₱2000+ depending on design
 
             // Create custom product data for cart
             $customProductData = [
                 'id' => 'custom_' . time(),
-                'name' => 'Custom Barong - ' . ucfirst($request->fabric),
+                'name' => 'Custom Barong - ' . ucfirst(str_replace('_', ' ', $request->fabric)),
                 'price' => $unitPrice,
                 'quantity' => $request->quantity,
                 'image' => '/images/custom-barong-placeholder.jpg',
@@ -165,6 +154,8 @@ class CustomDesignController extends Controller
                     'color' => $request->color,
                     'embroidery' => $request->embroidery,
                     'measurements' => $request->measurements,
+                    'fabric_yardage' => $request->fabric_yardage,
+                    'pricing' => $pricing,
                     'additional_notes' => $request->additional_notes,
                     'is_custom' => true
                 ]

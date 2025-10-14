@@ -16,13 +16,11 @@ class HomeController extends Controller
         // Get featured barong products
         $featuredProducts = BarongProduct::with(['brand', 'category'])
             ->featured()
-            ->available()
             ->limit(8)
             ->get();
 
         // Get new arrivals
         $newArrivals = BarongProduct::with(['brand', 'category'])
-            ->available()
             ->orderBy('created_at', 'desc')
             ->limit(8)
             ->get();
@@ -30,9 +28,7 @@ class HomeController extends Controller
         // Get categories
         $categories = Category::active()
             ->ordered()
-            ->withCount(['barongProducts' => function ($query) {
-                $query->available();
-            }])
+            ->withCount('barongProducts')
             ->get();
 
         return view('home', compact('featuredProducts', 'newArrivals', 'categories'));
@@ -111,6 +107,15 @@ class HomeController extends Controller
     public function orders()
     {
         return view('orders');
+    }
+
+    /**
+     * Display order details page.
+     */
+    public function orderDetails($id)
+    {
+        $order = auth()->user()->orders()->with(['orderItems.product'])->findOrFail($id);
+        return view('order-details', compact('order'));
     }
 
     /**
