@@ -11,7 +11,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Load Vite helper functions
+        require_once app_path('helpers/vite_helper.php');
     }
 
     /**

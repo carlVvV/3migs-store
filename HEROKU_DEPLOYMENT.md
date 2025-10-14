@@ -26,10 +26,21 @@ Added `"postinstall": "npm run build"` to automatically build assets during depl
 
 ## 🚀 Deployment Steps
 
-### Step 1: Set Heroku Buildpacks
+### Step 1: Set Heroku Buildpacks (IMPORTANT: Order matters!)
 ```bash
+# Set Node.js first (for building assets)
 heroku buildpacks:set heroku/nodejs
+
+# Add PHP second (for running the app)
 heroku buildpacks:add heroku/php
+```
+
+### Step 1.5: Verify Buildpack Order
+```bash
+heroku buildpacks
+# Should show:
+# 1. heroku/nodejs
+# 2. heroku/php
 ```
 
 ### Step 2: Set Environment Variables
@@ -73,9 +84,35 @@ heroku run php artisan db:seed --force
 ## 🔧 Troubleshooting
 
 ### If Vite manifest error persists:
-1. Check that buildpacks are set correctly
-2. Verify that `postinstall` script runs during deployment
-3. Check Heroku logs: `heroku logs --tail`
+
+1. **Check buildpack order** (CRITICAL):
+   ```bash
+   heroku buildpacks
+   # Must show Node.js first, then PHP
+   ```
+
+2. **Check build process**:
+   ```bash
+   heroku logs --tail --dyno web
+   # Look for "Building Vite assets" or npm build messages
+   ```
+
+3. **Verify files exist on Heroku**:
+   ```bash
+   heroku run ls -la public/build/
+   heroku run cat public/build/manifest.json
+   ```
+
+4. **Force rebuild**:
+   ```bash
+   heroku run npm run build
+   ```
+
+5. **Check environment**:
+   ```bash
+   heroku run env | grep NODE
+   heroku run env | grep APP_ENV
+   ```
 
 ### If database connection fails:
 1. Verify Supabase credentials
