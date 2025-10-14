@@ -9,7 +9,7 @@ use App\Models\OrderItem;
 use App\Models\BarongProduct;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use App\Services\BuxService;
+use App\Services\BuxPostbackService;
 
 class OrderController extends Controller
 {
@@ -452,22 +452,75 @@ class OrderController extends Controller
     }
 
     /**
-     * Webhook for Bux.ph payment events.
+     * Enhanced webhook for Bux.ph payment notifications (Postback)
      */
-    public function buxWebhook(Request $request)
+    public function buxWebhook(Request $request, BuxPostbackService $postbackService)
     {
-        $event = $request->all();
-        $orderId = data_get($event, 'metadata.order_id');
-        if ($orderId) {
-            $order = Order::find($orderId);
-            if ($order && data_get($event, 'status') === 'paid') {
-                $order->payment_status = 'paid';
-                if ($order->status === 'pending') {
-                    $order->status = 'processing';
-                }
-                $order->save();
+        try {
+            // Log incoming webhook for debugging
+            Log::info('Bux.ph webhook received', [
+                'headers' => $request->headers->all(),
+                'payload' => $request->all(),
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent()
+            ]);
+
+            // Process the postback
+            $result = $postbackService->processPostback($request->all());
+
+            if ($result['success']) {
+                Log::info('Bux.ph webhook processed successfully', [
+                    'order_number' => $result['order_number'] ?? 'unknown',
+                    'message' => $result['message']
+                ]);
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => $result['message']
+                ], 200);
+            } else {
+                Log::error('Bux.ph webhook processing failed', [
+                    'error' => $result['message'],
+                    'payload' => $request->all()
+                ]);
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => $result['message']
+                ], 400);
             }
+
+        } catch (\Exception $e) {
+            Log::error('Bux.ph webhook exception', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'payload' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Internal server error'
+            ], 500);
         }
-        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Test webhook endpoint (for development)
+     */
+    public function testBuxWebhook(Request $request, BuxPostbackService $postbackService)
+    {
+        $orderNumber = $request->input('order_number');
+        $status = $request->input('status', 'paid');
+
+        if (!$orderNumber) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order number is required'
+            ], 400);
+        }
+
+        $result = $postbackService->testPostback($orderNumber, $status);
+
+        return response()->json($result);
     }
 }

@@ -133,6 +133,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 
     // Payments
     Route::post('/payments/bux/webhook', [OrderController::class, 'buxWebhook']);
+    Route::post('/payments/bux/test-webhook', [OrderController::class, 'testBuxWebhook']);
     
     // (Wishlist routes moved to public v1 group)
     
