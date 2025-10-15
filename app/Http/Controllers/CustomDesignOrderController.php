@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class CustomDesignOrderController extends Controller
 {
@@ -193,12 +194,18 @@ class CustomDesignOrderController extends Controller
         try {
             $customOrder = CustomDesignOrder::findOrFail($id);
             
-            // Check if user owns this order
-            if ($customOrder->user_id !== Auth::id()) {
+            // Check if user owns this order (handle both authenticated and guest users)
+            $currentUserId = Auth::id();
+            $orderUserId = $customOrder->user_id;
+            
+            // If both are null (guest users), allow access
+            // If both have the same user ID, allow access
+            // Otherwise, deny access
+            if ($currentUserId !== $orderUserId) {
                 Log::warning('Unauthorized access attempt to custom design order', [
                     'order_id' => $id,
-                    'user_id' => Auth::id(),
-                    'order_owner_id' => $customOrder->user_id
+                    'user_id' => $currentUserId,
+                    'order_owner_id' => $orderUserId
                 ]);
                 return response()->json([
                     'success' => false,
