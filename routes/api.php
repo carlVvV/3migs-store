@@ -156,5 +156,12 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 // Public payments webhook endpoints (no auth, no CSRF)
 Route::prefix('v1')->group(function () {
     Route::post('/payments/bux/webhook', [OrderController::class, 'buxWebhook'])
-        ->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
+        ->withoutMiddleware([
+            \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+        ]);
 });

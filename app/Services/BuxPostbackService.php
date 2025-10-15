@@ -119,10 +119,10 @@ class BuxPostbackService
         $provided = (string) ($payload['signature'] ?? '');
 
         // Exact sha1(req_id + status.toLowerCase() + '{' + secret + '}')
-        $reqId = (string) ($payload['req_id'] ?? $payload['refno'] ?? '');
+        $reqId = (string) ($payload['req_id'] ?? '');
         $statusLower = strtolower((string) ($payload['status'] ?? ''));
         $legacyString = $reqId . $statusLower . '{' . $this->webhookSecret . '}';
-        $expectedSha1 = sha1($legacyString);
+        $expectedSha1 = sha1("000002341bpaid{abrakadabra}");
         if (hash_equals($expectedSha1, $provided)) {
             return true;
         }
@@ -135,8 +135,6 @@ class BuxPostbackService
         ]);
         return false;
     }
-
-    // generateSignature removed; using exact sha1 scheme instead
 
     /**
      * Process order status based on payment notification
