@@ -122,7 +122,7 @@ class BuxPostbackService
         $reqId = (string) ($payload['req_id'] ?? '');
         $statusLower = strtolower((string) ($payload['status'] ?? ''));
         $legacyString = $reqId . $statusLower . '{' . $this->webhookSecret . '}';
-        $expectedSha1 = sha1("000002341bpaid{abrakadabra}");
+        $expectedSha1 = sha1($legacyString);
         if (hash_equals($expectedSha1, $provided)) {
             return true;
         }
