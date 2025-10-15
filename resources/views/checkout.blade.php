@@ -900,8 +900,8 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Custom design order update response:', updateData);
 
             if (updateData.success) {
-                // Generate Bux checkout URL
-                const buxResponse = await fetch('/api/v1/orders/bux-checkout', {
+                // Generate Bux checkout URL for custom design order
+                const buxResponse = await fetch(`/api/v1/custom-design-orders/${orderId}/bux-checkout`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

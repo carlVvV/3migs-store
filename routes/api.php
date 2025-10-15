@@ -114,6 +114,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/', [\App\Http\Controllers\CustomDesignOrderController::class, 'store']);
         Route::get('/{id}', [\App\Http\Controllers\CustomDesignOrderController::class, 'show']);
         Route::put('/{id}', [\App\Http\Controllers\CustomDesignOrderController::class, 'update']);
+        Route::post('/{id}/bux-checkout', [\App\Http\Controllers\CustomDesignOrderController::class, 'buxCheckout']);
     });
 });
 

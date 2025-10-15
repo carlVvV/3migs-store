@@ -367,4 +367,96 @@ class CustomDesignOrderController extends Controller
             'data' => $orders
         ]);
     }
+
+    /**
+     * Generate Bux checkout URL for custom design order
+     */
+    public function buxCheckout(Request $request, $id)
+    {
+        Log::info('Custom design order bux checkout started', [
+            'order_id' => $id,
+            'user_id' => Auth::id(),
+            'is_guest' => !Auth::check()
+        ]);
+
+        try {
+            $customOrder = CustomDesignOrder::findOrFail($id);
+            
+            // Check authorization (same logic as update method)
+            $currentUserId = Auth::id();
+            $orderUserId = $customOrder->user_id;
+            
+            if ($currentUserId !== $orderUserId) {
+                Log::warning('Unauthorized bux checkout attempt', [
+                    'order_id' => $id,
+                    'user_id' => $currentUserId,
+                    'order_owner_id' => $orderUserId
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized access'
+                ], 403);
+            }
+
+            // Get billing address
+            $billing = is_string($customOrder->billing_address) ? 
+                (json_decode($customOrder->billing_address, true) ?: []) : 
+                ($customOrder->billing_address ?? []);
+
+            // Create Bux checkout payload
+            $payload = [
+                'req_id' => $customOrder->order_number,
+                'amount' => (float) $customOrder->total_amount,
+                'description' => 'Custom Barong Order #' . $customOrder->order_number,
+                'email' => $billing['email'] ?? 'customer@example.com',
+                'expiry' => 2, // 2 hours expiry
+                'notification_url' => url('/api/v1/payments/bux/webhook'),
+                'redirect_url' => url('/orders'),
+                'customer' => [
+                    'name' => $billing['full_name'] ?? 'Customer',
+                    'email' => $billing['email'] ?? 'customer@example.com',
+                    'phone' => $billing['phone'] ?? '',
+                ],
+                'address' => [
+                    'line1' => $billing['street_address'] ?? '',
+                    'city' => $billing['city'] ?? '',
+                    'state' => $billing['province'] ?? '',
+                    'postal_code' => $billing['postal_code'] ?? '',
+                    'country' => 'PH'
+                ]
+            ];
+
+            Log::info('Custom design order bux checkout payload', [
+                'order_id' => $id,
+                'payload' => $payload
+            ]);
+
+            // Generate Bux checkout URL (using the same service as regular orders)
+            $buxService = app(\App\Services\BuxService::class);
+            $checkoutUrl = $buxService->generateCheckoutUrl($payload);
+
+            Log::info('Custom design order bux checkout URL generated', [
+                'order_id' => $id,
+                'checkout_url' => $checkoutUrl
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'checkout_url' => $checkoutUrl,
+                'order_number' => $customOrder->order_number
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Custom design order bux checkout failed', [
+                'order_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate checkout URL'
+            ], 500);
+        }
+    }
 }
