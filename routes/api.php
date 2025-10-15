@@ -96,6 +96,9 @@ Route::prefix('v1')->group(function () {
     // Orders: lightweight read-only detail for UI that relies on session auth
     // Controller already restricts to the logged-in user's orders
     Route::get('/orders/{id}', [OrderController::class, 'show']);
+    // Expose order creation and Bux checkout for session-auth flows (no Sanctum token required)
+    Route::post('/orders', [OrderController::class, 'store']);
+    Route::post('/orders/{id}/bux-checkout', [OrderController::class, 'buxCheckout']);
 });
 
 // ============================================================================
