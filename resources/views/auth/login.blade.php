@@ -137,9 +137,9 @@
                             </a>
                         </div>
                         
-                        <!-- Forgot Password Link -->
+                        <!-- Forgot Password Link (robust: uses default name with fallback URL) -->
                         <div class="text-right">
-                            <a href="{{ route('password.forgot') }}" class="text-red-600 hover:underline">
+                            <a href="{{ Route::has('password.request') ? route('password.request') : (Route::has('password.forgot') ? route('password.forgot') : url('/forgot-password')) }}" class="text-red-600 hover:underline">
                                 Forgot Password?
                             </a>
                         </div>
