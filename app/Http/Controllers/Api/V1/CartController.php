@@ -216,9 +216,21 @@ class CartController extends Controller
 
             // If product uses per-size stocks, enforce size selection and validate per-size availability
             $usesSizeStocks = is_array($product->size_stocks) && count($product->size_stocks) > 0;
+            \Log::info('Stock validation debug', [
+                'product_id' => $product->id,
+                'uses_size_stocks' => $usesSizeStocks,
+                'size_stocks' => $product->size_stocks,
+                'selected_size' => $validator['size'] ?? null,
+                'requested_quantity' => $validator['quantity'],
+            ]);
+            
             if ($usesSizeStocks) {
                 $selectedSize = $validator['size'] ?? null;
                 if (!$selectedSize) {
+                    \Log::warning('No size selected for size-managed product', [
+                        'product_id' => $product->id,
+                        'size_stocks' => $product->size_stocks
+                    ]);
                     return response()->json([
                         'success' => false,
                         'message' => 'Please select a size before adding to cart.'
@@ -226,6 +238,13 @@ class CartController extends Controller
                 }
 
                 $availableForSize = (int) ($product->getStockForSize($selectedSize) ?? 0);
+                \Log::info('Size stock check', [
+                    'product_id' => $product->id,
+                    'size' => $selectedSize,
+                    'available_stock' => $availableForSize,
+                    'requested_quantity' => $validator['quantity'],
+                ]);
+                
                 if ($validator['quantity'] > $availableForSize) {
                     \Log::warning('Insufficient stock for size', [
                         'product_id' => $product->id,
@@ -244,7 +263,10 @@ class CartController extends Controller
                 \Log::warning('Insufficient stock', [
                     'product_id' => $product->id,
                     'requested_quantity' => $validator['quantity'],
-                    'available_stock' => $product->getTotalStock()
+                    'available_stock' => $product->getTotalStock(),
+                    'product_stock_column' => $product->stock,
+                    'size_stocks_sum' => is_array($product->size_stocks) ? array_sum($product->size_stocks) : 'N/A',
+                    'variations_sum' => $product->has_variations && is_array($product->variations) ? array_sum(array_column($product->variations, 'stock')) : 'N/A'
                 ]);
                 return response()->json([
                     'success' => false,

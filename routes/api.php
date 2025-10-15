@@ -108,6 +108,13 @@ Route::prefix('v1')->group(function () {
     // Expose order creation and Bux checkout for session-auth flows (no Sanctum token required)
     Route::post('/orders', [OrderController::class, 'store']);
     Route::post('/orders/{id}/bux-checkout', [OrderController::class, 'buxCheckout']);
+    
+    // Custom Design Orders (public endpoints for guest users)
+    Route::prefix('custom-design-orders')->group(function () {
+        Route::post('/', [\App\Http\Controllers\CustomDesignOrderController::class, 'store']);
+        Route::get('/{id}', [\App\Http\Controllers\CustomDesignOrderController::class, 'show']);
+        Route::put('/{id}', [\App\Http\Controllers\CustomDesignOrderController::class, 'update']);
+    });
 });
 
 // ============================================================================

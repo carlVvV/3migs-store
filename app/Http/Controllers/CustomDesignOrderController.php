@@ -18,6 +18,7 @@ class CustomDesignOrderController extends Controller
     {
         Log::info('Custom design order creation started', [
             'user_id' => Auth::id(),
+            'is_guest' => !Auth::check(),
             'request_data' => $request->all()
         ]);
 
@@ -36,15 +37,15 @@ class CustomDesignOrderController extends Controller
             'reference_image' => 'nullable|file|image|max:10240', // 10MB max
             'pricing' => 'required|array',
             'additional_notes' => 'nullable|string|max:1000',
-            'billing_address' => 'required|array',
-            'billing_address.full_name' => 'required|string|max:255',
-            'billing_address.street_address' => 'required|string|max:500',
-            'billing_address.city' => 'required|string|max:100',
-            'billing_address.province' => 'required|string|max:100',
-            'billing_address.postal_code' => 'required|string|max:20',
-            'billing_address.phone' => 'required|string|max:20',
-            'billing_address.email' => 'required|email|max:255',
-            'payment_method' => 'required|string|in:ewallet,cod',
+            'billing_address' => 'nullable|array', // Optional for guest users
+            'billing_address.full_name' => 'nullable|string|max:255',
+            'billing_address.street_address' => 'nullable|string|max:500',
+            'billing_address.city' => 'nullable|string|max:100',
+            'billing_address.province' => 'nullable|string|max:100',
+            'billing_address.postal_code' => 'nullable|string|max:20',
+            'billing_address.phone' => 'nullable|string|max:20',
+            'billing_address.email' => 'nullable|email|max:255',
+            'payment_method' => 'nullable|string|in:ewallet,cod', // Optional for initial creation
         ]);
 
         Log::info('Custom design order validation passed');
@@ -69,11 +70,11 @@ class CustomDesignOrderController extends Controller
             // Create custom design order
             $customOrder = CustomDesignOrder::create([
                 'order_number' => $orderNumber,
-                'user_id' => Auth::id(),
+                'user_id' => Auth::id(), // Will be null for guest users
                 'status' => 'pending',
                 'payment_status' => 'pending',
-                'payment_method' => $request->payment_method,
-                'total_amount' => $request->pricing['totalCost'] ?? 0,
+                'payment_method' => $request->payment_method ?? 'ewallet',
+                'total_amount' => $request->pricing['total'] ?? 0, // Use 'total' instead of 'totalCost'
                 'currency' => 'PHP',
                 'fabric' => $request->fabric,
                 'color' => $request->color,
@@ -84,8 +85,8 @@ class CustomDesignOrderController extends Controller
                 'reference_image' => $referenceImagePath,
                 'pricing' => $request->pricing,
                 'additional_notes' => $request->additional_notes,
-                'billing_address' => $request->billing_address,
-                'shipping_address' => $request->billing_address, // Default to billing address
+                'billing_address' => $request->billing_address ?? [], // Default to empty array for guests
+                'shipping_address' => $request->billing_address ?? [], // Default to empty array for guests
                 'estimated_completion_date' => now()->addDays(14), // 2 weeks estimated
             ]);
 
