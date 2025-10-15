@@ -678,7 +678,8 @@
                     if (data.success) {
                         const cartCount = document.getElementById('cart-count');
                         if (cartCount) {
-                            cartCount.textContent = data.data.length;
+                            // Use items array length or fallback to 0
+                            cartCount.textContent = data.items ? data.items.length : 0;
                         }
                     }
                 })
