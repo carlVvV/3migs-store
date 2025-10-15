@@ -34,13 +34,7 @@
         </div>
         
         <div>
-            <div class="flex items-center mb-2">
-                <input type="hidden" name="has_variations" value="0">
-                <input type="checkbox" id="has_variations" name="has_variations" value="1"
-                       {{ old('has_variations', $barongProduct->has_variations ?? false ? 'checked' : '') }}
-                       class="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                <label for="has_variations" class="ml-2 text-sm font-medium text-gray-700">Has Variations</label>
-            </div>
+            <input type="hidden" name="has_variations" value="0">
             
             <!-- Size Stock Management -->
             <div class="mt-4">
@@ -91,5 +85,5 @@
         </div>
     </div>
     
-    @include('admin.partials.product-form.variations')
+    {{-- Variations removed: stocks come from Size Stock Management and colors from attributes --}}
 </div>

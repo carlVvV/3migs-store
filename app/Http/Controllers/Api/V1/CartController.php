@@ -186,7 +186,33 @@ class CartController extends Controller
                 ], 400);
             }
 
-            if ($validator['quantity'] > $product->getTotalStock()) {
+            // If product uses per-size stocks, enforce size selection and validate per-size availability
+            $usesSizeStocks = is_array($product->size_stocks) && count($product->size_stocks) > 0;
+            if ($usesSizeStocks) {
+                $selectedSize = $validator['size'] ?? null;
+                if (!$selectedSize) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Please select a size before adding to cart.'
+                    ], 422);
+                }
+
+                $availableForSize = (int) ($product->getStockForSize($selectedSize) ?? 0);
+                if ($validator['quantity'] > $availableForSize) {
+                    \Log::warning('Insufficient stock for size', [
+                        'product_id' => $product->id,
+                        'size' => $selectedSize,
+                        'requested_quantity' => $validator['quantity'],
+                        'available_stock' => $availableForSize,
+                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Insufficient stock for size ' . $selectedSize . '. Available: ' . $availableForSize
+                    ], 400);
+                }
+            }
+
+            if (!$usesSizeStocks && $validator['quantity'] > $product->getTotalStock()) {
                 \Log::warning('Insufficient stock', [
                     'product_id' => $product->id,
                     'requested_quantity' => $validator['quantity'],
@@ -203,7 +229,36 @@ class CartController extends Controller
                 $cart = session()->get('cart', []);
 
                 if (isset($cart[$product->id])) {
-                    $cart[$product->id]['quantity'] += $validator['quantity'];
+                    // Prevent mixing different sizes for the same product in session cart
+                    $existingSize = $cart[$product->id]['size'] ?? null;
+                    $incomingSize = $validator['size'] ?? null;
+                    if ($usesSizeStocks && $existingSize && $incomingSize && $existingSize !== $incomingSize) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'This product is already in your cart with size ' . $existingSize . '. Remove it first to add a different size.'
+                        ], 400);
+                    }
+
+                    $newQuantity = ($cart[$product->id]['quantity'] ?? 0) + $validator['quantity'];
+                    if ($usesSizeStocks) {
+                        $sizeToUse = $existingSize ?: $incomingSize;
+                        $availableForSize = (int) ($product->getStockForSize($sizeToUse) ?? 0);
+                        if ($newQuantity > $availableForSize) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Insufficient stock for size ' . $sizeToUse . '. Available: ' . $availableForSize . ', Already in cart: ' . ($cart[$product->id]['quantity'] ?? 0)
+                            ], 400);
+                        }
+                    } else {
+                        if ($newQuantity > $product->getTotalStock()) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Insufficient stock. Available: ' . $product->getTotalStock() . ', Already in cart: ' . ($cart[$product->id]['quantity'] ?? 0)
+                            ], 400);
+                        }
+                    }
+
+                    $cart[$product->id]['quantity'] = $newQuantity;
                 } else {
                     $cart[$product->id] = [
                         'quantity' => $validator['quantity'],
@@ -236,12 +291,40 @@ class CartController extends Controller
             if ($existingCartItem) {
                 // Update quantity
                 $newQuantity = $existingCartItem->quantity + $validator['quantity'];
-                
-                if ($newQuantity > $product->getTotalStock()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Insufficient stock. Available: ' . $product->getTotalStock() . ', Already in cart: ' . $existingCartItem->quantity
-                    ], 400);
+
+                // Enforce size consistency and per-size stock constraint
+                if ($usesSizeStocks) {
+                    $existingSize = $existingCartItem->size;
+                    $incomingSize = $validator['size'] ?? null;
+                    if ($existingSize && $incomingSize && $existingSize !== $incomingSize) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'This product is already in your cart with size ' . $existingSize . '. Remove it first to add a different size.'
+                        ], 400);
+                    }
+
+                    $sizeToUse = $existingSize ?: $incomingSize;
+                    if (!$sizeToUse) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Please select a size before adding to cart.'
+                        ], 422);
+                    }
+
+                    $availableForSize = (int) ($product->getStockForSize($sizeToUse) ?? 0);
+                    if ($newQuantity > $availableForSize) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Insufficient stock for size ' . $sizeToUse . '. Available: ' . $availableForSize . ', Already in cart: ' . $existingCartItem->quantity
+                        ], 400);
+                    }
+                } else {
+                    if ($newQuantity > $product->getTotalStock()) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Insufficient stock. Available: ' . $product->getTotalStock() . ', Already in cart: ' . $existingCartItem->quantity
+                        ], 400);
+                    }
                 }
 
                 $existingCartItem->update([
@@ -294,7 +377,7 @@ class CartController extends Controller
      */
     public function update(Request $request)
     {
-        $validator = $request->validate([
+            $validator = $request->validate([
             'item_id' => 'required|integer',
             'quantity' => 'required|integer|min:1|max:10'
         ]);
@@ -322,11 +405,29 @@ class CartController extends Controller
                     ], 404);
                 }
 
-                if ($validator['quantity'] > $product->getTotalStock()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Insufficient stock. Available: ' . $product->getTotalStock()
-                    ], 400);
+                $usesSizeStocks = is_array($product->size_stocks) && count($product->size_stocks) > 0;
+                if ($usesSizeStocks) {
+                    $sizeInCart = $cart[$productId]['size'] ?? null;
+                    if (!$sizeInCart) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Please select a size for this cart item.'
+                        ], 422);
+                    }
+                    $availableForSize = (int) ($product->getStockForSize($sizeInCart) ?? 0);
+                    if ($validator['quantity'] > $availableForSize) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Insufficient stock for size ' . $sizeInCart . '. Available: ' . $availableForSize
+                        ], 400);
+                    }
+                } else {
+                    if ($validator['quantity'] > $product->getTotalStock()) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Insufficient stock. Available: ' . $product->getTotalStock()
+                        ], 400);
+                    }
                 }
 
                 $cart[$productId]['quantity'] = $validator['quantity'];
@@ -358,11 +459,29 @@ class CartController extends Controller
 
             $product = $cartItem->product;
 
-            if ($validator['quantity'] > $product->getTotalStock()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Insufficient stock. Available: ' . $product->getTotalStock()
-                ], 400);
+            $usesSizeStocks = is_array($product->size_stocks) && count($product->size_stocks) > 0;
+            if ($usesSizeStocks) {
+                $sizeInCart = $cartItem->size;
+                if (!$sizeInCart) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Please select a size for this cart item.'
+                    ], 422);
+                }
+                $availableForSize = (int) ($product->getStockForSize($sizeInCart) ?? 0);
+                if ($validator['quantity'] > $availableForSize) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Insufficient stock for size ' . $sizeInCart . '. Available: ' . $availableForSize
+                    ], 400);
+                }
+            } else {
+                if ($validator['quantity'] > $product->getTotalStock()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Insufficient stock. Available: ' . $product->getTotalStock()
+                    ], 400);
+                }
             }
 
             $cartItem->update([

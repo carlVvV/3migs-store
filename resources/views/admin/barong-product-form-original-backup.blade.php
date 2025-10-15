@@ -353,13 +353,7 @@
                     </div>
                     
                     <div>
-                        <div class="flex items-center mb-2">
-                            <input type="hidden" name="has_variations" value="0">
-                            <input type="checkbox" id="has_variations" name="has_variations" value="1"
-                                   {{ old('has_variations', $barongProduct->has_variations ?? false ? 'checked' : '') }}
-                                   class="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                            <label for="has_variations" class="ml-2 text-sm font-medium text-gray-700">Has Variations</label>
-                        </div>
+                        <input type="hidden" name="has_variations" value="0">
                         
                         <!-- Size Stock Management -->
                         <div class="mt-4">
@@ -411,13 +405,10 @@
                 </div>
                 
                 <!-- Enhanced Variations Section -->
-                <div id="variationsSection" class="mt-6 {{ old('has_variations', $barongProduct->has_variations ?? false ? '' : 'hidden') }}">
+                <div id="variationsSection" class="hidden">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-medium text-gray-900">Product Variations</h3>
-                        <button type="button" id="addVariationBtn" 
-                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200">
-                            Add Variation
-                        </button>
+                        
                     </div>
                     
                     <div id="variationsContainer" class="space-y-4">
@@ -1716,25 +1707,13 @@ function submitProductForm() {
     const hasVariationsCheckbox = document.getElementById('has_variations');
     const variationsSection = document.getElementById('variationsSection');
     const stockSection = document.getElementById('stockSection');
-    const addVariationBtn = document.getElementById('addVariationBtn');
     const variationsContainer = document.getElementById('variationsContainer');
-    let variationIndex = {{ isset($barongProduct) && $barongProduct->variations ? count($barongProduct->variations) : 0 }};
+    let variationIndex = 0;
 
-    hasVariationsCheckbox.addEventListener('change', function() {
-        if (this.checked) {
-            variationsSection.classList.remove('hidden');
-            stockSection.classList.add('hidden');
-            document.getElementById('stock').required = false;
-        } else {
-            variationsSection.classList.add('hidden');
-            stockSection.classList.remove('hidden');
-            document.getElementById('stock').required = true;
-        }
-    });
-
-    addVariationBtn.addEventListener('click', function() {
-        addVariationRow();
-    });
+    // Force variations UI disabled; always show size stock management instead
+    if (variationsSection) { variationsSection.classList.add('hidden'); }
+    if (hasVariationsCheckbox) { hasVariationsCheckbox.checked = false; }
+    if (stockSection) { stockSection.classList.remove('hidden'); }
 
     function addVariationRow() {
         const variationDiv = document.createElement('div');

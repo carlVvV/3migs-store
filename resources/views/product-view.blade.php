@@ -113,7 +113,7 @@
                     </select>
                 </div>
                 
-                <!-- Size Selection -->
+                <!-- Stock / Size Selection -->
                 <div class="mb-6">
                     <div class="flex items-center justify-between mb-3">
                         <h3 class="text-lg font-medium text-gray-900">Size:</h3>
@@ -123,63 +123,54 @@
                             Refresh Stock
                         </button>
                     </div>
+                    @php
+                        $sizes = ['S', 'M', 'L', 'XL', 'XXL'];
+                        $rawStocks = $product->size_stocks ?? [];
+                        $sizeStocks = [];
+                        // If size stocks exist, use them; otherwise mirror simple stock across sizes so UI still renders
+                        if (is_array($rawStocks) && count($rawStocks) > 0) {
+                            foreach ($sizes as $s) { $sizeStocks[$s] = intval($rawStocks[$s] ?? 0); }
+                        } else {
+                            $simple = (int) ($product->total_stock ?? $product->stock ?? 0);
+                            foreach ($sizes as $s) { $sizeStocks[$s] = $simple; }
+                        }
+
+                        // Determine availability and default selection
+                        $hasAnyStock = false; foreach ($sizes as $s) { if (($sizeStocks[$s] ?? 0) > 0) { $hasAnyStock = true; break; } }
+                        $defaultSize = 'M';
+                        $selectedSize = null;
+                        foreach ($sizes as $s) {
+                            if (($sizeStocks[$s] ?? 0) > 0) {
+                                if ($s === $defaultSize) { $selectedSize = $s; break; }
+                                if ($selectedSize === null) { $selectedSize = $s; }
+                            }
+                        }
+                        if ($selectedSize === null) { $selectedSize = $defaultSize; }
+                    @endphp
+
                     <div class="flex space-x-3">
-                        @php
-                            $sizes = ['S', 'M', 'L', 'XL', 'XXL'];
-                            $sizeStocks = $product->size_stocks ?? [];
-                            
-                            // Find the first available size, default to M if available
-                            $defaultSize = 'M';
-                            $selectedSize = null;
-                            foreach($sizes as $size) {
-                                if (($sizeStocks[$size] ?? 0) > 0) {
-                                    if ($size === $defaultSize) {
-                                        $selectedSize = $size;
-                                        break;
-                                    } elseif (!$selectedSize) {
-                                        $selectedSize = $size;
-                                    }
-                                }
-                            }
-                            // If no size is available, don't select any
-                            if (!$selectedSize) {
-                                $selectedSize = $defaultSize; // Will be disabled anyway
-                            }
-                            
-                            // Check if any size has stock
-                            $hasAnyStock = false;
-                            foreach($sizes as $size) {
-                                if (($sizeStocks[$size] ?? 0) > 0) {
-                                    $hasAnyStock = true;
-                                    break;
-                                }
-                            }
-                        @endphp
-                        
-                        @foreach($sizes as $size)
-                            @php
-                                $stock = $sizeStocks[$size] ?? 0;
-                                $isAvailable = $stock > 0;
-                                $isSelected = $size === $selectedSize;
-                            @endphp
-                            
-                            <button class="px-6 py-3 border rounded-lg transition-colors size-btn {{ $isSelected ? 'bg-black text-white' : 'border-gray-300 text-gray-700 hover:border-gray-400' }} {{ !$isAvailable ? 'opacity-50 cursor-not-allowed' : '' }}" 
-                                    data-size="{{ $size }}" 
-                                    data-stock="{{ $stock }}"
-                                    onclick="selectSize('{{ $size }}', this)"
-                                    {{ !$isAvailable ? 'disabled' : '' }}
-                                    title="{{ $isAvailable ? "Stock: {$stock}" : 'Out of stock' }}">
-                                {{ $size }}
-                                @if($isAvailable)
-                                    <span class="text-xs ml-1">({{ $stock }})</span>
-                                @else
-                                    <span class="text-xs ml-1 text-red-500">(0)</span>
-                                @endif
-                            </button>
-                        @endforeach
+                        <div class="flex space-x-3">
+                            @foreach($sizes as $size)
+                                @php
+                                    $stock = $sizeStocks[$size] ?? 0;
+                                    $isAvailable = $stock > 0;
+                                    $isSelected = $size === $selectedSize;
+                                @endphp
+                                <button class="px-6 py-3 border rounded-lg transition-colors size-btn {{ $isSelected ? 'bg-black text-white' : 'border-gray-300 text-gray-700 hover:border-gray-400' }} {{ !$isAvailable ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                        data-size="{{ $size }}" data-stock="{{ $stock }}"
+                                        onclick="selectSize('{{ $size }}', this)" {{ !$isAvailable ? 'disabled' : '' }}
+                                        title="{{ $isAvailable ? "Stock: {$stock}" : 'Out of stock' }}">
+                                    {{ $size }}
+                                    @if($isAvailable)
+                                        <span class="text-xs ml-1">({{ $stock }})</span>
+                                    @else
+                                        <span class="text-xs ml-1 text-red-500">(0)</span>
+                                    @endif
+                                </button>
+                            @endforeach
+                        </div>
                     </div>
-                    
-                    @if(count(array_filter($sizeStocks)) === 0)
+                    @if(!$hasAnyStock)
                         <div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
                             <p class="text-sm text-red-800">
                                 <i class="fas fa-exclamation-triangle mr-1"></i>
