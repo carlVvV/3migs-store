@@ -311,12 +311,15 @@ class OrderController extends Controller
 
             DB::beginTransaction();
 
+            // Normalize payment method to satisfy DB enum (map 'ewallet' → 'gcash')
+            $dbPaymentMethod = $request->payment_method === 'ewallet' ? 'gcash' : $request->payment_method;
+
             // Create order
             $order = Order::create([
                 'user_id' => $user->id,
                 'order_number' => 'ORD-' . time() . '-' . rand(1000, 9999),
                 'status' => 'pending',
-                'payment_method' => $request->payment_method,
+                'payment_method' => $dbPaymentMethod,
                 'payment_status' => $request->payment_method === 'cod' ? 'pending' : 'pending',
                 'subtotal' => $subtotal,
                 'discount' => $discount,
