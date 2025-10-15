@@ -100,10 +100,24 @@ class BuxPostbackService
             return true; // Allow if no secret configured (development)
         }
 
-        $signature = $payload['signature'] ?? '';
-        $expectedSignature = $this->generateSignature($payload);
+        $provided = (string) ($payload['signature'] ?? '');
 
-        return hash_equals($expectedSignature, $signature);
+        // Exact sha1(req_id + status.toLowerCase() + '{' + secret + '}')
+        $reqId = (string) ($payload['req_id'] ?? $payload['refno'] ?? '');
+        $statusLower = strtolower((string) ($payload['status'] ?? ''));
+        $legacyString = $reqId . $statusLower . '{' . $this->webhookSecret . '}';
+        $expectedSha1 = sha1($legacyString);
+        if (hash_equals($expectedSha1, $provided)) {
+            return true;
+        }
+
+        Log::warning('Bux.ph signature mismatch', [
+            'provided' => $provided,
+            'expected_sha1' => $expectedSha1,
+            'req_id' => $reqId,
+            'status' => $statusLower,
+        ]);
+        return false;
     }
 
     /**
