@@ -91,27 +91,5 @@
         @endif
     </div>
 
-    <!-- Video Upload -->
-    <div class="mt-6">
-        <div class="flex items-center mb-4">
-            <input type="checkbox" id="enable_video" name="enable_video" 
-                   {{ old('enable_video', isset($barongProduct) && $barongProduct->video_url ? 'checked' : '') }}
-                   class="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-            <label for="enable_video" class="ml-2 text-sm font-medium text-gray-700">Enable Video</label>
-        </div>
-        <div id="videoSection" class="{{ old('enable_video', isset($barongProduct) && $barongProduct->video_url ? '' : 'hidden') }}">
-            <label for="video_url" class="block text-sm font-medium text-gray-700 mb-2">Video URL</label>
-            <input type="url" id="video_url" name="video_url" 
-                   value="{{ old('video_url', $barongProduct->video_url ?? '') }}" 
-                   placeholder="https://youtube.com/watch?v=... or https://vimeo.com/..."
-                   autocomplete="url"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <p class="mt-1 text-xs text-gray-500">YouTube or Vimeo URL</p>
-            
-            <!-- Video Preview -->
-            <div id="videoPreview" class="mt-4 hidden">
-                <iframe id="videoFrame" class="w-full h-64 rounded-lg" frameborder="0" allowfullscreen></iframe>
-            </div>
-        </div>
-    </div>
+    <!-- Video Upload removed per request -->
 </div>

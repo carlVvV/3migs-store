@@ -155,5 +155,6 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 
 // Public payments webhook endpoints (no auth, no CSRF)
 Route::prefix('v1')->group(function () {
-    Route::post('/payments/bux/webhook', [OrderController::class, 'buxWebhook']);
+    Route::post('/payments/bux/webhook', [OrderController::class, 'buxWebhook'])
+        ->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
 });

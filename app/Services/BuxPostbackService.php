@@ -22,7 +22,8 @@ class BuxPostbackService
     {
         try {
             // Normalize id/key for idempotency
-            $ref = $payload['refno'] ?? $payload['req_id'] ?? null;
+            $ref = $payload['req_id'] ?? null;
+            Log::info('Bux.ph postback reference', ['ref' => $ref]);
 
             // Validate the postback signature (will be upgraded to raw-body validation in controller)
             if (!$this->validateSignature($payload)) {
@@ -35,9 +36,24 @@ class BuxPostbackService
             // Extract order information
             $orderNumber = $payload['req_id'] ?? $payload['refno'] ?? null;
             $status = $payload['status'] ?? null;
+            // Minimal payload support: transaction/amount/method may be absent
             $transactionId = $payload['transaction_id'] ?? ($payload['refno'] ?? null);
             $amount = $payload['amount'] ?? null;
             $paymentMethod = $payload['payment_method'] ?? ($payload['method'] ?? null);
+
+            // Optional merchant validation if configured
+            $configuredClientId = config('services.bux.client_id');
+            if (!empty($configuredClientId)) {
+                $incomingClientId = $payload['client_id'] ?? null;
+                if ($incomingClientId !== $configuredClientId) {
+                    Log::warning('Bux.ph client_id mismatch', [
+                        'expected' => $configuredClientId,
+                        'received' => $incomingClientId,
+                        'order_number' => $orderNumber,
+                    ]);
+                    return ['success' => false, 'message' => 'Invalid client_id'];
+                }
+            }
 
             if (!$orderNumber) {
                 Log::error('Bux.ph postback missing order number', ['payload' => $payload]);
@@ -120,22 +136,7 @@ class BuxPostbackService
         return false;
     }
 
-    /**
-     * Generate expected signature for validation
-     */
-    private function generateSignature(array $payload): string
-    {
-        // Remove signature from payload for calculation
-        $dataToSign = $payload;
-        unset($dataToSign['signature']);
-
-        // Sort by keys and create query string
-        ksort($dataToSign);
-        $queryString = http_build_query($dataToSign);
-
-        // Generate HMAC signature
-        return hash_hmac('sha256', $queryString, $this->webhookSecret);
-    }
+    // generateSignature removed; using exact sha1 scheme instead
 
     /**
      * Process order status based on payment notification

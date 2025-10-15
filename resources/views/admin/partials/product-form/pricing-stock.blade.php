@@ -16,22 +16,7 @@
             </div>
         </div>
         
-        <div>
-            <div class="flex items-center mb-2">
-                <!-- Special price disabled per request -->
-                <input type="hidden" name="enable_special_price" value="0">
-                <input type="checkbox" id="enable_special_price" name="enable_special_price" value="1" class="hidden" disabled>
-                <label for="enable_special_price" class="ml-2 text-sm font-medium text-gray-400 line-through">Enable Special Price</label>
-            </div>
-            <div id="specialPriceSection" class="hidden">
-                <div class="relative">
-                    <span class="absolute left-3 top-2 text-gray-500">₱</span>
-                    <input type="number" id="special_price" name="special_price" 
-                           value="" step="0.01" min="0" autocomplete="off" disabled
-                           class="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-md bg-gray-100 cursor-not-allowed">
-                </div>
-            </div>
-        </div>
+        <!-- Special price removed per request -->
         
         <div>
             <input type="hidden" name="has_variations" value="0">

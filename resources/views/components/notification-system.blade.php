@@ -1,4 +1,4 @@
-s<!-- Notification Container -->
+<!-- Notification Container -->
 <div id="notification-container" class="fixed right-4 z-50 space-y-2" style="top: 0px;">
     <!-- Notifications will be dynamically inserted here -->
 </div>
