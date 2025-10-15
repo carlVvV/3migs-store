@@ -48,7 +48,7 @@
                     <div class="ml-5 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Completed Orders</dt>
-                            <dd class="text-lg font-medium text-gray-900">{{ $orders->where('status', 'completed')->count() }}</dd>
+                            <dd class="text-lg font-medium text-gray-900">{{ $orders->where('status', 'delivered')->count() }}</dd>
                         </dl>
                     </div>
                 </div>
@@ -84,7 +84,7 @@
                         <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                         <option value="processing" {{ request('status') == 'processing' ? 'selected' : '' }}>Processing</option>
                         <option value="shipped" {{ request('status') == 'shipped' ? 'selected' : '' }}>Shipped</option>
-                        <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
+                        <option value="delivered" {{ request('status') == 'delivered' ? 'selected' : '' }}>Delivered</option>
                         <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                     </select>
                 </div>
@@ -148,7 +148,7 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                        @if($order->status === 'completed') bg-green-100 text-green-800
+                                        @if($order->status === 'delivered') bg-green-100 text-green-800
                                         @elseif($order->status === 'pending') bg-yellow-100 text-yellow-800
                                         @elseif($order->status === 'processing') bg-blue-100 text-blue-800
                                         @elseif($order->status === 'shipped') bg-purple-100 text-purple-800
@@ -414,7 +414,7 @@ function openAdminOrderUpdateModal(orderId, currentStatus, currentPayment) {
                                 <option value="processing">Processing</option>
                                 <option value="shipped">Shipped</option>
                                 <option value="delivered">Delivered</option>
-                                <option value="completed">Completed</option>
+                                <option value="delivered">Delivered</option>
                                 <option value="cancelled">Cancelled</option>
                                 <option value="refunded">Refunded</option>
                             </select>

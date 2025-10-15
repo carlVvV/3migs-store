@@ -526,9 +526,10 @@ class AdminController extends Controller
      */
     public function updateOrderStatus(Request $request, int $id)
     {
+        // Align allowed status values with DB enum (no 'completed' if DB doesn't allow it)
         $request->validate([
-            'status' => 'required|in:pending,processing,shipped,delivered,completed,cancelled,refunded',
-            'payment_status' => 'nullable|in:pending,paid,failed,refunded',
+            'status' => 'required|in:pending,processing,shipped,delivered,cancelled,refunded',
+            'payment_status' => 'nullable|in:pending,paid,failed,refunded,expired',
         ]);
 
         $order = Order::find($id);
@@ -539,7 +540,10 @@ class AdminController extends Controller
             ], 404);
         }
 
-        $order->status = $request->string('status');
+        $status = (string) $request->string('status');
+        // Map UI 'completed' to 'delivered' to satisfy DB constraint
+        if ($status === 'completed') { $status = 'delivered'; }
+        $order->status = $status;
         if ($request->filled('payment_status')) {
             $order->payment_status = $request->string('payment_status');
         }
