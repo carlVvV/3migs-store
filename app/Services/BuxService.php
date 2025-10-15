@@ -26,13 +26,24 @@ class BuxService
         // Use the correct checkout URL for generating checkout
         $url = $this->checkoutUrl;
 
-        // Add client_id (merchantId) to the payload
-        $payloadWithClientId = array_merge($payload, [
+        // Prepare the payload according to Bux.ph API format
+        $apiPayload = [
             'client_id' => $this->merchantId,
-        ]);
+            'req_id' => $payload['req_id'],
+            'amount' => $payload['amount'],
+            'description' => $payload['description'],
+            'email' => $payload['email'],
+            'expiry' => $payload['expiry'] ?? 2,
+            'notification_url' => $payload['notification_url'],
+            'redirect_url' => $payload['redirect_url'],
+            'name' => $payload['name'],
+            'contact' => $payload['contact'],
+            'param1' => $payload['param1'] ?? $payload['req_id'],
+        ];
 
         // Use x-api-key authentication as specified
-        $response = $this->requestWithAuthStyle($url, $payloadWithClientId, 'x-api-key');
+        $response = $this->requestWithAuthStyle($url, $apiPayload, 'x-api-key');
+        
         if ($response->ok()) {
             return [
                 'success' => true,
@@ -44,13 +55,25 @@ class BuxService
             'url' => $url,
             'status' => $response->status(),
             'body' => $response->body(),
-            'payload' => $payloadWithClientId,
+            'payload' => $apiPayload,
+            'headers' => $response->headers(),
         ]);
+
+        // Handle specific error cases
+        $errorMessage = 'Payment service temporarily unavailable';
+        if ($response->status() == 403) {
+            $errorMessage = 'Payment service authentication failed. Please contact support.';
+        } elseif ($response->status() == 400) {
+            $errorMessage = 'Invalid payment request. Please check your information.';
+        } elseif ($response->status() == 500) {
+            $errorMessage = 'Payment service error. Please try again later.';
+        }
 
         return [
             'success' => false,
             'status' => $response->status(),
-            'error' => $response->body(),
+            'error' => $errorMessage,
+            'raw_error' => $response->body(),
         ];
     }
     private function requestWithAuthStyle(string $url, array $payload, string $style)
