@@ -111,7 +111,6 @@
             </div>
 
             <!-- Remove left sidebar entirely for this view to maximize space -->
-            </div>
             
             <!-- Main Content -->
             <div class="flex-1 max-w-screen-xl mx-auto w-full">
@@ -167,38 +166,45 @@
                 </div>
                 
                 <!-- Products Grid -->
-                <div id="products-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                <div id="products-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     @forelse($barongProducts as $product)
-                        <a href="{{ route('product.details', $product->slug) }}" class="bg-white rounded-lg shadow-md overflow-hidden relative product-card hover:shadow-lg transition-shadow cursor-pointer">
+                        <div class="bg-white rounded-lg shadow-md overflow-hidden relative product-card hover:shadow-lg transition-shadow flex flex-col">
                             @if($product->is_on_sale)
-                            <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-{{ $product->discount_percentage }}%</div>
+                                <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-{{ $product->discount_percentage }}%</div>
                             @endif
-                            <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full h-48 object-cover">
-                            <div class="p-4">
-                                <h3 class="font-semibold text-gray-800">{{ $product->name }}</h3>
-                                <div class="flex items-center mt-2">
-                                    @if($product->is_on_sale)
-                                    <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
-                                    <span class="text-gray-500 text-sm line-through ml-2">₱{{ number_format($product->price, 0) }}</span>
-                                    @else
-                                    <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
-                                    @endif
-                                </a>
-                                <div class="flex items-center text-sm text-gray-600 mt-1">
-                                    @for($i = 0; $i < floor($product->average_rating); $i++)
-                                        <i class="fas fa-star text-yellow-400"></i>
-                                    @endfor
-                                    @if($product->average_rating - floor($product->average_rating) > 0)
-                                        <i class="fas fa-star-half-alt text-yellow-400"></i>
-                                    @endif
-                                    @for($i = 0; $i < (5 - ceil($product->average_rating)); $i++)
-                                        <i class="far fa-star text-yellow-400"></i>
-                                    @endfor
-                                    <span class="ml-1">({{ $product->review_count }})</span>
-                                </a>
-                                <button class="mt-4 w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 block text-center add-to-cart-btn" data-product-id="{{ $product->id }}">Add To Cart</button>
+                            <a href="{{ route('product.details', $product->slug) }}" class="block flex-grow">
+                                <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full h-48 object-cover">
+                                <div class="p-4">
+                                    <h3 class="font-semibold text-gray-800">{{ $product->name }}</h3>
+                                    <div class="flex items-center mt-2">
+                                        @if($product->is_on_sale)
+                                            <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
+                                            <span class="text-gray-500 text-sm line-through ml-2">₱{{ number_format($product->price, 0) }}</span>
+                                        @else
+                                            <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
+                                        @endif
+                                    </div>
+                                    <div class="flex items-center text-sm text-gray-600 mt-1">
+                                        @for($i = 0; $i < floor($product->average_rating); $i++)
+                                            <i class="fas fa-star text-yellow-400"></i>
+                                        @endfor
+                                        @if($product->average_rating - floor($product->average_rating) > 0)
+                                            <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                        @endif
+                                        @for($i = 0; $i < (5 - ceil($product->average_rating)); $i++)
+                                            <i class="far fa-star text-yellow-400"></i>
+                                        @endfor
+                                        <span class="ml-1">({{ $product->review_count }})</span>
+                                    </div>
+                                </div>
                             </a>
-                        </a>
+                            <button 
+                                class="m-4 mt-auto w-[calc(100%-2rem)] bg-black text-white py-2 rounded-md hover:bg-gray-800 text-center add-to-cart-btn"
+                                data-product-id="{{ $product->id }}"
+                                onclick="addToCart({{ $product->id }})">
+                                Add To Cart
+                            </button>
+                        </div>
                     @empty
                         <!-- Empty State -->
                         <div class="col-span-full flex items-center justify-center min-h-[80vh] px-4">

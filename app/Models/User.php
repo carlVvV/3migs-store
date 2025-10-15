@@ -26,7 +26,6 @@ class User extends Authenticatable
         'address',
         'role',
         'email_notifications',
-        'sms_notifications',
         'marketing_emails',
     ];
 
@@ -51,7 +50,6 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'email_notifications' => 'boolean',
-            'sms_notifications' => 'boolean',
             'marketing_emails' => 'boolean',
         ];
     }
