@@ -100,29 +100,28 @@ class BarongProduct extends Model
      */
     protected static function calculateAvailability($product)
     {
-        // Check if product has variations
-        if ($product->has_variations && $product->variations) {
-            // For products with variations, check if any variation has stock
-            foreach ($product->variations as $variation) {
-                if (isset($variation['stock']) && $variation['stock'] > 0) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        
-        // Check size stocks
+        // Prefer size-based stocks when present
         if ($product->size_stocks && is_array($product->size_stocks)) {
             foreach ($product->size_stocks as $stock) {
-                if ($stock > 0) {
+                if (intval($stock) > 0) {
                     return true;
                 }
             }
             return false;
         }
-        
-        // Check main stock
-        return $product->stock > 0;
+
+        // Otherwise fall back to variations
+        if ($product->has_variations && $product->variations) {
+            foreach ($product->variations as $variation) {
+                if (isset($variation['stock']) && intval($variation['stock']) > 0) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Finally, fallback to simple stock
+        return intval($product->stock) > 0;
     }
 
     /**
@@ -252,17 +251,17 @@ class BarongProduct extends Model
      */
     public function getTotalStock(): int
     {
-        // If product has variations, sum their stock
+        // Prefer size-based stocks when present
+        if (!empty($this->size_stocks) && is_array($this->size_stocks)) {
+            $sizeTotal = array_sum(array_map('intval', $this->size_stocks));
+            return (int) $sizeTotal;
+        }
+
+        // Otherwise sum variation stocks
         if ($this->has_variations && !empty($this->variations) && is_array($this->variations)) {
             $variationStocks = array_column($this->variations, 'stock');
             $variationTotal = array_sum(array_map('intval', $variationStocks));
             return (int) $variationTotal;
-        }
-
-        // If product uses size-based stocks, sum all sizes
-        if (!empty($this->size_stocks) && is_array($this->size_stocks)) {
-            $sizeTotal = array_sum(array_map('intval', $this->size_stocks));
-            return (int) $sizeTotal;
         }
 
         // Fallback to simple stock column

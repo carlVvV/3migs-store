@@ -199,16 +199,9 @@ class AdminController extends Controller
                 'cover_image_index' => $request->cover_image_index,
             ]);
 
-            // Process variations using Eloquent collections
-            Log::info('Processing variations...');
-            $productData['variations'] = $this->processVariations($request->variations ?? []);
-            $productData['has_variations'] = !empty($productData['variations']);
-
-            Log::info('Variations processed:', [
-                'variations' => $productData['variations'],
-                'has_variations' => $productData['has_variations'],
-                'variation_count' => count($productData['variations']),
-            ]);
+            // Variations disabled: ensure cleared and rely on size_stocks
+            $productData['variations'] = [];
+            $productData['has_variations'] = false;
 
             // Set defaults using Eloquent
             $productData['is_available'] = true;
@@ -422,19 +415,9 @@ class AdminController extends Controller
                 Log::info('No cover image index provided or no images available');
             }
 
-            // Process variations
-            if ($request->has('variations')) {
-                $productData['variations'] = $this->processVariations($request->variations);
-                $productData['has_variations'] = !empty($productData['variations']);
-            } else {
-                // If no variations provided, keep existing variations and set has_variations accordingly
-                $productData['has_variations'] = !empty($barongProduct->variations);
-            }
-
-            // Ensure has_variations is always set (fallback to request value)
-            if (!isset($productData['has_variations'])) {
-                $productData['has_variations'] = $request->boolean('has_variations', false);
-            }
+            // Variations disabled in UI: always clear and rely on size_stocks
+            $productData['variations'] = [];
+            $productData['has_variations'] = false;
 
             Log::info('Variations processing completed:', [
                 'has_variations' => $productData['has_variations'],
@@ -449,9 +432,12 @@ class AdminController extends Controller
             
             // Calculate total stock from size stocks
             if (isset($productData['size_stocks']) && is_array($productData['size_stocks'])) {
-                $productData['stock'] = array_sum($productData['size_stocks']);
+                // Normalize to integers before summing
+                $normalized = array_map('intval', $productData['size_stocks']);
+                $productData['size_stocks'] = $normalized;
+                $productData['stock'] = array_sum($normalized);
                 Log::info('Total stock calculated from size stocks (update):', [
-                    'size_stocks' => $productData['size_stocks'],
+                    'size_stocks' => $normalized,
                     'total_stock' => $productData['stock']
                 ]);
             } else {

@@ -165,7 +165,7 @@ function createWishlistItemElement(item) {
             </div>
             <div class="flex space-x-2">
                 <button onclick="event.stopPropagation(); addToCart(${item.product_id})" 
-                        class="flex-1 ${isAvailable ? 'bg-gray-600 hover:bg-gray-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'} py-2 px-4 rounded-md transition-colors text-sm"
+                        class="flex-1 bg-black text-white ${isAvailable ? 'hover:bg-gray-900' : 'bg-gray-300 text-gray-500 cursor-not-allowed'} py-2 px-4 rounded-md transition-colors text-sm"
                         ${!isAvailable ? 'disabled' : ''}>
                     <i class="fas fa-shopping-cart mr-1"></i> ${isAvailable ? 'Add to Cart' : 'Out of Stock'}
                 </button>
