@@ -27,6 +27,34 @@ class CartController extends Controller
                 $totalQuantity = 0;
 
                 foreach ($sessionCart as $productId => $details) {
+                    // Handle custom barong items
+                    if (is_string($productId) && str_starts_with($productId, 'custom_')) {
+                        $subtotal = ($details['price'] ?? 0) * ($details['quantity'] ?? 1);
+                        $total += $subtotal;
+                        $totalQuantity += $details['quantity'] ?? 1;
+
+                        $items[] = [
+                            'id' => $productId,
+                            'product_id' => null, // Custom items don't have a product_id
+                            'name' => $details['name'] ?? 'Custom Barong',
+                            'slug' => null,
+                            'price' => $details['price'] ?? 0,
+                            'current_price' => $details['price'] ?? 0,
+                            'special_price' => null,
+                            'is_on_sale' => false,
+                            'discount_percentage' => 0,
+                            'quantity' => $details['quantity'] ?? 1,
+                            'subtotal' => $subtotal,
+                            'category' => null,
+                            'images' => [$details['image'] ?? '/images/custom-barong-placeholder.jpg'],
+                            'stock_quantity' => 999, // Custom items have unlimited stock
+                            'added_at' => $details['added_at'] ?? now(),
+                            'is_custom' => true,
+                            'custom_options' => $details['custom_options'] ?? [],
+                        ];
+                        continue;
+                    }
+
                     $product = BarongProduct::with('category')->find($productId);
                     
                     if ($product && $product->is_available) {

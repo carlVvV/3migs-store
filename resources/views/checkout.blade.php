@@ -242,12 +242,22 @@
                         </div>
                         
                         <!-- Cash on Delivery Option -->
-                        <div class="flex items-center p-3 border border-gray-200 rounded-md hover:bg-gray-50">
-                            <input type="radio" name="payment_method" id="cod" value="cod" checked
+                        <div class="flex items-center p-3 border border-gray-200 rounded-md hover:bg-gray-50" id="cod-option">
+                            <input type="radio" name="payment_method" id="cod" value="cod" 
                                    class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300">
                             <label for="cod" class="ml-3">
                                 <span class="text-sm font-medium text-gray-700">Cash on delivery</span>
                             </label>
+                        </div>
+                        
+                        <!-- Custom Barong Notice -->
+                        <div id="custom-barong-notice" class="bg-yellow-50 border border-yellow-200 rounded-md p-3 mt-3" style="display: none;">
+                            <div class="flex items-center">
+                                <i class="fas fa-info-circle text-yellow-600 mr-2"></i>
+                                <span class="text-sm text-yellow-800">
+                                    Custom barong orders require online payment only. Cash on delivery is not available for custom designs.
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -413,6 +423,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.success && data.items && data.items.length > 0) {
                     displayOrderItems(data.items);
                     updateOrderTotals(data);
+                    checkForCustomBarong(data.items);
                     document.getElementById('checkout-content').classList.remove('hidden');
                     document.getElementById('empty-cart-message').classList.add('hidden');
                     document.getElementById('not-logged-in-message').classList.add('hidden');
@@ -456,8 +467,32 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateOrderTotals(data) {
-        document.getElementById('order-subtotal').textContent = `₱${data.subtotal || 0}`;
-        document.getElementById('order-total').textContent = `₱${data.total || 0}`;
+        document.getElementById('order-subtotal').textContent = `₱${(data.subtotal || 0).toFixed(2)}`;
+        document.getElementById('order-total').textContent = `₱${(data.total || 0).toFixed(2)}`;
+    }
+
+    function checkForCustomBarong(items) {
+        const hasCustomBarong = items.some(item => 
+            item.id && item.id.startsWith('custom_') || 
+            item.name && item.name.toLowerCase().includes('custom')
+        );
+        
+        if (hasCustomBarong) {
+            // Disable COD option
+            const codOption = document.getElementById('cod-option');
+            const codInput = document.getElementById('cod');
+            const ewalletInput = document.getElementById('ewallet');
+            
+            codOption.style.opacity = '0.5';
+            codOption.style.pointerEvents = 'none';
+            codInput.disabled = true;
+            
+            // Auto-select online payment
+            ewalletInput.checked = true;
+            
+            // Show notice
+            document.getElementById('custom-barong-notice').style.display = 'block';
+        }
     }
 
     function setupFormValidation() {

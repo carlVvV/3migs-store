@@ -132,7 +132,7 @@ class CustomDesignController extends Controller
         $request->replace($payload);
 
         $validator = Validator::make($request->all(), [
-            'fabric' => 'required|string|in:jusilyn,hugo_boss,pina_cocoon,gusot_mayaman',
+            'fabric' => 'required|string|in:pina,jusi,cotton,linen,silk,jusilyn,hugo_boss,pina_cocoon,gusot_mayaman',
             'color' => 'required|string|in:white,cream,ivory,beige,light-blue,light-pink',
             'embroidery' => 'nullable|string|in:none,simple,detailed,custom',
             'quantity' => 'required|integer|min:1|max:10',
