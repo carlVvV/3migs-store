@@ -41,6 +41,7 @@ class BarongProduct extends Model
         'fabric' => 'array',
         'embroidery_style' => 'array',
         'colors' => 'array',
+        'collar_type' => 'array',
         'design_details' => 'array',
         'size_stocks' => 'array',
         'variations' => 'array',
