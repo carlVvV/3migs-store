@@ -361,15 +361,27 @@ class OrderController extends Controller
                     'total_price' => $cartItem->price * $cartItem->quantity
                 ]);
 
-                // Update product stock
+                // Update product stock (size-aware)
                 $product = $cartItem->product;
-                if ($product->has_variations && !empty($product->variations)) {
-                    // For products with variations, reduce variation stock
-                    $variations = $product->variations;
-                    if (!empty($variations)) {
-                        $variations[0]['stock'] = max(0, $variations[0]['stock'] - $cartItem->quantity);
-                        $product->variations = $variations;
+                $usesSizeStocks = is_array($product->size_stocks) && count($product->size_stocks) > 0;
+                if ($usesSizeStocks) {
+                    // Determine size from cart item or attributes
+                    $size = $cartItem->size ?? ($cartItem->product_attributes['size'] ?? null);
+                    if (!$size) {
+                        // Try to read size stored in user cart relation (if present)
+                        $size = $cartItem->getAttribute('size');
+                    }
+                    $sizeStocks = $product->size_stocks ?? [];
+                    if ($size && isset($sizeStocks[$size])) {
+                        $sizeStocks[$size] = max(0, intval($sizeStocks[$size]) - intval($cartItem->quantity));
+                        $product->size_stocks = $sizeStocks;
+                        // Also maintain aggregate stock for quick displays
+                        $product->stock = array_sum(array_map('intval', $sizeStocks));
+                        $product->is_available = $product->stock > 0;
                         $product->save();
+                    } else {
+                        // Fallback: decrement overall stock
+                        $product->decrement('stock', $cartItem->quantity);
                     }
                 } else {
                     $product->decrement('stock', $cartItem->quantity);
