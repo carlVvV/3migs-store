@@ -151,6 +151,14 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     
     // Cart sync route (for authenticated users)
     Route::post('/cart/sync', [CartController::class, 'sync']);
+    
+            // Custom Design Orders
+            Route::prefix('custom-design-orders')->group(function () {
+                Route::get('/', [\App\Http\Controllers\CustomDesignOrderController::class, 'index']);
+                Route::get('/{id}', [\App\Http\Controllers\CustomDesignOrderController::class, 'show']);
+                Route::post('/', [\App\Http\Controllers\CustomDesignOrderController::class, 'store']);
+                Route::put('/{id}', [\App\Http\Controllers\CustomDesignOrderController::class, 'update']);
+            });
 });
 
 // Public payments webhook endpoints (no auth, no CSRF)

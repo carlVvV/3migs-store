@@ -208,8 +208,33 @@
                         <!-- Items will be loaded dynamically -->
                     </div>
                     
+                    
                     <!-- Order Totals -->
                     <div class="border-t border-gray-200 pt-4 space-y-2">
+                        <!-- Custom Order Pricing Breakdown -->
+                        <div id="custom-pricing-breakdown" class="hidden space-y-1 text-sm border-b border-gray-200 pb-3">
+                            <div class="flex justify-between">
+                                <span>Fabric Cost:</span>
+                                <span id="breakdown-fabric-cost">₱0.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Labor Cost:</span>
+                                <span>₱1,500.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Embroidery:</span>
+                                <span id="breakdown-embroidery-cost">₱0.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Yardage:</span>
+                                <span id="breakdown-yardage-cost">₱0.00</span>
+                            </div>
+                            <div class="flex justify-between border-t pt-1">
+                                <span>Per Unit:</span>
+                                <span id="breakdown-per-unit">₱0.00</span>
+                            </div>
+                        </div>
+                        
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-600">Subtotal:</span>
                             <span id="order-subtotal" class="font-medium">₱0.00</span>
@@ -414,10 +439,94 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('place-order-btn').addEventListener('click', placeOrder);
 
     function loadOrderSummary() {
-        // This function only runs for logged-in users
+        console.log('Loading checkout order summary...');
+        
+        // Check if we have a custom design order ID from session storage
+        const customDesignOrderId = sessionStorage.getItem('customDesignOrderId');
+        
+        if (customDesignOrderId) {
+            console.log('Custom design order ID found:', customDesignOrderId);
+            console.log('Validating custom design order...');
+            loadCustomDesignOrder(customDesignOrderId);
+        } else {
+            console.log('No custom design order ID, loading regular cart');
+            console.log('Validating regular cart items...');
+            loadRegularCart();
+        }
+    }
+
+    function loadCustomDesignOrder(orderId) {
+        console.log('Loading custom design order:', orderId);
+        
+        // Validate order ID
+        if (!orderId || orderId === 'null' || orderId === 'undefined') {
+            console.error('Invalid custom design order ID:', orderId);
+            loadRegularCart();
+            return;
+        }
+        
+        fetch(`/api/v1/custom-design-orders/${orderId}`)
+            .then(response => {
+                console.log('Custom design order API response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Custom design order response:', data);
+                document.getElementById('checkout-loading').classList.add('hidden');
+                
+                if (data.success && data.data) {
+                    const order = data.data;
+                    console.log('Custom design order validated successfully:', order);
+                    
+                    // Validate pricing data
+                    if (!order.pricing || !order.pricing.total) {
+                        console.warn('Custom design order missing pricing data, using fallback');
+                        order.pricing = {
+                            fabric_cost: 0,
+                            embroidery_cost: 0,
+                            yardage_cost: 0,
+                            total_per_unit: order.total_amount || 0,
+                            total: order.total_amount || 0
+                        };
+                    }
+                    
+                    // Display custom barong item
+                    displayCustomOrderItem(order);
+                    updateCustomOrderTotals(order);
+                    
+                    // Enable custom barong features
+                    enableCustomBarongMode();
+                    
+                    document.getElementById('checkout-content').classList.remove('hidden');
+                    document.getElementById('empty-cart-message').classList.add('hidden');
+                    document.getElementById('not-logged-in-message').classList.add('hidden');
+                    
+                    console.log('Custom design order checkout initialized successfully');
+                } else {
+                    console.error('Failed to load custom design order - invalid data:', data);
+                    showNotification('Failed to load custom design order. Please try again.', 'error');
+                    // Fallback to regular cart
+                    loadRegularCart();
+                }
+            })
+            .catch(error => {
+                console.error('Error loading custom design order:', error);
+                showNotification('Error loading custom design order. Please try again.', 'error');
+                // Fallback to regular cart
+                loadRegularCart();
+            });
+    }
+
+    function loadRegularCart() {
+        console.log('Loading regular cart...');
+        
         fetch('/api/v1/cart')
             .then(response => response.json())
             .then(data => {
+                console.log('Cart API response:', data);
                 document.getElementById('checkout-loading').classList.add('hidden');
                 
                 if (data.success && data.items && data.items.length > 0) {
@@ -439,8 +548,110 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('checkout-loading').classList.add('hidden');
                 document.getElementById('checkout-content').classList.add('hidden');
                 document.getElementById('empty-cart-message').classList.remove('hidden');
-                document.getElementById('not-logged-in-message').classList.add('hidden');
             });
+    }
+
+    function displayCustomOrderItem(order) {
+        console.log('Displaying custom order item:', order);
+        const container = document.getElementById('order-items');
+        container.innerHTML = '';
+        
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'flex items-center justify-between py-4 border-b border-gray-200';
+        
+        const pricing = order.pricing || {};
+        const measurements = order.measurements || {};
+        
+        itemDiv.innerHTML = `
+            <div class="flex-1">
+                <h3 class="text-lg font-semibold text-gray-900">Custom Barong</h3>
+                <div class="text-sm text-gray-600 mt-1">
+                    <p><strong>Fabric:</strong> ${order.fabric}</p>
+                    <p><strong>Color:</strong> ${order.color}</p>
+                    <p><strong>Embroidery:</strong> ${order.embroidery || 'None'}</p>
+                    <p><strong>Quantity:</strong> ${order.quantity}</p>
+                    <p><strong>Fabric Yardage:</strong> ${order.fabric_yardage} yards</p>
+                    <div class="mt-2">
+                        <p class="font-medium">Measurements:</p>
+                        <p>Chest: ${measurements.chest || 0}" | Waist: ${measurements.waist || 0}" | Length: ${measurements.length || 0}"</p>
+                        <p>Shoulder: ${measurements.shoulder_width || 0}" | Sleeve: ${measurements.sleeve_length || 0}"</p>
+                    </div>
+                    ${order.reference_image ? `<div class="mt-2"><p class="font-medium">Reference Image:</p><img src="/storage/${order.reference_image}" alt="Reference image" class="max-w-xs max-h-32 rounded-md mt-1"></div>` : ''}
+                    ${order.additional_notes ? `<p class="mt-1"><strong>Notes:</strong> ${order.additional_notes}</p>` : ''}
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-lg font-semibold text-gray-900">
+                    ₱${(pricing.total || 0).toFixed(2)}
+                </div>
+                <div class="text-sm text-gray-600">
+                    <div>Qty: ${order.quantity} × ₱${(pricing.total_per_unit || pricing.total || 0).toFixed(2)}</div>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(itemDiv);
+    }
+
+    function updateCustomOrderTotals(order) {
+        console.log('Updating custom order totals:', order);
+        const pricing = order.pricing || {};
+        
+        // Show and populate custom pricing breakdown
+        const customPricingBreakdown = document.getElementById('custom-pricing-breakdown');
+        if (customPricingBreakdown) {
+            customPricingBreakdown.classList.remove('hidden');
+            document.getElementById('breakdown-fabric-cost').textContent = `₱${(pricing.fabric_cost || 0).toFixed(2)}`;
+            document.getElementById('breakdown-embroidery-cost').textContent = `₱${(pricing.embroidery_cost || 0).toFixed(2)}`;
+            document.getElementById('breakdown-yardage-cost').textContent = `₱${(pricing.yardage_cost || 0).toFixed(2)}`;
+            document.getElementById('breakdown-per-unit').textContent = `₱${(pricing.total_per_unit || pricing.total || 0).toFixed(2)}`;
+        }
+        
+        // Update main totals
+        document.getElementById('order-subtotal').textContent = `₱${(pricing.total || 0).toFixed(2)}`;
+        document.getElementById('order-total').textContent = `₱${(pricing.total || 0).toFixed(2)}`;
+        
+        // Hide shipping and coupon sections for custom orders
+        const shippingSection = document.querySelector('.shipping-section');
+        const couponSection = document.querySelector('.coupon-section');
+        if (shippingSection) shippingSection.style.display = 'none';
+        if (couponSection) couponSection.style.display = 'none';
+    }
+
+    function enableCustomBarongMode() {
+        console.log('Enabling custom barong mode');
+        
+        // Disable COD option
+        const codRadio = document.getElementById('cod');
+        if (codRadio) {
+            codRadio.disabled = true;
+            codRadio.checked = false;
+        }
+        
+        // Enable online payment
+        const onlineRadio = document.getElementById('ewallet');
+        if (onlineRadio) {
+            onlineRadio.checked = true;
+        }
+        
+        // Show custom barong notice
+        const customNotice = document.getElementById('custom-barong-notice');
+        if (customNotice) {
+            customNotice.style.display = 'block';
+        }
+        
+        // Update COD label to show it's disabled
+        const codLabel = document.querySelector('label[for="cod"]');
+        if (codLabel) {
+            codLabel.innerHTML = 'Cash on Delivery <span class="text-red-500 text-sm">(Not available for custom barong)</span>';
+        }
+        
+        // Disable the entire COD option container
+        const codOption = document.getElementById('cod-option');
+        if (codOption) {
+            codOption.style.opacity = '0.5';
+            codOption.style.pointerEvents = 'none';
+        }
     }
 
     function displayOrderItems(items) {
@@ -632,6 +843,104 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function placeOrder() {
+        console.log('Placing order...');
+        
+        // Check if we have a custom design order ID
+        const customDesignOrderId = sessionStorage.getItem('customDesignOrderId');
+        
+        if (customDesignOrderId) {
+            console.log('Processing custom design order:', customDesignOrderId);
+            await processCustomDesignOrder(customDesignOrderId);
+        } else {
+            console.log('Processing regular order');
+            await processRegularOrder();
+        }
+    }
+
+    async function processCustomDesignOrder(orderId) {
+        console.log('Processing custom design order:', orderId);
+        
+        // Validate billing information
+        const billingData = validateBillingForm();
+        if (!billingData) {
+            return;
+        }
+
+        // Get payment method
+        const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
+        console.log('Payment method:', paymentMethod);
+
+        if (paymentMethod === 'ewallet') {
+            // Process online payment for custom design order
+            await processCustomDesignOnlinePayment(orderId, billingData);
+        } else {
+            showNotification('Please select online payment for custom barong orders', 'error');
+        }
+    }
+
+    async function processCustomDesignOnlinePayment(orderId, billingData) {
+        console.log('Processing custom design online payment:', orderId, billingData);
+        
+        try {
+            // Update the custom design order with billing information
+            const updateResponse = await fetch(`/api/v1/custom-design-orders/${orderId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    billing_address: billingData,
+                    payment_method: 'ewallet'
+                })
+            });
+
+            const updateData = await updateResponse.json();
+            console.log('Custom design order update response:', updateData);
+
+            if (updateData.success) {
+                // Generate Bux checkout URL
+                const buxResponse = await fetch('/api/v1/orders/bux-checkout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        order_id: orderId,
+                        order_type: 'custom_design',
+                        total_amount: updateData.data.order.total_amount,
+                        billing_address: billingData
+                    })
+                });
+
+                const buxData = await buxResponse.json();
+                console.log('Bux checkout response:', buxData);
+
+                if (buxData.success && buxData.checkout_url) {
+                    // Clear session storage
+                    sessionStorage.removeItem('customDesignOrderId');
+                    sessionStorage.removeItem('customDesignData');
+                    
+                    // Redirect to Bux checkout
+                    window.location.href = buxData.checkout_url;
+                } else {
+                    showNotification(buxData.message || 'Failed to create payment checkout', 'error');
+                }
+            } else {
+                showNotification(updateData.message || 'Failed to update order', 'error');
+            }
+        } catch (error) {
+            console.error('Error processing custom design online payment:', error);
+            showNotification('Error processing payment', 'error');
+        }
+    }
+
+    async function processRegularOrder() {
+        console.log('Processing regular order');
+        
         if (!validateForm()) {
             return;
         }
@@ -702,6 +1011,32 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Failed to start processing:', e);
             showNotification('Unable to start checkout. Please try again.', 'error');
         }
+    }
+
+    function validateBillingForm() {
+        const formData = new FormData(document.getElementById('checkout-form'));
+        
+        const billingData = {
+            full_name: formData.get('full_name'),
+            company_name: formData.get('company_name'),
+            street_address: formData.get('street_address'),
+            apartment: formData.get('apartment'),
+            city: formData.get('city'),
+            province: formData.get('province'),
+            postal_code: formData.get('postal_code'),
+            phone: formData.get('phone'),
+            email: formData.get('email'),
+            save_info: formData.get('save_info') === 'on'
+        };
+
+        // Basic validation
+        if (!billingData.full_name || !billingData.street_address || !billingData.city || 
+            !billingData.province || !billingData.postal_code || !billingData.phone || !billingData.email) {
+            showNotification('Please fill in all required fields', 'error');
+            return null;
+        }
+
+        return billingData;
     }
 
     function showNotification(message, type = 'info') {

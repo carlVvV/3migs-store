@@ -72,6 +72,19 @@
                                 <option value="detailed">Detailed Embroidery - ₱350</option>
                                 <option value="custom">Custom Design - ₱500+ (varies)</option>
                             </select>
+                            
+                            <!-- Embroidery Pricing Note -->
+                            <div class="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                                <div class="flex items-center">
+                                    <svg class="h-4 w-4 text-blue-400 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                    </svg>
+                                    <div class="text-blue-700">
+                                        <span class="font-medium">Note:</span> Prices are estimates. 
+                                        <span class="font-medium">Contact:</span> 09328915962 / 09759634122
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -101,7 +114,7 @@
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Fabric Yardage</label>
                                 <div class="flex items-center space-x-2">
-                                    <input type="number" name="fabric_yardage" id="fabric_yardage" step="0.1" min="1" max="10" 
+                                    <input type="number" name="fabric_yardage" id="fabric_yardage" step="0.1" min="1" max="25" 
                                            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                            placeholder="2.5" readonly>
                                     <span class="text-sm text-gray-500">yards</span>
@@ -184,6 +197,48 @@
                         </div>
                     </div>
 
+                    <!-- Quantity Selection -->
+                    <div class="mb-6">
+                        <label for="quantity" class="block text-sm font-medium text-gray-700 mb-2">
+                            Quantity <span class="text-red-500">*</span>
+                        </label>
+                        <select name="quantity" id="quantity" required
+                                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Select Quantity</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                    </div>
+
+                    <!-- Reference Image Upload -->
+                    <div class="mb-6">
+                        <label for="reference_image" class="block text-sm font-medium text-gray-700 mb-2">
+                            Reference Image (Optional)
+                        </label>
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                            <div class="space-y-1 text-center">
+                                <svg class="mx-auto h-8 w-8 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <div class="flex text-sm text-gray-600">
+                                    <label for="reference_image" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                        <span>Upload a reference image</span>
+                                        <input id="reference_image" name="reference_image" type="file" accept="image/*" class="sr-only">
+                                    </label>
+                                    <p class="pl-1">or drag and drop</p>
+                                </div>
+                                <p class="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                            </div>
+                        </div>
+                        <div id="image-preview" class="mt-2 hidden">
+                            <img id="preview-img" src="" alt="Reference image preview" class="max-w-xs max-h-48 rounded-md">
+                            <button type="button" id="remove-image" class="mt-2 text-sm text-red-600 hover:text-red-800">Remove image</button>
+                        </div>
+                    </div>
+
                     <!-- Additional Notes Section -->
                     <div class="bg-blue-50 rounded-lg p-4">
                         <h3 class="text-base font-semibold text-gray-900 mb-2 flex items-center">
@@ -247,19 +302,34 @@
                             <span class="font-medium text-gray-700">Shoulder:</span>
                             <span class="text-gray-900" id="summary-shoulder">18 in</span>
                         </div>
+                        <div class="flex items-center justify-between">
+                            <span class="font-medium text-gray-700">Quantity:</span>
+                            <span class="text-gray-900" id="quantity-display">1 piece</span>
+                        </div>
                     <!-- Pricing Breakdown -->
                     <div class="space-y-2 text-sm">
                         <div class="flex items-center justify-between">
                             <span class="text-gray-600">Fabric Cost:</span>
                             <span class="font-medium text-gray-800" id="fabric-cost">₱0.00</span>
                         </div>
+                        <div class="text-xs text-gray-500 ml-2" id="fabric-cost-breakdown">
+                            (Yards × Price per Yard)
+                        </div>
                         <div class="flex items-center justify-between">
                             <span class="text-gray-600">Labor Cost:</span>
-                            <span class="font-medium text-gray-800">₱1,500.00</span>
+                            <span class="font-medium text-gray-800">₱700.00</span>
                         </div>
                         <div class="flex items-center justify-between">
                             <span class="text-gray-600">Embroidery:</span>
                             <span class="font-medium text-gray-800" id="embroidery-cost">₱0.00</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-600">Yardage:</span>
+                            <span class="font-medium text-gray-800" id="yardage-cost">₱0.00</span>
+                        </div>
+                        <div class="flex items-center justify-between border-t border-gray-200 pt-2">
+                            <span class="text-gray-600">Per Unit:</span>
+                            <span class="font-medium text-gray-800" id="per-unit-cost">₱0.00</span>
                         </div>
                         <div class="flex items-center justify-between pt-2 border-t border-gray-200">
                             <span class="font-medium text-gray-700">Subtotal:</span>
@@ -293,6 +363,32 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Pricing configuration - centralized pricing data (moved to top to avoid hoisting issues)
+    const pricingConfig = {
+        fabrics: {
+            'pina': { costPerYard: 800 },
+            'jusi': { costPerYard: 600 },
+            'cotton': { costPerYard: 400 },
+            'linen': { costPerYard: 500 },
+            'silk': { costPerYard: 1000 },
+            'jusilyn': { costPerYard: 160 }, // Updated to 160 per yard
+            'hugo_boss': { costPerYard: 130 }, // Updated to 130 per yard
+            'pina_cocoon': { costPerYard: 130 }, // Updated to 130 per yard
+            'gusot_mayaman': { costPerYard: 220 } // Updated to 220 per yard
+        },
+        embroidery: {
+            'none': 0,
+            'simple': 200,
+            'detailed': 350,
+            'custom': 500
+        },
+        yardage: {
+            baseYardage: 2,
+            extraCostPerYard: 200
+        },
+        labor: 1500 // Fixed labor cost
+    };
+
     // Form elements
     const fabricSelect = document.getElementById('fabric');
     const colorSelect = document.getElementById('color');
@@ -307,6 +403,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const shoulderWidthInput = document.getElementById('shoulder_width');
     const sleeveLengthInput = document.getElementById('sleeve_length');
     const additionalNotesInput = document.getElementById('additional_notes');
+    const quantitySelect = document.getElementById('quantity');
+    
+    // Image upload elements
+    const referenceImageInput = document.getElementById('reference_image');
+    const imagePreview = document.getElementById('image-preview');
+    const previewImg = document.getElementById('preview-img');
+    const removeImageBtn = document.getElementById('remove-image');
     
     // Summary elements
     const itemFabric = document.getElementById('item-fabric');
@@ -325,6 +428,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const removeItemBtn = document.getElementById('remove-item');
     const returnToShopBtn = document.getElementById('return-to-shop');
     const payNowBtn = document.getElementById('pay-now');
+    
+    // Debug: Check if elements exist
+    console.log('payNowBtn element:', payNowBtn);
+    console.log('updateCartBtn element:', updateCartBtn);
+    console.log('returnToShopBtn element:', returnToShopBtn);
     
     // Color mapping
     const colorMap = {
@@ -353,13 +461,7 @@ document.addEventListener('DOMContentLoaded', function() {
         'gusot_mayaman': 220
     };
     
-    // Embroidery pricing
-    const embroideryPrices = {
-        'none': 0,
-        'simple': 200,
-        'detailed': 350,
-        'custom': 500 // Base price, will vary based on design complexity
-    };
+    // Note: Embroidery pricing is now handled in pricingConfig.embroidery
     
     // Standard size measurements (chest, waist, length, shoulder, sleeve)
     const standardSizes = {
@@ -467,11 +569,77 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Additional notes for completeness
     additionalNotesInput.addEventListener('input', debouncedUpdateSummary);
+    quantitySelect.addEventListener('change', immediateUpdateSummary);
+
+    // Image upload functionality
+    referenceImageInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            // Validate file size (10MB max)
+            if (file.size > 10 * 1024 * 1024) {
+                showNotification('File size must be less than 10MB', 'error');
+                return;
+            }
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                showNotification('Please select a valid image file', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                imagePreview.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    removeImageBtn.addEventListener('click', function() {
+        referenceImageInput.value = '';
+        imagePreview.classList.add('hidden');
+        previewImg.src = '';
+    });
+
+    // Drag and drop functionality
+    const dropZone = referenceImageInput.closest('.border-dashed');
+    
+    dropZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        dropZone.classList.add('border-blue-400', 'bg-blue-50');
+    });
+
+    dropZone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        dropZone.classList.remove('border-blue-400', 'bg-blue-50');
+    });
+
+    dropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dropZone.classList.remove('border-blue-400', 'bg-blue-50');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            referenceImageInput.files = files;
+            referenceImageInput.dispatchEvent(new Event('change'));
+        }
+    });
     
     updateCartBtn.addEventListener('click', updateCart);
     removeItemBtn.addEventListener('click', removeItem);
     returnToShopBtn.addEventListener('click', () => window.location.href = '/home');
-    payNowBtn.addEventListener('click', proceedToPayment);
+    
+    // Only attach event listener if payNowBtn exists
+    if (payNowBtn) {
+        console.log('Attaching event listener to payNowBtn');
+        payNowBtn.addEventListener('click', function() {
+            console.log('Pay Now button clicked');
+            proceedToPayment();
+        });
+    } else {
+        console.error('payNowBtn element not found!');
+    }
     
     // Apply standard size measurements
     function applyStandardSize() {
@@ -492,66 +660,86 @@ document.addEventListener('DOMContentLoaded', function() {
         const chest = parseFloat(chestInput.value) || 0;
         const waist = parseFloat(waistInput.value) || 0;
         const length = parseFloat(lengthInput.value) || 0;
-        const shoulder = parseFloat(shoulderWidthInput.value) || 0;
-        const sleeve = parseFloat(sleeveLengthInput.value) || 0;
+        const shoulderWidth = parseFloat(shoulderWidthInput.value) || 0;
+        const sleeveLength = parseFloat(sleeveLengthInput.value) || 0;
         
         // If any measurement is missing, return 0
-        if (!chest || !waist || !length || !shoulder || !sleeve) {
+        if (!chest || !waist || !length || !shoulderWidth || !sleeveLength) {
             return 0;
         }
         
-        // Convert inches to yards (1 yard = 36 inches)
-        // For barong: we need fabric for body + sleeves + extra for seams and finishing
-        // Body fabric calculation: (chest + waist) / 2 * length / 36
-        const bodyWidth = (chest + waist) / 2; // Average width
-        const bodyYardage = (bodyWidth * length) / 36; // Convert to yards
+        // Step 1: Convert Inches to Yards
+        // Formula: Yards = Inches / 36
+        const totalInches = chest + waist + length + shoulderWidth + sleeveLength;
+        const totalYardage = totalInches / 36;
         
-        // Sleeve fabric calculation: sleeve length * sleeve width (estimated as chest/3) / 36
-        const sleeveWidth = chest / 3; // Estimate sleeve width as 1/3 of chest
-        const sleeveYardage = (sleeve * sleeveWidth) / 36;
+        // Cap at 25 yards maximum
+        const cappedYardage = Math.min(totalYardage, 25);
         
-        // Add extra fabric for seams, hemming, and finishing (typically 0.5-1 yard)
-        const extraFabric = 0.75; // 3/4 yard for seams and finishing
+        console.log('Fabric yardage calculation:', {
+            chest: chest,
+            waist: waist,
+            length: length,
+            shoulderWidth: shoulderWidth,
+            sleeveLength: sleeveLength,
+            totalInches: totalInches,
+            totalYardage: totalYardage,
+            cappedYardage: cappedYardage
+        });
         
-        const totalYardage = bodyYardage + sleeveYardage + extraFabric;
-        
-        return Math.ceil(totalYardage * 10) / 10; // Round up to 1 decimal place
+        return Math.ceil(cappedYardage * 10) / 10; // Round up to 1 decimal place
     }
-    
-    // Calculate pricing
-    function calculatePricing() {
+
+    // Automated pricing calculation function
+    function calculateAutomatedPricing() {
         const fabric = fabricSelect.value;
         const embroidery = embroiderySelect.value || 'none';
         const yardage = calculateFabricYardage();
+        const quantity = parseInt(quantitySelect.value) || 1;
         
-        // Get fabric price per yard
-        const fabricPricePerYard = fabric && fabricPrices[fabric] ? fabricPrices[fabric] : 0;
-        const fabricCost = fabricPricePerYard * yardage;
+        // Get fabric pricing
+        const fabricData = pricingConfig.fabrics[fabric] || { costPerYard: 500 };
         
-        // Get embroidery cost
-        const embroideryCost = embroideryPrices[embroidery] || 0;
+        // Step 2: Calculate the Total Price
+        // Formula: Total Price = Yards × Price per Yard
+        const fabricCost = yardage * fabricData.costPerYard; // Updated formula
+        const embroideryCost = pricingConfig.embroidery[embroidery] || 0;
+        const yardageCost = yardage > pricingConfig.yardage.baseYardage ? 
+            (yardage - pricingConfig.yardage.baseYardage) * pricingConfig.yardage.extraCostPerYard : 0;
         
-        // Calculate total cost
-        const totalCost = fabricCost + laborCost + embroideryCost;
+        // Calculate totals (removed base price)
+        const totalCostPerUnit = fabricCost + embroideryCost + yardageCost + pricingConfig.labor;
+        const totalCost = totalCostPerUnit * quantity;
         
-        console.log('Pricing calculation:', {
+        console.log('Automated pricing calculation:', {
             fabric: fabric,
-            fabricPricePerYard: fabricPricePerYard,
+            fabricCostPerYard: fabricData.costPerYard,
             yardage: yardage,
             fabricCost: fabricCost,
-            embroidery: embroidery,
             embroideryCost: embroideryCost,
-            laborCost: laborCost,
+            yardageCost: yardageCost,
+            laborCost: pricingConfig.labor,
+            quantity: quantity,
+            totalCostPerUnit: totalCostPerUnit,
             totalCost: totalCost
         });
         
         return {
-            fabricCost: fabricCost,
-            embroideryCost: embroideryCost,
-            laborCost: laborCost,
-            totalCost: totalCost,
+            fabric_cost: fabricCost,
+            embroidery_cost: embroideryCost,
+            yardage_cost: yardageCost,
+            labor_cost: pricingConfig.labor,
+            total_per_unit: totalCostPerUnit,
+            quantity: quantity,
+            total: totalCost,
             yardage: yardage
         };
+    }
+    
+    // Calculate pricing
+    function calculatePricing() {
+        // Use the automated pricing calculation
+        return calculateAutomatedPricing();
     }
     
     function updateSummary() {
@@ -601,21 +789,53 @@ document.addEventListener('DOMContentLoaded', function() {
             fabricYardageInput.value = pricing.yardage;
             fabricYardageInput.style.backgroundColor = pricing.yardage > 0 ? '#f0f9ff' : '#f9fafb';
         }
+        
+        // Update all pricing breakdown elements
+        const fabricCostElement = document.getElementById('fabric-cost');
+        const embroideryCostElement = document.getElementById('embroidery-cost');
+        const yardageCostElement = document.getElementById('yardage-cost');
+        const perUnitCostElement = document.getElementById('per-unit-cost');
+        const subtotalElement = document.getElementById('subtotal');
+        
         if (fabricCostElement) {
-            fabricCostElement.textContent = '₱' + pricing.fabricCost.toFixed(2);
-            fabricCostElement.style.color = pricing.fabricCost > 0 ? '#059669' : '#9ca3af';
+            fabricCostElement.textContent = '₱' + pricing.fabric_cost.toFixed(2);
+            fabricCostElement.style.color = pricing.fabric_cost > 0 ? '#059669' : '#9ca3af';
+        }
+        
+        // Update fabric cost breakdown
+        const fabricCostBreakdown = document.getElementById('fabric-cost-breakdown');
+        if (fabricCostBreakdown && fabricSelect.value) {
+            const fabricData = pricingConfig.fabrics[fabricSelect.value];
+            if (fabricData) {
+                fabricCostBreakdown.textContent = `(${pricing.yardage} yards × ₱${fabricData.costPerYard})`;
+                fabricCostBreakdown.style.color = pricing.fabric_cost > 0 ? '#059669' : '#9ca3af';
+            }
         }
         if (embroideryCostElement) {
-            embroideryCostElement.textContent = '₱' + pricing.embroideryCost.toFixed(2);
-            embroideryCostElement.style.color = pricing.embroideryCost > 0 ? '#059669' : '#9ca3af';
+            embroideryCostElement.textContent = '₱' + pricing.embroidery_cost.toFixed(2);
+            embroideryCostElement.style.color = pricing.embroidery_cost > 0 ? '#059669' : '#9ca3af';
         }
-        if (subtotal) {
-            subtotal.textContent = '₱' + pricing.totalCost.toFixed(2);
-            subtotal.style.color = pricing.totalCost > 0 ? '#dc2626' : '#9ca3af';
+        if (yardageCostElement) {
+            yardageCostElement.textContent = '₱' + pricing.yardage_cost.toFixed(2);
+            yardageCostElement.style.color = pricing.yardage_cost > 0 ? '#059669' : '#9ca3af';
+        }
+        if (perUnitCostElement) {
+            perUnitCostElement.textContent = '₱' + pricing.total_per_unit.toFixed(2);
+            perUnitCostElement.style.color = pricing.total_per_unit > 0 ? '#059669' : '#9ca3af';
+        }
+        if (subtotalElement) {
+            subtotalElement.textContent = '₱' + pricing.total.toFixed(2);
+            subtotalElement.style.color = pricing.total > 0 ? '#dc2626' : '#9ca3af';
+        }
+        
+        // Update quantity display
+        const quantityDisplay = document.getElementById('quantity-display');
+        if (quantityDisplay) {
+            quantityDisplay.textContent = `${pricing.quantity} ${pricing.quantity === 1 ? 'piece' : 'pieces'}`;
         }
         
         // Add visual indicator for incomplete form
-        const isFormComplete = fabric && color && chest && waist && length && shoulderWidth && sleeveLength;
+        const isFormComplete = fabric && color && chest && waist && length && shoulderWidth && sleeveLength && quantitySelect.value;
         if (subtotal) {
             subtotal.style.fontWeight = isFormComplete ? 'bold' : 'normal';
         }
@@ -729,21 +949,159 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function proceedToPayment() {
+        console.log('proceedToPayment function called');
+        
         // Validate required fields
-        if (!fabricSelect.value || !colorSelect.value || !chestInput.value || !waistInput.value || !lengthInput.value || !shoulderWidthInput.value || !sleeveLengthInput.value) {
-            showNotification('Please complete your custom barong selection and measurements', 'error');
+        if (!fabricSelect.value || !colorSelect.value || !quantitySelect.value || !chestInput.value || !waistInput.value || !lengthInput.value || !shoulderWidthInput.value || !sleeveLengthInput.value) {
+            console.log('Validation failed: missing required fields');
+            showNotification('Please complete your custom barong selection, quantity, and measurements', 'error');
             return;
         }
         
-        // First add to cart, then redirect to checkout
-        updateCart();
+        // Validate measurement ranges
+        if (chestInput.value < 20 || chestInput.value > 60) {
+            showNotification('Chest measurement must be between 20 and 60 inches', 'error');
+            return;
+        }
+        if (waistInput.value < 20 || waistInput.value > 60) {
+            showNotification('Waist measurement must be between 20 and 60 inches', 'error');
+            return;
+        }
+        if (lengthInput.value < 20 || lengthInput.value > 40) {
+            showNotification('Length measurement must be between 20 and 40 inches', 'error');
+            return;
+        }
+        if (shoulderWidthInput.value < 12 || shoulderWidthInput.value > 25) {
+            showNotification('Shoulder width must be between 12 and 25 inches', 'error');
+            return;
+        }
+        if (sleeveLengthInput.value < 15 || sleeveLengthInput.value > 35) {
+            showNotification('Sleeve length must be between 15 and 35 inches', 'error');
+            return;
+        }
         
-        // Redirect to checkout after successful cart update
-        setTimeout(() => {
-            window.location.href = '/checkout';
-        }, 2000);
+        // Show loading
+        document.getElementById('loading-modal').classList.remove('hidden');
+        
+        // Prepare data
+        const customData = {
+            fabric: fabricSelect.value,
+            color: colorSelect.value,
+            embroidery: embroiderySelect.value || 'none',
+            quantity: parseInt(quantitySelect.value),
+            measurements: {
+                chest: parseFloat(chestInput.value),
+                waist: parseFloat(waistInput.value),
+                length: parseFloat(lengthInput.value),
+                shoulder_width: parseFloat(shoulderWidthInput.value),
+                sleeve_length: parseFloat(sleeveLengthInput.value)
+            },
+            fabric_yardage: parseFloat(fabricYardageInput.value),
+            reference_image: referenceImageInput.files[0] || null,
+            pricing: calculatePricing(),
+            additional_notes: additionalNotesInput.value || ''
+        };
+        
+        // Call API to add to cart and then redirect
+        fetch('/api/v1/custom-design/add-to-cart', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify(customData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('loading-modal').classList.add('hidden');
+            
+            if (data.success) {
+                // Save custom design data to session storage for checkout
+                const customDesignData = {
+                    fabric: fabricSelect.value,
+                    color: colorSelect.value,
+                    embroidery: embroiderySelect.value || 'none',
+                    quantity: parseInt(quantitySelect.value),
+                    measurements: {
+                        chest: parseFloat(chestInput.value),
+                        waist: parseFloat(waistInput.value),
+                        length: parseFloat(lengthInput.value),
+                        shoulder_width: parseFloat(shoulderWidthInput.value),
+                        sleeve_length: parseFloat(sleeveLengthInput.value)
+                    },
+                    fabric_yardage: parseFloat(fabricYardageInput.value),
+                    reference_image: referenceImageInput.files[0] || null,
+                    pricing: calculatePricing(),
+                    additional_notes: additionalNotesInput.value || ''
+                };
+                
+                // Create custom design order record first
+                createCustomDesignOrder(customDesignData);
+            } else {
+                showNotification(data.message || 'Failed to add to cart', 'error');
+            }
+        })
+        .catch(error => {
+            document.getElementById('loading-modal').classList.add('hidden');
+            console.error('Error adding to cart:', error);
+            showNotification('Error adding to cart', 'error');
+        });
     }
     
+    function createCustomDesignOrder(customDesignData) {
+        console.log('Creating custom design order:', customDesignData);
+        
+        // Create a temporary order record without billing address
+        const orderPayload = {
+            ...customDesignData,
+            billing_address: {
+                full_name: 'Temporary',
+                street_address: 'Temporary',
+                city: 'Temporary',
+                province: 'Temporary',
+                postal_code: '0000',
+                phone: '00000000000',
+                email: 'temp@example.com'
+            },
+            payment_method: 'ewallet'
+        };
+
+        fetch('/api/v1/custom-design-orders', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify(orderPayload)
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Custom design order creation response:', data);
+            
+            if (data.success) {
+                // Store the order ID in session storage for checkout to retrieve
+                sessionStorage.setItem('customDesignOrderId', data.data.order.id);
+                sessionStorage.setItem('customDesignData', JSON.stringify(customDesignData));
+                
+                showNotification('Custom barong order created! Redirecting to checkout...', 'success');
+                // Update cart count if available
+                updateCartCount();
+                // Redirect to regular checkout after successful order creation
+                setTimeout(() => {
+                    window.location.href = '/checkout';
+                }, 1500);
+            } else {
+                console.error('Failed to create custom design order:', data);
+                showNotification(data.message || 'Failed to create custom design order', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error creating custom design order:', error);
+            showNotification('Error creating custom design order', 'error');
+        });
+    }
+
     function updateCartCount() {
         // Update cart count in header if available
         fetch('/api/v1/cart/count')

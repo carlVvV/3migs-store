@@ -14,9 +14,9 @@
         </div>
         <div>
             <h3 class="text-xl font-bold mb-4">Support</h3>
-            <p class="text-sm">Pandi, Bulacan</p>
+            <p class="text-sm">Cacarong Bata, Pandi, Bulacan</p>
             <p class="text-sm">3migs@gmail.com</p>
-            <p class="text-sm">+639*********</p>
+            <p class="text-sm">09328915962 / 09759634122</p>
         </div>
         <div>
             <h3 class="text-xl font-bold mb-4">Account</h3>

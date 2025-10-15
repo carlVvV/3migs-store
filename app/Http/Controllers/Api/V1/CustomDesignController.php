@@ -143,7 +143,8 @@ class CustomDesignController extends Controller
             'measurements.shoulder_width' => 'required|numeric|min:12|max:25',
             'measurements.sleeve_length' => 'required|numeric|min:15|max:35',
             // Allow slightly wider range to accommodate larger sizes
-            'fabric_yardage' => 'required|numeric|min:0.5|max:20',
+            'fabric_yardage' => 'required|numeric|min:0.5|max:25',
+            'reference_image' => 'nullable|file|image|max:10240', // 10MB max
             'pricing' => 'required|array',
             'additional_notes' => 'nullable|string|max:1000'
         ]);
