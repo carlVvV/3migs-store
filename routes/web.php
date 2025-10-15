@@ -75,6 +75,11 @@ Route::post('/signup', [AuthController::class, 'signup']);
 
 // Password reset (OTP-based)
 Route::get('/forgot-password', [\App\Http\Controllers\PasswordResetController::class, 'showForgotForm'])->name('password.forgot');
+// Provide Breeze-compatible alias if templates use password.request
+Route::get('/password/forgot', function () {
+    return redirect()->route('password.forgot');
+})->name('password.request');
+
 Route::post('/forgot-password', [\App\Http\Controllers\PasswordResetController::class, 'sendOtp'])->name('password.email');
 Route::get('/verify-code', [\App\Http\Controllers\PasswordResetController::class, 'showVerifyForm'])->name('password.verify');
 Route::post('/verify-code', [\App\Http\Controllers\PasswordResetController::class, 'verifyOtp'])->name('password.verify.submit');
