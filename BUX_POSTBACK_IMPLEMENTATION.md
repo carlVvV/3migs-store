@@ -65,7 +65,7 @@ POST /api/v1/payments/bux/test-webhook
 # Bux.ph Configuration
 BUX_API_KEY=your_api_key
 BUX_SECRET=your_secret
-BUX_WEBHOOK_SECRET=your_webhook_secret
+BUX_SECRET=your_webhook_secret
 BUX_MERCHANT_ID=your_merchant_id
 BUX_CHECKOUT_URL=https://api.bux.ph/v1/api/sandbox/open/checkout
 BUX_BASE_URL=https://app.bux.ph/test/checkout
@@ -122,7 +122,7 @@ curl -X POST http://localhost:8000/api/v1/payments/bux/test-webhook \
 
 #### **For Heroku:**
 ```bash
-heroku config:set BUX_WEBHOOK_SECRET=your_webhook_secret
+heroku config:set BUX_SECRET=your_webhook_secret
 heroku config:set BUX_API_KEY=your_api_key
 heroku config:set BUX_SECRET=your_secret
 heroku config:set BUX_MERCHANT_ID=your_merchant_id

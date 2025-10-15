@@ -49,7 +49,7 @@ return [
         'base_url' => env('BUX_BASE_URL', 'https://app.bux.ph/test/checkout'),
         'api_key' => env('BUX_API_KEY'),
         'secret' => env('BUX_SECRET'),
-        'webhook_secret' => env('BUX_WEBHOOK_SECRET'),
+        'webhook_secret' => env('BUX_SECRET'),
         'merchant_id' => env('BUX_MERCHANT_ID'),
         'checkout_url' => env('BUX_CHECKOUT_URL', 'https://api.bux.ph/v1/api/sandbox/open/checkout'),
     ],
