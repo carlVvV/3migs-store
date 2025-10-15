@@ -349,6 +349,32 @@ class OrderController extends Controller
                 ]
             ]);
 
+            // Optionally save address to user's address book when requested
+            if ($request->boolean('save_info', false)) {
+                try {
+                    \App\Models\Address::updateOrCreate(
+                        [
+                            'user_id' => $user->id,
+                            'full_name' => $request->full_name,
+                            'street_address' => $request->street_address,
+                            'city' => $request->city,
+                            'province' => $request->province,
+                            'postal_code' => $request->postal_code,
+                            'phone' => $request->phone,
+                            'email' => $request->email,
+                        ],
+                        [
+                            'company_name' => $request->company_name,
+                            'apartment' => $request->apartment,
+                            'label' => 'Checkout',
+                            'is_default' => true,
+                        ]
+                    );
+                    // Ensure only one default
+                    \App\Models\Address::where('user_id', $user->id)->where('label', '!=', 'Checkout')->update(['is_default' => false]);
+                } catch (\Throwable $e) { /* ignore */ }
+            }
+
             // Create order items
             foreach ($cartItems as $cartItem) {
                 OrderItem::create([

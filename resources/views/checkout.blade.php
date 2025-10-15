@@ -76,6 +76,15 @@
                 <div class="bg-white rounded-lg shadow-md p-6">
                     <h2 class="text-xl font-bold text-gray-900 mb-6">Billing Details</h2>
                     
+                    <!-- Saved Addresses -->
+                    <div id="saved-addresses" class="mb-4 hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Select saved address</label>
+                        <div class="flex items-center space-x-2">
+                            <select id="address-select" class="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"></select>
+                            <button id="new-address-btn" type="button" class="px-3 py-2 text-sm border rounded-md">Add new</button>
+                        </div>
+                    </div>
+
                     <form id="checkout-form" class="space-y-4">
                         @csrf
                         
@@ -181,7 +190,7 @@
                             <input type="checkbox" name="save_info" id="save_info" checked
                                    class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded">
                             <label for="save_info" class="ml-2 text-sm text-gray-700">
-                                Save this information for faster check-out next time
+                                Save this information to my account
                             </label>
                         </div>
                     </form>
@@ -299,8 +308,96 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('empty-cart-message').style.display = 'none';
     }
     
+    // Load saved addresses and setup form
+    loadSavedAddresses();
+    // Restore draft after attempting to load saved addresses
+    restoreCheckoutDraft();
+    
+    // Persist form as draft on change
+    attachDraftPersistence();
+
     // Form validation
     setupFormValidation();
+    async function loadSavedAddresses() {
+        try {
+            const res = await fetch('/api/v1/addresses', { headers: { 'Accept': 'application/json' } });
+            const data = await res.json();
+            if (!res.ok || !data.success || !Array.isArray(data.data) || data.data.length === 0) {
+                return; // keep hidden
+            }
+            const wrap = document.getElementById('saved-addresses');
+            const sel = document.getElementById('address-select');
+            wrap.classList.remove('hidden');
+            // Populate select
+            sel.innerHTML = '';
+            data.data.forEach(addr => {
+                const opt = document.createElement('option');
+                opt.value = String(addr.id);
+                opt.textContent = `${addr.label ? '['+addr.label+'] ' : ''}${addr.full_name}, ${addr.street_address}, ${addr.city}`;
+                if (addr.is_default) opt.selected = true;
+                sel.appendChild(opt);
+            });
+            // Apply default to form
+            applyAddressToForm(data.data.find(a => a.is_default) || data.data[0]);
+            sel.addEventListener('change', () => {
+                const addr = data.data.find(a => String(a.id) === sel.value);
+                if (addr) applyAddressToForm(addr);
+            });
+            document.getElementById('new-address-btn').addEventListener('click', () => {
+                // Clear form for new address input
+                ['full_name','company_name','street_address','apartment','city','province','postal_code','phone','email'].forEach(id => {
+                    const el = document.getElementById(id); if (el) el.value = '';
+                });
+                document.getElementById('full_name').focus();
+            });
+        } catch (_) { /* ignore */ }
+    }
+
+    function applyAddressToForm(addr) {
+        if (!addr) return;
+        const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+        set('full_name', addr.full_name);
+        set('company_name', addr.company_name);
+        set('street_address', addr.street_address);
+        set('apartment', addr.apartment);
+        set('city', addr.city);
+        set('province', addr.province);
+        set('postal_code', addr.postal_code);
+        set('phone', addr.phone);
+        set('email', addr.email);
+    }
+
+    function attachDraftPersistence() {
+        const ids = ['full_name','company_name','street_address','apartment','city','province','postal_code','phone','email'];
+        const save = () => {
+            const draft = {};
+            ids.forEach(id => { const el = document.getElementById(id); if (el) draft[id] = el.value || ''; });
+            try { localStorage.setItem('checkoutDraft', JSON.stringify(draft)); } catch(_) {}
+        };
+        ids.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', save);
+                el.addEventListener('change', save);
+            }
+        });
+    }
+
+    function restoreCheckoutDraft() {
+        try {
+            const raw = localStorage.getItem('checkoutDraft');
+            if (!raw) return;
+            const draft = JSON.parse(raw);
+            const ids = ['full_name','company_name','street_address','apartment','city','province','postal_code','phone','email'];
+            // Only fill empty fields to avoid overriding a selected saved address
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && !el.value && draft[id] !== undefined) {
+                    el.value = draft[id];
+                }
+            });
+        } catch(_) {}
+    }
     
     // Event listeners
     document.getElementById('apply-coupon-btn').addEventListener('click', applyCoupon);

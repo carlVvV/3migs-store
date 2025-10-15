@@ -96,6 +96,15 @@ Route::prefix('v1')->group(function () {
     // Orders: lightweight read-only detail for UI that relies on session auth
     // Controller already restricts to the logged-in user's orders
     Route::get('/orders/{id}', [OrderController::class, 'show']);
+    
+    // Addresses (authenticated-only for mutations; reads allowed when logged in)
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/addresses', [\App\Http\Controllers\Api\V1\AddressController::class, 'index']);
+        Route::post('/addresses', [\App\Http\Controllers\Api\V1\AddressController::class, 'store']);
+        Route::put('/addresses/{id}', [\App\Http\Controllers\Api\V1\AddressController::class, 'update']);
+        Route::delete('/addresses/{id}', [\App\Http\Controllers\Api\V1\AddressController::class, 'destroy']);
+        Route::post('/addresses/{id}/make-default', [\App\Http\Controllers\Api\V1\AddressController::class, 'makeDefault']);
+    });
     // Expose order creation and Bux checkout for session-auth flows (no Sanctum token required)
     Route::post('/orders', [OrderController::class, 'store']);
     Route::post('/orders/{id}/bux-checkout', [OrderController::class, 'buxCheckout']);
