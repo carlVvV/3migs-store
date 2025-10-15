@@ -226,9 +226,8 @@
                             <input type="radio" name="payment_method" id="ewallet" value="ewallet" 
                                    class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300">
                             <label for="ewallet" class="ml-3 flex items-center">
-                                <span class="text-sm font-medium text-gray-700">GCash</span>
+                                <span class="text-sm font-medium text-gray-700">Online Payment</span>
                                 <div class="ml-4 flex space-x-2">
-                                    <div class="w-8 h-5 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">GC</div>
                                 </div>
                             </label>
                         </div>
