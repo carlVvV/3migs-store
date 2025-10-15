@@ -499,19 +499,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
 
-    function placeOrder() {
+    async function placeOrder() {
         if (!validateForm()) {
             return;
         }
-
-        // Redirect to a dedicated processing page (replaces loading modal)
-        // We stash the order payload in sessionStorage; the processing page will
-        // create the order and handle Bux redirect for ewallet/GCash.
-        
         // Get form data
         const formData = new FormData(document.getElementById('checkout-form'));
         const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
-        
+
         const orderData = {
             full_name: formData.get('full_name'),
             company_name: formData.get('company_name'),
@@ -526,12 +521,54 @@ document.addEventListener('DOMContentLoaded', function() {
             payment_method: paymentMethod
         };
 
+        // Fast-path: if Online Payment selected, create the order and open Bux.ph directly
+        if (paymentMethod === 'ewallet') {
+            try {
+                const createRes = await fetch('/api/v1/orders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify(orderData)
+                });
+                const created = await createRes.json().catch(() => ({}));
+                if (!createRes.ok || !created.success) {
+                    showNotification(created.message || 'Failed to place order for online payment.', 'error');
+                    return;
+                }
+                const order = created.data?.order || created.data;
+                const buxRes = await fetch(`/api/v1/orders/${order.id}/bux-checkout`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                });
+                const bux = await buxRes.json().catch(() => ({}));
+                const redirectUrl = bux?.data?.checkout_url || bux?.data?.redirect_url || bux?.data?.url;
+                if (buxRes.ok && bux.success && redirectUrl) {
+                    window.location.href = redirectUrl;
+                    return;
+                }
+                showNotification(bux.message || 'Payment service unavailable. Please try again later.', 'error');
+                return;
+            } catch (err) {
+                console.error('Online payment error:', err);
+                showNotification('Unable to start online payment. Please try again.', 'error');
+                return;
+            }
+        }
+
+        // Default: COD goes through processing page (creates order then redirects to orders)
         try {
             sessionStorage.setItem('checkoutOrderData', JSON.stringify(orderData));
             window.location.href = '/processing-order';
         } catch (e) {
             console.error('Failed to start processing:', e);
-            showNotification('Unable to start payment. Please try again.', 'error');
+            showNotification('Unable to start checkout. Please try again.', 'error');
         }
     }
 
