@@ -246,7 +246,15 @@
         function addCardToWishlist(productId) {
             const isLoggedIn = {{ auth()->check() ? 'true' : 'false' }};
             if (!isLoggedIn) {
-                showError('Please log in to add items to your wishlist');
+                showError('Please log in to add items to your wishlist', 'You need to be logged in to save items to your wishlist. Click here to log in.', 5000);
+                // Add a clickable link to login
+                setTimeout(() => {
+                    const notification = document.querySelector('.notification');
+                    if (notification) {
+                        notification.style.cursor = 'pointer';
+                        notification.onclick = () => window.location.href = '/login';
+                    }
+                }, 100);
                 return;
             }
             fetch('/api/v1/wishlist/add', {
@@ -307,6 +315,12 @@
                 const isLoggedIn = {{ auth()->check() ? 'true' : 'false' }};
                 if (!isLoggedIn) {
                     showNotification('Please log in to add items to your wishlist', 'error');
+                    // Redirect to login after a short delay
+                    setTimeout(() => {
+                        if (confirm('You need to be logged in to add items to your wishlist. Would you like to log in now?')) {
+                            window.location.href = '/login';
+                        }
+                    }, 2000);
                     return;
                 }
                 
@@ -358,7 +372,12 @@
                 }
 
                 if (res.status === 401) {
-                    showError('Please log in to add items to your wishlist');
+                    showError('Please log in to add items to your wishlist', 'Your session has expired. Please log in again to continue.');
+                    setTimeout(() => {
+                        if (confirm('Your session has expired. Would you like to log in now?')) {
+                            window.location.href = '/login';
+                        }
+                    }, 2000);
                     return false;
                 }
 

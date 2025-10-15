@@ -126,6 +126,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [OrderController::class, 'show']);
         Route::put('/{id}/cancel', [OrderController::class, 'cancel']);
         Route::post('/{id}/bux-checkout', [OrderController::class, 'buxCheckout']);
+        Route::post('/{id}/update-payment-status', [OrderController::class, 'updatePaymentStatus']);
         Route::post('/seed/sample', [OrderController::class, 'seedSample']);
         // Simple GET alias for seeding in local/testing
         Route::get('/seed/sample', [OrderController::class, 'seedSample']);

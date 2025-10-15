@@ -37,6 +37,8 @@ class WishlistController extends Controller
                     'current_price' => $item->product->current_price,
                     'original_price' => $item->product->is_on_sale ? $item->product->base_price : null,
                     'category' => $item->product->category->name ?? 'Barong',
+                    'is_available' => $item->product->is_available,
+                    'total_stock' => $item->product->getTotalStock(),
                     'created_at' => $item->created_at
                 ];
             });

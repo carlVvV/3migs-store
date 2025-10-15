@@ -152,7 +152,11 @@ class BuxPostbackService
     {
         // Update order with payment information
         $order->payment_status = 'paid';
-        $order->payment_method = $paymentData['payment_method'] ?? 'bux';
+        
+        // Update payment method based on Bux.ph response
+        $buxPaymentMethod = $paymentData['payment_method'] ?? 'gcash';
+        $order->payment_method = $this->mapBuxPaymentMethod($buxPaymentMethod);
+        
         $order->transaction_id = $paymentData['transaction_id'] ?? null;
         $order->paid_at = now();
 
@@ -167,8 +171,11 @@ class BuxPostbackService
         Log::info('Order payment successful', [
             'order_id' => $order->id,
             'order_number' => $order->order_number,
+            'original_payment_method' => $order->getOriginal('payment_method'),
+            'new_payment_method' => $order->payment_method,
             'amount' => $paymentData['amount'],
-            'transaction_id' => $paymentData['transaction_id']
+            'transaction_id' => $paymentData['transaction_id'],
+            'bux_payment_method' => $buxPaymentMethod
         ]);
 
         // TODO: Send confirmation email to customer
@@ -181,7 +188,11 @@ class BuxPostbackService
             'success' => true,
             'message' => 'Payment processed successfully',
             'order_id' => $order->id,
-            'order_number' => $order->order_number
+            'order_number' => $order->order_number,
+            'payment_status' => $order->payment_status,
+            'order_status' => $order->status,
+            'transaction_id' => $order->transaction_id,
+            'payment_method' => $order->payment_method
         ];
     }
 
@@ -263,6 +274,27 @@ class BuxPostbackService
             'order_id' => $order->id,
             'order_number' => $order->order_number
         ];
+    }
+
+    /**
+     * Map Bux.ph payment method to our internal payment method
+     */
+    private function mapBuxPaymentMethod(string $buxMethod): string
+    {
+        $mapping = [
+            'gcash' => 'gcash',
+            'gcash_qr' => 'gcash',
+            'grabpay' => 'grabpay',
+            'paymaya' => 'paymaya',
+            'bdo' => 'bank_transfer',
+            'bpi' => 'bank_transfer',
+            'metrobank' => 'bank_transfer',
+            'unionbank' => 'bank_transfer',
+            'credit_card' => 'credit_card',
+            'debit_card' => 'credit_card',
+        ];
+
+        return $mapping[strtolower($buxMethod)] ?? 'gcash';
     }
 
     /**

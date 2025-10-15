@@ -124,38 +124,66 @@ function displayWishlistItems(items) {
 
 function createWishlistItemElement(item) {
     const div = document.createElement('div');
-    div.className = 'bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow';
+    const isAvailable = item.is_available && item.total_stock > 0;
+    const clickableClass = isAvailable ? 'cursor-pointer hover:shadow-lg' : 'cursor-default';
+    
+    div.className = `bg-white rounded-lg shadow-md overflow-hidden transition-shadow ${clickableClass}`;
     div.setAttribute('data-wishlist-id', item.id);
     div.setAttribute('data-product-id', item.product_id);
+    div.setAttribute('data-product-slug', item.slug);
+    
+    // Make the entire card clickable if available
+    if (isAvailable) {
+        div.onclick = () => viewProduct(item.slug);
+    }
+    
     div.innerHTML = `
         <div class="relative">
             <img src="${item.image || '/images/placeholder.jpg'}" 
                  alt="${item.name}" 
                  class="w-full h-48 object-cover">
-            <button onclick="removeFromWishlist(${item.id})" 
+            <button onclick="event.stopPropagation(); removeFromWishlist(${item.id})" 
                     class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600 transition-colors">
                 <i class="fas fa-times text-sm"></i>
             </button>
+            ${!isAvailable ? `
+                <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                    <span class="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                        <i class="fas fa-times mr-1"></i>Out of Stock
+                    </span>
+                </div>
+            ` : ''}
         </div>
         <div class="p-4">
-            <h3 class="font-semibold text-gray-800 mb-2 line-clamp-2">${item.name}</h3>
+            <h3 class="font-semibold text-gray-800 mb-2 line-clamp-2 ${isAvailable ? 'hover:text-blue-600' : 'text-gray-500'}">${item.name}</h3>
             <p class="text-sm text-gray-600 mb-2">${item.category || 'Barong'}</p>
             <div class="flex items-center justify-between mb-3">
-                <span class="text-lg font-bold text-gray-900">₱${item.current_price}</span>
+                <span class="text-lg font-bold ${isAvailable ? 'text-gray-900' : 'text-gray-500'}">₱${item.current_price}</span>
                 ${item.original_price && item.original_price > item.current_price ? 
                     `<span class="text-sm text-gray-500 line-through">₱${item.original_price}</span>` : ''
                 }
             </div>
             <div class="flex space-x-2">
-                <button onclick="addToCart(${item.product_id})" 
-                        class="flex-1 bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors text-sm">
-                    <i class="fas fa-shopping-cart mr-1"></i> Add to Cart
+                <button onclick="event.stopPropagation(); addToCart(${item.product_id})" 
+                        class="flex-1 ${isAvailable ? 'bg-gray-600 hover:bg-gray-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'} py-2 px-4 rounded-md transition-colors text-sm"
+                        ${!isAvailable ? 'disabled' : ''}>
+                    <i class="fas fa-shopping-cart mr-1"></i> ${isAvailable ? 'Add to Cart' : 'Out of Stock'}
                 </button>
-                <button onclick="viewProduct('${item.slug}')" 
-                        class="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-200 transition-colors text-sm">
+                <button onclick="event.stopPropagation(); viewProduct('${item.slug}')" 
+                        class="flex-1 ${isAvailable ? 'bg-gray-100 hover:bg-gray-200 text-gray-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'} py-2 px-4 rounded-md transition-colors text-sm"
+                        ${!isAvailable ? 'disabled' : ''}>
                     <i class="fas fa-eye mr-1"></i> View
                 </button>
             </div>
+            ${isAvailable ? `
+                <div class="mt-2 text-xs text-green-600 font-medium">
+                    <i class="fas fa-check-circle mr-1"></i>Available (${item.total_stock} in stock)
+                </div>
+            ` : `
+                <div class="mt-2 text-xs text-red-600 font-medium">
+                    <i class="fas fa-exclamation-circle mr-1"></i>Currently unavailable
+                </div>
+            `}
         </div>
     `;
     return div;
@@ -164,6 +192,20 @@ function createWishlistItemElement(item) {
 
 
 function addToCart(itemId) {
+    // Find the item to check availability
+    const itemElement = document.querySelector(`[data-product-id="${itemId}"]`);
+    if (!itemElement) {
+        showNotification('Item not found', 'error');
+        return;
+    }
+    
+    // Check if item is available
+    const isAvailable = !itemElement.querySelector('.bg-red-600');
+    if (!isAvailable) {
+        showNotification('This item is currently out of stock', 'error');
+        return;
+    }
+    
     fetch('/api/v1/cart/add', {
         method: 'POST',
         headers: {
@@ -192,6 +234,16 @@ function addToCart(itemId) {
 }
 
 function viewProduct(slug) {
+    // Check if the item is available before navigating
+    const itemElement = document.querySelector(`[data-product-slug="${slug}"]`);
+    if (itemElement) {
+        const isAvailable = !itemElement.querySelector('.bg-red-600');
+        if (!isAvailable) {
+            showNotification('This item is currently out of stock', 'warning');
+            return;
+        }
+    }
+    
     window.location.href = `/product/${slug}`;
 }
 

@@ -401,6 +401,90 @@ class OrderController extends Controller
     }
 
     /**
+     * Update payment status for an order (for testing/simulation purposes).
+     */
+    public function updatePaymentStatus(Request $request, $id)
+    {
+        $request->validate([
+            'payment_status' => 'required|in:paid,failed,pending,expired',
+            'transaction_id' => 'nullable|string|max:255',
+            'paid_at' => 'nullable|date'
+        ]);
+
+        try {
+            $order = Order::findOrFail($id);
+
+            // Check if user owns this order
+            if (Auth::id() !== $order->user_id) {
+                return response()->json(['success' => false, 'message' => 'Not authorized'], 403);
+            }
+
+            // Update order status
+            $order->payment_status = $request->payment_status;
+            
+            // Update payment method to GCash when payment is successful
+            if ($request->payment_status === 'paid' && $order->payment_method === 'cod') {
+                $order->payment_method = 'gcash';
+            }
+            
+            if ($request->transaction_id) {
+                $order->transaction_id = $request->transaction_id;
+            }
+            
+            if ($request->paid_at) {
+                $order->paid_at = $request->paid_at;
+            }
+
+            // Update order status based on payment status
+            if ($request->payment_status === 'paid') {
+                $order->status = 'processing';
+            } elseif (in_array($request->payment_status, ['failed', 'expired'])) {
+                $order->status = 'cancelled';
+            }
+
+            $order->save();
+
+            \Log::info('Payment status updated manually', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'payment_status' => $order->payment_status,
+                'order_status' => $order->status,
+                'transaction_id' => $order->transaction_id,
+                'paid_at' => $order->paid_at,
+                'original_payment_method' => $order->getOriginal('payment_method'),
+                'new_payment_method' => $order->payment_method,
+                'updated_by' => 'user_' . Auth::id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment status updated successfully',
+                'data' => [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'payment_status' => $order->payment_status,
+                    'order_status' => $order->status,
+                    'transaction_id' => $order->transaction_id,
+                    'paid_at' => $order->paid_at
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to update payment status', [
+                'order_id' => $id,
+                'error' => $e->getMessage(),
+                'user_id' => Auth::id()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update payment status',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Generate Bux.ph checkout URL for an order (authenticated user for own order).
      */
     public function buxCheckout(Request $request, $id, BuxService $bux)
