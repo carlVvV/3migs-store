@@ -548,7 +548,7 @@ class OrderController extends Controller
             // Raw body + header signature for robust validation
             $raw = $request->getContent();
             $headerSig = $request->header('X-Signature') ?? $request->header('x-signature');
-
+            Log::info('Bux webhook request', ['raw' => $raw, 'headerSig' => $headerSig]);
             // Build payload from JSON or form
             $payload = $request->json()->all();
             if (empty($payload)) {
