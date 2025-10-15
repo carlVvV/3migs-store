@@ -35,6 +35,7 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/cart', [HomeController::class, 'cart'])->name('cart');
 Route::get('/checkout', [HomeController::class, 'checkout'])->name('checkout');
 Route::get('/custom-design', [HomeController::class, 'customDesign'])->name('custom-design');
+Route::view('/processing-order', 'processing-order')->name('processing-order');
 Route::get('/product/{slug}', [HomeController::class, 'productDetails'])->name('product.details');
 
 // Category routes
@@ -58,6 +59,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/account/profile/update', [AccountController::class, 'updateProfile'])->name('account.profile.update');
     Route::post('/account/password/update', [AccountController::class, 'updatePassword'])->name('account.password.update');
     Route::post('/account/notifications/update', [AccountController::class, 'updateNotifications'])->name('account.notifications.update');
+    // Send OTP to email for password reset (authenticated shortcut)
+    Route::post('/account/password/send-otp', [\App\Http\Controllers\PasswordResetController::class, 'sendOtpForAuthenticatedUser'])->name('account.password.send-otp');
 });
 
 // ============================================================================
@@ -69,6 +72,14 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::get('/signup', [AuthController::class, 'showSignup'])->name('signup');
 Route::post('/signup', [AuthController::class, 'signup']);
+
+// Password reset (OTP-based)
+Route::get('/forgot-password', [\App\Http\Controllers\PasswordResetController::class, 'showForgotForm'])->name('password.forgot');
+Route::post('/forgot-password', [\App\Http\Controllers\PasswordResetController::class, 'sendOtp'])->name('password.email');
+Route::get('/verify-code', [\App\Http\Controllers\PasswordResetController::class, 'showVerifyForm'])->name('password.verify');
+Route::post('/verify-code', [\App\Http\Controllers\PasswordResetController::class, 'verifyOtp'])->name('password.verify.submit');
+Route::get('/reset-password', [\App\Http\Controllers\PasswordResetController::class, 'showResetForm'])->name('password.reset');
+Route::post('/reset-password', [\App\Http\Controllers\PasswordResetController::class, 'resetPassword'])->name('password.update');
 
 // Google OAuth (Socialite) routes
 Route::get('/auth/google/redirect', [\App\Http\Controllers\AuthController::class, 'googleRedirect'])->name('auth.google.redirect');

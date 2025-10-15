@@ -132,12 +132,16 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::get('/seed/sample', [OrderController::class, 'seedSample']);
     });
 
-    // Payments
-    Route::post('/payments/bux/webhook', [OrderController::class, 'buxWebhook']);
+    // Payments (authenticated utilities)
     Route::post('/payments/bux/test-webhook', [OrderController::class, 'testBuxWebhook']);
     
     // (Wishlist routes moved to public v1 group)
     
     // Cart sync route (for authenticated users)
     Route::post('/cart/sync', [CartController::class, 'sync']);
+});
+
+// Public payments webhook endpoints (no auth, no CSRF)
+Route::prefix('v1')->group(function () {
+    Route::post('/payments/bux/webhook', [OrderController::class, 'buxWebhook']);
 });

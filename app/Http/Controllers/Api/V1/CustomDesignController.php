@@ -110,6 +110,27 @@ class CustomDesignController extends Controller
      */
     public function addToCart(Request $request)
     {
+        // Normalize/derive inputs to avoid common validation failures coming from the UI
+        $payload = $request->all();
+
+        // If yardage wasn't explicitly sent, try to derive it from pricing.yardage
+        if ((!isset($payload['fabric_yardage']) || $payload['fabric_yardage'] === '' || $payload['fabric_yardage'] === null)
+            && isset($payload['pricing']['yardage'])) {
+            $payload['fabric_yardage'] = (float) $payload['pricing']['yardage'];
+        }
+
+        // Coerce measurement values to numbers when they come as strings
+        if (isset($payload['measurements']) && is_array($payload['measurements'])) {
+            foreach (['chest','waist','length','shoulder_width','sleeve_length'] as $k) {
+                if (isset($payload['measurements'][$k])) {
+                    $payload['measurements'][$k] = (float) $payload['measurements'][$k];
+                }
+            }
+        }
+
+        // Recreate request with normalized payload for validation
+        $request->replace($payload);
+
         $validator = Validator::make($request->all(), [
             'fabric' => 'required|string|in:jusilyn,hugo_boss,pina_cocoon,gusot_mayaman',
             'color' => 'required|string|in:white,cream,ivory,beige,light-blue,light-pink',
@@ -121,7 +142,8 @@ class CustomDesignController extends Controller
             'measurements.length' => 'required|numeric|min:20|max:40',
             'measurements.shoulder_width' => 'required|numeric|min:12|max:25',
             'measurements.sleeve_length' => 'required|numeric|min:15|max:35',
-            'fabric_yardage' => 'required|numeric|min:1|max:10',
+            // Allow slightly wider range to accommodate larger sizes
+            'fabric_yardage' => 'required|numeric|min:0.5|max:20',
             'pricing' => 'required|array',
             'additional_notes' => 'nullable|string|max:1000'
         ]);
@@ -135,8 +157,8 @@ class CustomDesignController extends Controller
         }
 
         try {
-            // Use pricing from frontend calculation
-            $pricing = $request->pricing;
+            // Use pricing from frontend calculation (ensure array)
+            $pricing = is_array($request->pricing) ? $request->pricing : [];
             $unitPrice = $pricing['totalCost'] ?? 2000; // Fallback price
             
             // Note: Custom embroidery pricing varies based on design complexity
@@ -154,7 +176,7 @@ class CustomDesignController extends Controller
                     'color' => $request->color,
                     'embroidery' => $request->embroidery,
                     'measurements' => $request->measurements,
-                    'fabric_yardage' => $request->fabric_yardage,
+                    'fabric_yardage' => (float) $request->fabric_yardage,
                     'pricing' => $pricing,
                     'additional_notes' => $request->additional_notes,
                     'is_custom' => true

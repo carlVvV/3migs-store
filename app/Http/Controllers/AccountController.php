@@ -80,7 +80,6 @@ class AccountController extends Controller
 
         $validator = Validator::make($request->all(), [
             'email_notifications' => ['boolean'],
-            'sms_notifications' => ['boolean'],
             'marketing_emails' => ['boolean'],
         ]);
 
@@ -92,7 +91,6 @@ class AccountController extends Controller
 
         $user->update([
             'email_notifications' => $request->has('email_notifications'),
-            'sms_notifications' => $request->has('sms_notifications'),
             'marketing_emails' => $request->has('marketing_emails'),
         ]);
 

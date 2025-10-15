@@ -21,7 +21,10 @@ class BuxPostbackService
     public function processPostback(array $payload): array
     {
         try {
-            // Validate the postback signature
+            // Normalize id/key for idempotency
+            $ref = $payload['refno'] ?? $payload['req_id'] ?? null;
+
+            // Validate the postback signature (will be upgraded to raw-body validation in controller)
             if (!$this->validateSignature($payload)) {
                 Log::warning('Bux.ph postback signature validation failed', [
                     'payload' => $payload
@@ -30,15 +33,23 @@ class BuxPostbackService
             }
 
             // Extract order information
-            $orderNumber = $payload['req_id'] ?? null;
+            $orderNumber = $payload['req_id'] ?? $payload['refno'] ?? null;
             $status = $payload['status'] ?? null;
-            $transactionId = $payload['transaction_id'] ?? null;
+            $transactionId = $payload['transaction_id'] ?? ($payload['refno'] ?? null);
             $amount = $payload['amount'] ?? null;
-            $paymentMethod = $payload['payment_method'] ?? null;
+            $paymentMethod = $payload['payment_method'] ?? ($payload['method'] ?? null);
 
             if (!$orderNumber) {
                 Log::error('Bux.ph postback missing order number', ['payload' => $payload]);
                 return ['success' => false, 'message' => 'Missing order number'];
+            }
+
+            // Idempotency: ignore duplicate postbacks (based on ref/req_id)
+            if ($ref) {
+                $dupe = DB::table('processed_webhooks')->where('provider', 'bux')->where('idempotency_key', $ref)->exists();
+                if ($dupe) {
+                    return ['success' => true, 'message' => 'Duplicate postback ignored'];
+                }
             }
 
             // Find the order
@@ -58,6 +69,15 @@ class BuxPostbackService
                 'payment_method' => $paymentMethod,
                 'payload' => $payload
             ]);
+
+            // Record idempotency on success
+            if (!empty($result['success']) && $ref) {
+                DB::table('processed_webhooks')->insert([
+                    'provider' => 'bux',
+                    'idempotency_key' => $ref,
+                    'processed_at' => now(),
+                ]);
+            }
 
             return $result;
 

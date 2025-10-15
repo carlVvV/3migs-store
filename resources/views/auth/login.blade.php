@@ -139,7 +139,7 @@
                         
                         <!-- Forgot Password Link -->
                         <div class="text-right">
-                            <a href="{{ route('password.request') }}" class="text-red-600 hover:underline">
+                            <a href="{{ route('password.forgot') }}" class="text-red-600 hover:underline">
                                 Forgot Password?
                             </a>
                         </div>

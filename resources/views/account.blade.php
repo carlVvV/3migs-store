@@ -46,7 +46,11 @@
                                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                             @enderror
                         </div>
-                        <div class="flex items-center justify-end">
+                        <div class="flex items-center justify-between">
+                            <form method="POST" action="{{ route('account.password.send-otp') }}">
+                                @csrf
+                                <button type="submit" class="text-sm text-red-600 hover:underline">Send OTP to change password</button>
+                            </form>
                             <button type="submit" class="px-6 py-2 bg-gray-600 text-white font-medium rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors">
                                 Save Changes
                             </button>
@@ -86,7 +90,11 @@
                                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                             @enderror
                         </div>
-                        <div class="flex items-center justify-end">
+                        <div class="flex items-center justify-between">
+                            <form method="POST" action="{{ route('account.password.send-otp') }}">
+                                @csrf
+                                <button type="submit" class="text-sm text-red-600 hover:underline">Use OTP instead</button>
+                            </form>
                             <button type="submit" class="px-6 py-2 bg-gray-600 text-white font-medium rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors">
                                 Change Password
                             </button>

@@ -542,50 +542,31 @@ class OrderController extends Controller
     public function buxWebhook(Request $request, BuxPostbackService $postbackService)
     {
         try {
-            // Log incoming webhook for debugging
-            Log::info('Bux.ph webhook received', [
-                'headers' => $request->headers->all(),
-                'payload' => $request->all(),
-                'ip' => $request->ip(),
-                'user_agent' => $request->userAgent()
-            ]);
+            // Raw body + header signature for robust validation
+            $raw = $request->getContent();
+            $headerSig = $request->header('X-Signature') ?? $request->header('x-signature');
 
-            // Process the postback
-            $result = $postbackService->processPostback($request->all());
-
-            if ($result['success']) {
-                Log::info('Bux.ph webhook processed successfully', [
-                    'order_number' => $result['order_number'] ?? 'unknown',
-                    'message' => $result['message']
-                ]);
-                
-                return response()->json([
-                    'success' => true,
-                    'message' => $result['message']
-                ], 200);
-            } else {
-                Log::error('Bux.ph webhook processing failed', [
-                    'error' => $result['message'],
-                    'payload' => $request->all()
-                ]);
-                
-                return response()->json([
-                    'success' => false,
-                    'message' => $result['message']
-                ], 400);
+            // Build payload from JSON or form
+            $payload = $request->json()->all();
+            if (empty($payload)) {
+                $payload = $request->post();
+            }
+            if ($headerSig && !isset($payload['signature'])) {
+                $payload['signature'] = $headerSig;
             }
 
-        } catch (\Exception $e) {
-            Log::error('Bux.ph webhook exception', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'payload' => $request->all()
-            ]);
+            $result = $postbackService->processPostback($payload);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Internal server error'
-            ], 500);
+            if (!empty($result['success'])) {
+                return response('OK', 200);
+            }
+            if (($result['message'] ?? '') === 'Invalid signature') {
+                return response('Unauthorized', 401);
+            }
+            return response('Bad Request', 400);
+        } catch (\Throwable $e) {
+            \Log::error('Bux.ph webhook exception', ['error' => $e->getMessage()]);
+            return response('Server Error', 500);
         }
     }
 

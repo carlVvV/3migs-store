@@ -505,8 +505,9 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Show loading modal
-        document.getElementById('loading-modal').classList.remove('hidden');
+        // Redirect to a dedicated processing page (replaces loading modal)
+        // We stash the order payload in sessionStorage; the processing page will
+        // create the order and handle Bux redirect for ewallet/GCash.
         
         // Get form data
         const formData = new FormData(document.getElementById('checkout-form'));
@@ -526,33 +527,13 @@ document.addEventListener('DOMContentLoaded', function() {
             payment_method: paymentMethod
         };
 
-        fetch('/api/v1/orders', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify(orderData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('loading-modal').classList.add('hidden');
-            
-            if (data.success) {
-                showNotification('Order placed successfully!', 'success');
-                // Redirect to order confirmation or orders page
-                setTimeout(() => {
-                    window.location.href = '/orders';
-                }, 2000);
-            } else {
-                showNotification(data.message || 'Failed to place order', 'error');
-            }
-        })
-        .catch(error => {
-            document.getElementById('loading-modal').classList.add('hidden');
-            console.error('Error placing order:', error);
-            showNotification('An error occurred while placing your order', 'error');
-        });
+        try {
+            sessionStorage.setItem('checkoutOrderData', JSON.stringify(orderData));
+            window.location.href = '/processing-order';
+        } catch (e) {
+            console.error('Failed to start processing:', e);
+            showNotification('Unable to start payment. Please try again.', 'error');
+        }
     }
 
     function showNotification(message, type = 'info') {
