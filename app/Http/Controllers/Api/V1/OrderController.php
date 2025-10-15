@@ -560,6 +560,22 @@ class OrderController extends Controller
             // Raw body + header signature for robust validation
             $raw = $request->getContent();
             $headerSig = $request->header('X-Signature') ?? $request->header('x-signature');
+            try {
+                \DB::table('bux_webhook_logs')->insert([
+                    'provider' => 'bux',
+                    'raw_body' => $raw,
+                    'headers' => json_encode($request->headers->all()),
+                    'ip' => $request->ip(),
+                    'order_number' => $request->input('req_id') ?? $request->input('refno'),
+                    'status' => $request->input('status'),
+                    'http_status' => null,
+                    'note' => 'received',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } catch (\Throwable $e) {
+                // Swallow log errors
+            }
             Log::info('Bux webhook request', ['raw' => $raw, 'headerSig' => $headerSig]);
             // Build payload from JSON or form
             $payload = $request->json()->all();
@@ -573,14 +589,29 @@ class OrderController extends Controller
             $result = $postbackService->processPostback($payload);
 
             if (!empty($result['success'])) {
+                try { \DB::table('bux_webhook_logs')->where('raw_body', $raw)->update(['http_status' => 200, 'note' => 'processed']); } catch (\Throwable $e) {}
                 return response('OK', 200);
             }
             if (($result['message'] ?? '') === 'Invalid signature') {
+                try { \DB::table('bux_webhook_logs')->where('raw_body', $raw)->update(['http_status' => 401, 'note' => 'invalid-signature']); } catch (\Throwable $e) {}
                 return response('Unauthorized', 401);
             }
+            try { \DB::table('bux_webhook_logs')->where('raw_body', $raw)->update(['http_status' => 400, 'note' => 'bad-request']); } catch (\Throwable $e) {}
             return response('Bad Request', 400);
         } catch (\Throwable $e) {
             \Log::error('Bux.ph webhook exception', ['error' => $e->getMessage()]);
+            try { \DB::table('bux_webhook_logs')->insert([
+                'provider' => 'bux',
+                'raw_body' => $request->getContent(),
+                'headers' => json_encode($request->headers->all()),
+                'ip' => $request->ip(),
+                'order_number' => $request->input('req_id') ?? $request->input('refno'),
+                'status' => $request->input('status'),
+                'http_status' => 500,
+                'note' => 'exception: '.$e->getMessage(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]); } catch (\Throwable $ee) {}
             return response('Server Error', 500);
         }
     }
