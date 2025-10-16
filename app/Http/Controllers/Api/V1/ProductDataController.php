@@ -67,9 +67,16 @@ class ProductDataController extends Controller
                 ->first();
 
             if (!$product) {
+                \Log::warning('Product not found for size-stocks request', [
+                    'slug' => $slug,
+                    'request_url' => request()->url(),
+                    'user_agent' => request()->userAgent()
+                ]);
+                
                 return response()->json([
                     'success' => false,
-                    'message' => 'Product not found'
+                    'message' => 'Product not found',
+                    'error' => 'Product with slug "' . $slug . '" does not exist'
                 ], 404);
             }
 
@@ -81,6 +88,12 @@ class ProductDataController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Error fetching size stocks', [
+                'slug' => $slug,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Error fetching size stocks: ' . $e->getMessage()

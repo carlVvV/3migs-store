@@ -84,34 +84,54 @@
                       </div>
                   </div>
                 </div>
-                <button id="chatbotButton" class="focus:outline-none ml-2" title="Chatbot"><i class="fas fa-robot"></i></button>
+                <button id="chatbotButton" class="focus:outline-none ml-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-full w-10 h-10 flex items-center justify-center transition-all duration-200 hover:scale-105" title="Chat with MigsBot"><i class="fas fa-robot"></i></button>
 
-                <!-- Chatbox Component -->
-                <div id="chatboxContainer" class="fixed bottom-6 right-6 z-50 w-96 max-w-full bg-transparent hidden">
-                    <div class="rounded-lg shadow-lg border border-gray-300 bg-white overflow-hidden">
-                        <div class="bg-black text-white flex items-center justify-between px-4 py-2">
-                            <span class="font-bold">MigsBot</span>
-                            <div class="flex items-center space-x-2">
-                                <button title="Alert" class="text-orange-400 hover:text-orange-600 focus:outline-none">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                </button>
-                                <button id="closeChatbox" title="Close" class="text-blue-300 hover:text-blue-500 focus:outline-none">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                <!-- Enhanced MigsBot Chatbox Component -->
+                <div id="chatboxContainer" class="fixed top-20 right-4 w-80 h-[calc(100vh-8rem)] bg-white rounded-lg shadow-xl flex flex-col z-[1000] hidden md:w-96 h-[calc(100vh-8rem)] lg:w-[400px] transition-transform transform translate-x-full duration-300 ease-in-out">
+                    <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-t-lg flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                <i class="fas fa-robot text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold">MigsBot</h3>
+                                <p class="text-xs text-blue-100">AI Assistant</p>
                             </div>
                         </div>
-                        <div class="p-4 bg-gray-50 flex flex-col gap-3" style="height: 320px; overflow-y: auto;" id="chatMessages">
-                            <div class="self-start bg-white border border-gray-300 rounded-lg px-3 py-2 shadow-sm max-w-xs relative">
-                                <span>Hello! I'm MigsBot, your AI assistant for 3Migs Barong. How can I help you find the perfect barong today?</span>
+                        <button id="closeChatbox" class="text-white hover:text-blue-200 transition-colors duration-200 p-2 rounded-full hover:bg-white hover:bg-opacity-10">
+                            <i class="fas fa-times text-lg"></i>
+                        </button>
+                    </div>
+                    <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-4 text-sm bg-gray-50">
+                        <div class="flex items-start space-x-3">
+                            <div class="flex-shrink-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                                <i class="fas fa-robot text-white text-sm"></i>
+                            </div>
+                            <div class="bg-white p-4 rounded-2xl rounded-tl-sm shadow-sm max-w-[85%]">
+                                <p class="text-gray-800 text-sm leading-relaxed">
+                                    👋 Hi! I'm <strong>MigsBot</strong>, your AI assistant for 3Migs Barong. 
+                                </p>
+                                <p class="text-gray-600 text-xs mt-2">
+                                    I can help you find barong and gowns, check order info, or answer questions about shipping, returns, and more.
+                                </p>
+                                <div class="mt-3 flex flex-wrap gap-2">
+                                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">Find barong</span>
+                                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Shipping info</span>
+                                    <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">Returns</span>
+                                </div>
                             </div>
                         </div>
-                        <div class="px-4 py-2 bg-white border-t border-gray-200 flex items-center gap-2">
-                            <input type="text" placeholder="Ask about our barong..." class="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none" id="chatInput" />
-                            <button class="text-gray-500 hover:text-gray-700 focus:outline-none" id="attachBtn" title="Attach file">
-                                <i class="far fa-image"></i>
-                            </button>
-                            <button class="bg-black text-white rounded-full px-4 py-2 ml-2 hover:bg-gray-800 focus:outline-none" id="sendBtn">
-                                <i class="fas fa-paper-plane"></i>
+                    </div>
+                    <div class="p-4 border-t border-gray-200 bg-white">
+                        <div class="flex items-center space-x-3">
+                            <div class="flex-1 relative">
+                                <input type="text" id="chatInput" placeholder="Type your message..." class="w-full border border-gray-300 rounded-full px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" autocomplete="off">
+                                <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                    <i class="fas fa-paper-plane text-gray-400 text-sm"></i>
+                                </div>
+                            </div>
+                            <button id="sendBtn" class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-full w-12 h-12 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 hover:scale-105">
+                                <i class="fas fa-paper-plane text-sm"></i>
                             </button>
                         </div>
                     </div>

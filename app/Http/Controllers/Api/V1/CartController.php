@@ -146,20 +146,39 @@ class CartController extends Controller
      */
     public function add(Request $request)
     {
+        // Enhanced logging for debugging 422 errors
+        \Log::info('=== CART ADD REQUEST START ===', [
+            'timestamp' => now()->toISOString(),
+            'request_method' => $request->method(),
+            'request_url' => $request->url(),
+            'request_headers' => $request->headers->all(),
+            'raw_input' => $request->getContent(),
+            'parsed_input' => $request->all(),
+            'user_agent' => $request->userAgent(),
+            'ip_address' => $request->ip(),
+            'referer' => $request->header('Referer'),
+            'content_type' => $request->header('Content-Type'),
+            'accept_header' => $request->header('Accept'),
+        ]);
+
         try {
-            // Minimal request info
-            \Log::info('Cart add request received', [
-                'product_id' => $request->product_id,
-                'quantity' => $request->quantity,
-                'size' => $request->size,
-                'color' => $request->color,
-                'user' => Auth::user() ? Auth::user()->id : 'guest',
-                'all_request_data' => $request->all(),
-                'raw_input' => $request->getContent()
+            // Log individual field values
+            \Log::info('Cart add field analysis', [
+                'product_id_raw' => $request->input('product_id'),
+                'product_id_type' => gettype($request->input('product_id')),
+                'quantity_raw' => $request->input('quantity'),
+                'quantity_type' => gettype($request->input('quantity')),
+                'size_raw' => $request->input('size'),
+                'size_type' => gettype($request->input('size')),
+                'color_raw' => $request->input('color'),
+                'color_type' => gettype($request->input('color')),
+                'all_input_keys' => array_keys($request->all()),
+                'all_input_values' => $request->all(),
             ]);
 
             // Fallback: infer product_id from Referer slug when not provided
             if (empty($request->input('product_id'))) {
+                \Log::warning('Product ID is empty, attempting to infer from referer');
                 $referer = $request->header('Referer');
                 if ($referer) {
                     $path = parse_url($referer, PHP_URL_PATH);
@@ -171,19 +190,30 @@ class CartController extends Controller
                             $slug = $segments[$slugIndex + 1];
                             $inferredProduct = BarongProduct::where('slug', $slug)->first();
                             if ($inferredProduct) {
-                                \Log::info('Inferred product_id from referer slug', [
+                                \Log::info('Successfully inferred product_id from referer slug', [
                                     'slug' => $slug,
-                                    'product_id' => $inferredProduct->id,
+                                    'inferred_product_id' => $inferredProduct->id,
+                                    'product_name' => $inferredProduct->name,
                                 ]);
                                 $request->merge(['product_id' => $inferredProduct->id]);
                             } else {
                                 \Log::warning('Failed to infer product from slug', [
                                     'slug' => $slug,
                                     'referer' => $referer,
+                                    'path' => $path,
+                                    'segments' => $segments,
                                 ]);
                             }
+                        } else {
+                            \Log::warning('Could not parse product slug from referer', [
+                                'referer' => $referer,
+                                'path' => $path,
+                                'segments' => $segments,
+                            ]);
                         }
                     }
+                } else {
+                    \Log::warning('No referer header found');
                 }
             }
 
@@ -195,20 +225,46 @@ class CartController extends Controller
                 'color' => 'nullable|string|max:255',
             ]);
 
+            // Log validation results
             if ($validatorInstance->fails()) {
+                \Log::error('Cart add validation failed', [
+                    'validation_errors' => $validatorInstance->errors()->toArray(),
+                    'failed_rules' => $validatorInstance->failed(),
+                    'input_data' => $request->all(),
+                    'product_id_exists' => $request->input('product_id') ? BarongProduct::find($request->input('product_id')) !== null : false,
+                    'available_products' => BarongProduct::pluck('id', 'slug')->toArray(),
+                ]);
+                
                 return response()->json([
                     'success' => false,
                     'message' => 'Validation failed',
                     'errors' => $validatorInstance->errors(),
+                    'debug_info' => [
+                        'input_data' => $request->all(),
+                        'available_products' => BarongProduct::pluck('id', 'slug')->toArray(),
+                    ]
                 ], 422);
             }
 
             $validator = $validatorInstance->validated();
+            \Log::info('Validation passed', ['validated_data' => $validator]);
 
             $user = Auth::user();
-            $product = BarongProduct::findOrFail($validator['product_id']);
+            \Log::info('User authentication', [
+                'user_id' => $user ? $user->id : 'guest',
+                'user_email' => $user ? $user->email : 'guest',
+                'is_authenticated' => Auth::check(),
+            ]);
 
-            
+            $product = BarongProduct::findOrFail($validator['product_id']);
+            \Log::info('Product found', [
+                'product_id' => $product->id,
+                'product_name' => $product->name,
+                'product_slug' => $product->slug,
+                'is_available' => $product->is_available,
+                'total_stock' => $product->getTotalStock(),
+                'size_stocks' => $product->size_stocks,
+            ]);
 
             if (!$product->is_available) {
                 \Log::warning('Product not available', ['product_id' => $product->id]);
@@ -233,7 +289,8 @@ class CartController extends Controller
                 if (!$selectedSize) {
                     \Log::warning('No size selected for size-managed product', [
                         'product_id' => $product->id,
-                        'size_stocks' => $product->size_stocks
+                        'size_stocks' => $product->size_stocks,
+                        'available_sizes' => array_keys(array_filter($product->size_stocks ?? [])),
                     ]);
                     return response()->json([
                         'success' => false,
@@ -278,6 +335,15 @@ class CartController extends Controller
                 ], 400);
             }
 
+            \Log::info('=== CART ADD REQUEST SUCCESS ===', [
+                'product_id' => $product->id,
+                'quantity' => $validator['quantity'],
+                'size' => $validator['size'] ?? null,
+                'color' => $validator['color'] ?? null,
+                'user_id' => $user ? $user->id : 'guest',
+            ]);
+
+            // Continue with existing cart logic...
             if (!$user) {
                 // Handle guest users with session cart
                 $cart = session()->get('cart', []);
@@ -323,8 +389,6 @@ class CartController extends Controller
                 }
 
                 session()->put('cart', $cart);
-
-                
 
                 return response()->json([
                     'success' => true,
@@ -401,8 +465,6 @@ class CartController extends Controller
 
             $cartItem->load('product');
 
-            
-
             return response()->json([
                 'success' => true,
                 'message' => 'Product added to cart successfully',
@@ -415,7 +477,9 @@ class CartController extends Controller
         } catch (\Exception $e) {
             \Log::error('Cart add error', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all(),
+                'user_id' => Auth::user() ? Auth::user()->id : 'guest',
             ]);
             
             return response()->json([

@@ -5,6 +5,9 @@
 @section('content')
 <div class="min-h-screen bg-white">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Hidden input for product ID -->
+        <input type="hidden" id="productId" value="{{ $product->id }}">
+        
         <!-- Breadcrumb -->
         <nav class="mb-8">
             <ol class="flex items-center space-x-2 text-sm text-gray-600">
@@ -275,13 +278,27 @@ console.log('Initialized selectedSize variable:', selectedSize);
 console.log('Type of selectedSize:', typeof selectedSize);
 
 // Auto-select first available size if none is selected
-if (!selectedSize) {
+if (!selectedSize || selectedSize === null || selectedSize === 'null') {
+    console.log('No size selected, attempting auto-selection...');
     const availableSizes = document.querySelectorAll('.size-btn:not(.opacity-50)');
+    console.log('Available sizes found:', availableSizes.length);
+    
     if (availableSizes.length > 0) {
         const firstAvailable = availableSizes[0];
         const size = firstAvailable.getAttribute('data-size');
+        console.log('Auto-selecting size:', size);
         selectSize(size, firstAvailable);
         console.log('Auto-selected first available size:', size);
+    } else {
+        console.warn('No available sizes found for auto-selection');
+    }
+} else {
+    console.log('Size already selected:', selectedSize);
+    // Ensure the selected size button is visually selected
+    const selectedButton = document.querySelector(`[data-size="${selectedSize}"]`);
+    if (selectedButton) {
+        selectedButton.classList.add('bg-black', 'text-white');
+        selectedButton.classList.remove('border-gray-300', 'text-gray-700');
     }
 }
 
@@ -340,7 +357,17 @@ function checkForUpdates() {
     const productSlug = '{{ $product->slug }}';
     
     fetch(`/api/v1/product-data/${productSlug}/size-stocks`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 404) {
+                    console.warn('Product not found for updates:', productSlug);
+                    stopRealTimeUpdates();
+                    return;
+                }
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success && data.updated_at !== lastUpdateTime) {
                 console.log('Product updated, refreshing size stocks...');
@@ -350,6 +377,10 @@ function checkForUpdates() {
         })
         .catch(error => {
             console.log('Error checking for updates:', error);
+            // Don't stop updates for network errors, only for 404s
+            if (error.message.includes('404')) {
+                stopRealTimeUpdates();
+            }
         });
 }
 
@@ -455,47 +486,99 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function addToCart() {
-    const productId = @json($product->id);
+    // Get product ID from hidden input first, then fallback to PHP
+    let productId = document.getElementById('productId')?.value;
+    if (!productId) {
+        productId = @json($product->id);
+    }
+    
     const quantity = currentQuantity;
     const size = selectedSize;
-    const color = document.getElementById('colorSelect').value;
+    const color = document.getElementById('colorSelect') ? document.getElementById('colorSelect').value : null;
     
-    console.log('Initial selectedSize value:', selectedSize);
+    console.log('=== AddToCart Debug ===');
+    console.log('Product ID:', productId);
+    console.log('Quantity:', quantity);
+    console.log('Selected Size:', selectedSize);
+    console.log('Size variable:', size);
+    console.log('Color:', color);
     console.log('Type of selectedSize:', typeof selectedSize);
     
     // Check if size is properly selected
-    if (!size || size === 'null' || size === '') {
+    if (!size || size === 'null' || size === '' || size === null) {
         console.error('No size selected! selectedSize =', selectedSize);
-        showError('Please select a size before adding to cart.');
-        return;
+        console.error('Attempting emergency size selection...');
+        
+        // Emergency fallback: try to select the first available size
+        const availableSizes = document.querySelectorAll('.size-btn:not(.opacity-50)');
+        if (availableSizes.length > 0) {
+            const firstAvailable = availableSizes[0];
+            const emergencySize = firstAvailable.getAttribute('data-size');
+            console.log('Emergency selecting size:', emergencySize);
+            selectSize(emergencySize, firstAvailable);
+            
+            // Update the size variable
+            const updatedSize = emergencySize;
+            console.log('Updated size to:', updatedSize);
+            
+            // Continue with the updated size
+            const updatedPayload = {
+                product_id: Number(productId),
+                quantity: Number(quantity),
+                size: updatedSize,
+                color: color || null,
+                _token: csrfToken ? csrfToken.getAttribute('content') : ''
+            };
+            
+            console.log('Emergency payload:', updatedPayload);
+            // Continue with the request using updatedPayload instead of payload
+            proceedWithCartAdd(updatedPayload);
+            return;
+        } else {
+            showError('Please select a size before adding to cart.');
+            return;
+        }
     }
     
-    const payload = {
-        product_id: Number(productId),
-        quantity: Number(quantity),
-        size: size || null,
-        color: color || null,
-    };
-    
-    console.log('Final values:', { productId, quantity, size, color });
-    
-    console.log('Add to Cart Debug:', {
-        productId: productId,
-        quantity: quantity,
-        size: size,
-        color: color,
-        payload: payload
-    });
-    
-    console.log('Raw payload being sent:', JSON.stringify(payload));
+    // Validate product ID
+    if (!productId || productId === null) {
+        console.error('No product ID found!');
+        showError('Product information is missing. Please refresh the page and try again.');
+        return;
+    }
     
     // Debug CSRF token
     const csrfToken = document.querySelector('meta[name="csrf-token"]');
     console.log('CSRF Token element:', csrfToken);
     console.log('CSRF Token value:', csrfToken ? csrfToken.getAttribute('content') : 'NOT FOUND');
     
+    const payload = {
+        product_id: Number(productId),
+        quantity: Number(quantity),
+        size: size || null,
+        color: color || null,
+        _token: csrfToken ? csrfToken.getAttribute('content') : ''
+    };
+    
+    console.log('Final payload:', payload);
+    console.log('Raw payload being sent:', JSON.stringify(payload));
+    
+    // Proceed with cart addition
+    proceedWithCartAdd(payload);
+}
+
+function proceedWithCartAdd(payload) {
+    const size = payload.size;
+    const quantity = payload.quantity;
+    
     // Check stock availability
     const selectedButton = document.querySelector(`[data-size="${size}"]`);
+    if (!selectedButton) {
+        console.error('Selected size button not found for size:', size);
+        showError('Size selection error. Please select a size again.');
+        return;
+    }
+    
     const availableStock = parseInt(selectedButton.getAttribute('data-stock'));
     
     if (availableStock <= 0) {
@@ -507,6 +590,12 @@ function addToCart() {
         showError(`Only ${availableStock} items available in size ${size}`);
         return;
     }
+    
+    // Show loading state
+    const addToCartBtn = document.querySelector('button[onclick="addToCart()"]');
+    const originalText = addToCartBtn.innerHTML;
+    addToCartBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Adding...';
+    addToCartBtn.disabled = true;
     
     fetch('/api/v1/cart/add', {
         method: 'POST',
@@ -536,6 +625,8 @@ function addToCart() {
     .then(data => {
         if (!data) return; // Handle 419 case
         
+        console.log('Response data:', data);
+        
         if (data.success) {
             // Position notification below header dynamically
             const notification = document.createElement('div');
@@ -560,12 +651,18 @@ function addToCart() {
                 updateCartCount();
             }
         } else {
+            console.error('Add to cart failed:', data);
             showError('Error adding product to cart: ' + (data.message || 'Unknown error'));
         }
     })
     .catch(error => {
         console.error('Error:', error);
         showError('An error occurred while adding to cart');
+    })
+    .finally(() => {
+        // Restore button state
+        addToCartBtn.innerHTML = originalText;
+        addToCartBtn.disabled = false;
     });
 }
 

@@ -106,35 +106,94 @@
 
 <!-- MigsBot Chat Panel -->
 <div id="migsbot-panel" class="fixed top-16 right-4 w-80 h-[calc(100vh-8rem)] bg-white rounded-lg shadow-xl flex flex-col z-[1000] hidden md:w-96 md:h-[calc(100vh-8rem)] lg:w-[400px] transition-transform transform translate-x-full duration-300 ease-in-out">
-    <div class="bg-gray-600 text-white p-4 rounded-t-lg flex items-center justify-between">
-        <div class="flex items-center">
-            <i class="fas fa-robot mr-2 text-xl"></i>
-            <h3 class="text-lg font-semibold">MigsBot</h3>
+    <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-t-lg flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                <i class="fas fa-robot text-lg"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold">MigsBot</h3>
+                <p class="text-xs text-blue-100">AI Assistant</p>
+            </div>
         </div>
-        <button id="migsbot-close-btn" class="text-white hover:text-gray-200 focus:outline-none">
+        <button id="migsbot-close-btn" class="text-white hover:text-blue-200 transition-colors duration-200 p-2 rounded-full hover:bg-white hover:bg-opacity-10">
             <i class="fas fa-times text-lg"></i>
         </button>
     </div>
     <div id="migsbot-messages" class="flex-1 p-4 overflow-y-auto space-y-4 text-sm bg-gray-50">
         <div class="flex items-start space-x-3">
-            <div class="flex-shrink-0 w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center text-white">
-                <i class="fas fa-robot text-sm"></i>
+            <div class="flex-shrink-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                <i class="fas fa-robot text-white text-sm"></i>
             </div>
-            <div class="bg-white p-3 rounded-lg shadow-sm max-w-[80%]">
-                <p class="text-gray-800">Hi! I am MigsBot. I can help you find barong and gowns, check simple order info, or answer questions about shipping, returns, and more.</p>
-                <p class="text-gray-600 mt-1 text-xs">Ask about products, shipping, returns, or type a keyword like 'barong'.</p>
+            <div class="bg-white p-4 rounded-2xl rounded-tl-sm shadow-sm max-w-[85%]">
+                <p class="text-gray-800 text-sm leading-relaxed">
+                    👋 Hi! I'm <strong>MigsBot</strong>, your AI assistant for 3Migs Barong. 
+                </p>
+                <p class="text-gray-600 text-xs mt-2">
+                    I can help you find barong and gowns, check order info, or answer questions about shipping, returns, and more.
+                </p>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">Find barong</span>
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Shipping info</span>
+                    <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">Returns</span>
+                </div>
             </div>
         </div>
     </div>
     <form id="migsbot-form" class="p-4 border-t border-gray-200 bg-white">
-        <div class="flex items-center space-x-2">
-            <input type="text" id="migsbot-input" placeholder="Type a message..." class="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500">
-            <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white rounded-full w-10 h-10 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-200">
-                <i class="fas fa-paper-plane"></i>
+        <div class="flex items-center space-x-3">
+            <div class="flex-1 relative">
+                <input type="text" id="migsbot-input" placeholder="Type your message..." class="w-full border border-gray-300 rounded-full px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" autocomplete="off">
+                <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <i class="fas fa-paper-plane text-gray-400 text-sm"></i>
+                </div>
+            </div>
+            <button type="submit" class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-full w-12 h-12 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 hover:scale-105">
+                <i class="fas fa-paper-plane text-sm"></i>
             </button>
         </div>
     </form>
 </div>
+
+<style>
+    .migsbot-message {
+        animation: fadeInUp 0.3s ease-out;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .migsbot-typing {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #6B7280;
+        animation: typing 1.4s infinite ease-in-out;
+    }
+    
+    .migsbot-typing:nth-child(1) { animation-delay: -0.32s; }
+    .migsbot-typing:nth-child(2) { animation-delay: -0.16s; }
+    
+    @keyframes typing {
+        0%, 80%, 100% {
+            transform: scale(0.8);
+            opacity: 0.5;
+        }
+        40% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -231,74 +290,114 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // MigsBot chat functionality
+    // Enhanced MigsBot chat functionality
     function addMessage(sender, text, isProduct = false, products = []) {
         const messageContainer = document.createElement('div');
-        messageContainer.className = `flex items-start space-x-3 ${sender === 'user' ? 'justify-end' : ''}`;
+        messageContainer.className = `flex items-start space-x-3 migsbot-message ${sender === 'user' ? 'justify-end' : ''}`;
 
-        if (sender === 'bot') {
-            const botIcon = `<div class="flex-shrink-0 w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center text-white"><i class="fas fa-robot text-sm"></i></div>`;
-            messageContainer.innerHTML += botIcon;
-        }
+        if (sender === 'user') {
+            const messageBubble = document.createElement('div');
+            messageBubble.className = 'bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-2xl rounded-tr-sm shadow-sm max-w-[85%]';
+            messageBubble.innerHTML = `<p class="text-sm leading-relaxed">${text}</p>`;
+            messageContainer.appendChild(messageBubble);
+        } else {
+            const botIcon = document.createElement('div');
+            botIcon.className = 'flex-shrink-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center';
+            botIcon.innerHTML = '<i class="fas fa-robot text-white text-sm"></i>';
+            messageContainer.appendChild(botIcon);
 
-        const messageBubble = document.createElement('div');
-        messageBubble.className = `p-3 rounded-lg shadow-sm max-w-[80%] ${sender === 'user' ? 'bg-gray-500 text-white' : 'bg-white text-gray-800'}`;
-        messageBubble.innerHTML = text;
+            const messageBubble = document.createElement('div');
+            messageBubble.className = 'bg-white p-4 rounded-2xl rounded-tl-sm shadow-sm max-w-[85%]';
+            messageBubble.innerHTML = `<p class="text-gray-800 text-sm leading-relaxed">${text}</p>`;
 
-        if (isProduct && products.length > 0) {
-            let productHtml = '<p class="font-semibold mb-2">Here are some products:</p><ul class="space-y-2">';
-            products.forEach(product => {
-                productHtml += `
-                    <li class="flex items-center space-x-2">
-                        <img src="${product.image_url || '/images/placeholder.jpg'}" alt="${product.name}" class="w-10 h-10 object-cover rounded">
-                        <div>
-                            <a href="/product/${product.slug}" class="text-blue-600 hover:underline font-medium">${product.name}</a>
-                            <p class="text-sm text-gray-600">₱${parseFloat(product.current_price).toFixed(2)}</p>
+            if (isProduct && products.length > 0) {
+                let productHtml = '<div class="mt-3"><p class="text-gray-800 text-sm font-medium mb-2">Here are some products you might like:</p>';
+                products.forEach(product => {
+                    productHtml += `
+                        <div class="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <div class="font-medium text-blue-900">${product.name}</div>
+                            <div class="text-sm text-blue-700">₱${parseFloat(product.current_price || product.price).toFixed(2)}</div>
+                            <a href="/product/${product.slug}" class="text-xs text-blue-600 hover:text-blue-800 underline">View Product</a>
                         </div>
-                    </li>
-                `;
-            });
-            productHtml += '</ul>';
-            messageBubble.innerHTML += productHtml;
+                    `;
+                });
+                productHtml += '</div>';
+                messageBubble.innerHTML += productHtml;
+            }
+
+            messageContainer.appendChild(messageBubble);
         }
 
-        messageContainer.appendChild(messageBubble);
         migsbotMessages.appendChild(messageContainer);
         migsbotMessages.scrollTop = migsbotMessages.scrollHeight;
     }
 
-    // Handle MigsBot form submission
+    // Enhanced MigsBot form submission
     if (migsbotForm) {
         migsbotForm.addEventListener('submit', function(e) {
             e.preventDefault();
             const message = migsbotInput.value.trim();
-            if (message) {
-                addMessage('user', message);
-                migsbotInput.value = '';
+            if (!message) return;
 
-                fetch('/api/v1/migsbot/chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify({
-                        message: message
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        addMessage('bot', data.reply, data.is_product_search, data.products);
-                    } else {
-                        addMessage('bot', 'Sorry, I encountered an error. Please try again.');
-                    }
-                })
-                .catch(error => {
-                    console.error('MigsBot API Error:', error);
-                    addMessage('bot', 'Sorry, I could not connect to the server. Please try again later.');
-                });
-            }
+            // Disable input while processing
+            migsbotInput.disabled = true;
+            const submitBtn = migsbotForm.querySelector('button[type="submit"]');
+            const originalContent = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin text-sm"></i>';
+
+            // Add user message
+            addMessage('user', message);
+            migsbotInput.value = '';
+
+            // Show typing indicator
+            const typingContainer = document.createElement('div');
+            typingContainer.className = 'flex items-start space-x-3 migsbot-message';
+            typingContainer.innerHTML = `
+                <div class="flex-shrink-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                    <i class="fas fa-robot text-white text-sm"></i>
+                </div>
+                <div class="bg-white p-4 rounded-2xl rounded-tl-sm shadow-sm max-w-[85%]">
+                    <div class="flex items-center space-x-1">
+                        <span class="migsbot-typing"></span>
+                        <span class="migsbot-typing"></span>
+                        <span class="migsbot-typing"></span>
+                    </div>
+                </div>
+            `;
+            migsbotMessages.appendChild(typingContainer);
+            migsbotMessages.scrollTop = migsbotMessages.scrollHeight;
+
+            fetch('/api/v1/migsbot/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ message: message })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Remove typing indicator
+                typingContainer.remove();
+
+                if (data.success) {
+                    addMessage('bot', data.reply || 'I apologize, but I\'m having trouble processing your request. Please try again or contact our store directly.', data.is_product_search, data.products);
+                } else {
+                    addMessage('bot', 'I apologize, but I\'m having trouble processing your request. Please try again or contact our store directly.');
+                }
+            })
+            .catch(error => {
+                console.error('MigsBot API Error:', error);
+                // Remove typing indicator
+                typingContainer.remove();
+                addMessage('bot', 'Network error, please try again.');
+            })
+            .finally(() => {
+                // Re-enable input
+                migsbotInput.disabled = false;
+                submitBtn.innerHTML = originalContent;
+                migsbotInput.focus();
+            });
         });
     }
 

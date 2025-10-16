@@ -14,13 +14,13 @@ class HomeController extends Controller
     public function index()
     {
         // Get featured barong products
-        $featuredProducts = BarongProduct::with(['brand', 'category'])
+        $featuredProducts = BarongProduct::with(['category'])
             ->featured()
             ->limit(8)
             ->get();
 
         // Get new arrivals
-        $newArrivals = BarongProduct::with(['brand', 'category'])
+        $newArrivals = BarongProduct::with(['category'])
             ->orderBy('created_at', 'desc')
             ->limit(8)
             ->get();
@@ -65,7 +65,7 @@ class HomeController extends Controller
     {
         // Cache the product for 1 hour to reduce database calls
         $product = cache()->remember("product.{$slug}", 3600, function () use ($slug) {
-            return BarongProduct::with(['brand', 'category'])
+            return BarongProduct::with(['category'])
                 ->where('slug', $slug)
                 ->available()
                 ->first();
@@ -77,7 +77,7 @@ class HomeController extends Controller
 
         // Cache related products for 30 minutes
         $relatedProducts = cache()->remember("product.{$slug}.related", 1800, function () use ($product) {
-            return BarongProduct::with(['brand', 'category'])
+            return BarongProduct::with(['category'])
                 ->where('category_id', $product->category_id)
                 ->where('id', '!=', $product->id)
                 ->available()

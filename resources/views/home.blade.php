@@ -69,11 +69,11 @@
                     <span class="w-2 h-8 bg-red-500 mr-3 rounded-sm"></span> All Products
                 </h2>
                 <div class="flex items-center space-x-4">
-                    <span class="text-sm text-gray-600">{{ $featuredProducts->count() + $newArrivals->count() }} Products</span>
+                    <span class="text-sm text-gray-600">{{ $featuredProducts->concat($newArrivals)->unique('id')->filter(function($product) { return !empty($product->slug); })->count() }} Products</span>
                 </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                @foreach($featuredProducts->concat($newArrivals)->unique('id') as $product)
+                @foreach($featuredProducts->concat($newArrivals)->unique('id')->filter(function($product) { return !empty($product->slug); }) as $product)
                 <a href="{{ route('product.details', $product->slug) }}" class="bg-white rounded-lg shadow-md overflow-hidden relative product-card hover:shadow-lg transition-shadow cursor-pointer">
                     @if($product->is_on_sale)
                     <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-{{ $product->discount_percentage }}%</div>
