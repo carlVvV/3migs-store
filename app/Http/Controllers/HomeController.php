@@ -106,7 +106,18 @@ class HomeController extends Controller
      */
     public function orders()
     {
-        return view('orders');
+        // Get regular orders
+        $regularOrders = auth()->user()->orders()->with(['orderItems.product'])->latest()->get();
+        
+        // Get custom design orders
+        $customOrders = \App\Models\CustomDesignOrder::where('user_id', auth()->id())
+            ->latest()
+            ->get();
+        
+        // Combine and sort orders by creation date
+        $allOrders = $regularOrders->concat($customOrders)->sortByDesc('created_at');
+        
+        return view('orders', compact('allOrders'));
     }
 
     /**

@@ -134,14 +134,22 @@
                             @foreach($orders as $order)
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    #{{ $order->order_number ?? $order->id }}
+                                    @if(isset($order->orderItems))
+                                        Order #{{ $order->order_number ?? $order->id }}
+                                    @else
+                                        Custom #{{ $order->order_number ?? $order->id }}
+                                    @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm font-medium text-gray-900">{{ $order->user->name ?? 'Guest' }}</div>
                                     <div class="text-sm text-gray-500">{{ $order->user->email ?? 'N/A' }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {{ $order->orderItems->count() }} item(s)
+                                    @if(isset($order->orderItems))
+                                        {{ $order->orderItems->count() }} item(s)
+                                    @else
+                                        Custom Barong ({{ $order->quantity }})
+                                    @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     ₱{{ number_format($order->total_amount ?? 0, 2) }}
@@ -162,8 +170,13 @@
                                     {{ $order->created_at->format('M d, Y') }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3 view-order-btn" data-order-id="{{ $order->id }}">View</button>
-                                    <button class="text-green-600 hover:text-green-900 mr-3 update-order-btn" data-order-id="{{ $order->id }}" data-order-status="{{ $order->status }}" data-payment-status="{{ $order->payment_status ?? 'pending' }}">Update</button>
+                                    @if(isset($order->orderItems))
+                                        <button class="text-blue-600 hover:text-blue-900 mr-3 view-order-btn" data-order-id="{{ $order->id }}">View</button>
+                                        <button class="text-green-600 hover:text-green-900 mr-3 update-order-btn" data-order-id="{{ $order->id }}" data-order-status="{{ $order->status }}" data-payment-status="{{ $order->payment_status ?? 'pending' }}">Update</button>
+                                    @else
+                                        <button class="text-blue-600 hover:text-blue-900 mr-3 view-custom-order-btn" data-order-id="{{ $order->id }}">View</button>
+                                        <button class="text-green-600 hover:text-green-900 mr-3 update-custom-order-btn" data-order-id="{{ $order->id }}" data-order-status="{{ $order->status }}" data-payment-status="{{ $order->payment_status ?? 'pending' }}">Update</button>
+                                    @endif
                                 </td>
                             </tr>
                             @endforeach

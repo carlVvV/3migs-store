@@ -501,23 +501,49 @@ class AdminController extends Controller
      */
     public function orders(Request $request)
     {
-        $query = Order::with(['user', 'orderItems.product']);
-
-        // Filter by status
+        // Get regular orders
+        $regularQuery = Order::with(['user', 'orderItems.product']);
+        
+        // Get custom design orders
+        $customQuery = \App\Models\CustomDesignOrder::with('user');
+        
+        // Apply filters to both queries
         if ($request->has('status') && $request->status) {
-            $query->where('status', $request->status);
+            $regularQuery->where('status', $request->status);
+            $customQuery->where('status', $request->status);
         }
-
-        // Filter by date range
+        
         if ($request->has('date_from') && $request->date_from) {
-            $query->whereDate('created_at', '>=', $request->date_from);
+            $regularQuery->whereDate('created_at', '>=', $request->date_from);
+            $customQuery->whereDate('created_at', '>=', $request->date_from);
         }
+        
         if ($request->has('date_to') && $request->date_to) {
-            $query->whereDate('created_at', '<=', $request->date_to);
+            $regularQuery->whereDate('created_at', '<=', $request->date_to);
+            $customQuery->whereDate('created_at', '<=', $request->date_to);
         }
-
-        $orders = $query->orderBy('created_at', 'desc')->paginate(20);
-
+        
+        // Get orders and combine them
+        $regularOrders = $regularQuery->orderBy('created_at', 'desc')->get();
+        $customOrders = $customQuery->orderBy('created_at', 'desc')->get();
+        
+        // Combine and sort by creation date
+        $allOrders = $regularOrders->concat($customOrders)->sortByDesc('created_at');
+        
+        // Create a paginated collection
+        $perPage = 20;
+        $currentPage = $request->get('page', 1);
+        $offset = ($currentPage - 1) * $perPage;
+        $items = $allOrders->slice($offset, $perPage)->values();
+        
+        $orders = new \Illuminate\Pagination\LengthAwarePaginator(
+            $items,
+            $allOrders->count(),
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'pageName' => 'page']
+        );
+        
         return view('admin.orders', compact('orders'));
     }
 

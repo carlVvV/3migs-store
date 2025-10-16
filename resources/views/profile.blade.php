@@ -97,15 +97,39 @@
                     <div class="mb-8">
                         <h3 class="text-lg font-semibold text-gray-700 mb-4">Recent Orders</h3>
                         <div class="bg-gray-50 rounded-lg p-4">
-                            @if(Auth::user()->orders()->latest()->take(3)->count() > 0)
-                                @foreach(Auth::user()->orders()->latest()->take(3)->get() as $order)
+                            @php
+                                // Get regular orders
+                                $regularOrders = Auth::user()->orders()->latest()->take(3)->get();
+                                
+                                // Get custom design orders
+                                $customOrders = \App\Models\CustomDesignOrder::where('user_id', Auth::id())
+                                    ->latest()
+                                    ->take(3)
+                                    ->get();
+                                
+                                // Combine and sort orders by creation date
+                                $recentOrders = $regularOrders->concat($customOrders)->sortByDesc('created_at')->take(3);
+                            @endphp
+                            
+                            @if($recentOrders->count() > 0)
+                                @foreach($recentOrders as $order)
                                 <div class="flex items-center justify-between py-3 border-b border-gray-200 last:border-b-0">
                                     <div class="flex items-center space-x-4">
                                         <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-                                            <i class="fas fa-box text-gray-600"></i>
+                                            @if(isset($order->orderItems))
+                                                <i class="fas fa-box text-gray-600"></i>
+                                            @else
+                                                <i class="fas fa-palette text-gray-600"></i>
+                                            @endif
                                         </div>
                                         <div>
-                                            <div class="font-semibold text-gray-800">Order #{{ $order->order_number }}</div>
+                                            <div class="font-semibold text-gray-800">
+                                                @if(isset($order->orderItems))
+                                                    Order #{{ $order->order_number }}
+                                                @else
+                                                    Custom Order #{{ $order->order_number }}
+                                                @endif
+                                            </div>
                                             <div class="text-sm text-gray-600">{{ $order->created_at->format('M d, Y') }}</div>
                                         </div>
                                     </div>
@@ -122,7 +146,7 @@
                                 </div>
                                 @endforeach
                                 <div class="text-center mt-4">
-                                    <a href="#orders" class="text-blue-600 hover:text-blue-800 font-medium">View All Orders</a>
+                                    <a href="{{ route('orders') }}" class="text-blue-600 hover:text-blue-800 font-medium">View All Orders</a>
                                 </div>
                             @else
                                 <div class="text-center py-8 text-gray-500">

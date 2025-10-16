@@ -79,16 +79,26 @@
 
         <!-- Orders List -->
         <div id="orders-container">
-            @if(Auth::user()->orders()->count() > 0)
-                @foreach(Auth::user()->orders()->latest()->get() as $order)
+            @if($allOrders->count() > 0)
+                @foreach($allOrders as $order)
                 <div class="order-card bg-white rounded-lg shadow-md p-6 mb-6" data-status="{{ $order->status }}">
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center space-x-4">
                             <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                                <i class="fas fa-box text-gray-600"></i>
+                                @if(isset($order->orderItems))
+                                    <i class="fas fa-box text-gray-600"></i>
+                                @else
+                                    <i class="fas fa-palette text-gray-600"></i>
+                                @endif
                             </div>
                             <div>
-                                <h3 class="text-lg font-semibold text-gray-800">Order #{{ $order->order_number }}</h3>
+                                <h3 class="text-lg font-semibold text-gray-800">
+                                    @if(isset($order->orderItems))
+                                        Order #{{ $order->order_number }}
+                                    @else
+                                        Custom Order #{{ $order->order_number }}
+                                    @endif
+                                </h3>
                                 <p class="text-sm text-gray-600">Placed on {{ $order->created_at->format('M d, Y \a\t g:i A') }}</p>
                             </div>
                         </div>
@@ -107,19 +117,52 @@
                     
                     <!-- Order Items -->
                     <div class="space-y-3 mb-4">
-                        @foreach($order->orderItems as $item)
-                        <div class="flex items-center space-x-4 bg-gray-50 p-4 rounded-lg">
-                            <img src="{{ asset($item->product->images[0] ?? 'images/placeholder.jpg') }}" alt="{{ $item->product->name }}" class="w-16 h-16 object-cover rounded-lg">
-                            <div class="flex-1">
-                                <h4 class="font-semibold text-gray-800">{{ $item->product->name }}</h4>
-                                <p class="text-sm text-gray-600">Quantity: {{ $item->quantity }}</p>
-                                <p class="text-sm text-gray-600">Price: ₱{{ number_format((float) ($item->unit_price ?? ($item->price ?? 0)), 2) }}</p>
+                        @if(isset($order->orderItems))
+                            @foreach($order->orderItems as $item)
+                            <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                                <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                                    @if($item->product && $item->product->cover_image)
+                                        <img src="{{ $item->product->cover_image }}" alt="{{ $item->product->name }}" class="w-full h-full object-cover rounded-lg">
+                                    @else
+                                        <i class="fas fa-image text-gray-400"></i>
+                                    @endif
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-medium text-gray-800">{{ $item->product->name ?? 'Product' }}</h4>
+                                    <p class="text-sm text-gray-600">Quantity: {{ $item->quantity }}</p>
+                                    @if($item->size)
+                                        <p class="text-sm text-gray-600">Size: {{ $item->size }}</p>
+                                    @endif
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-semibold text-gray-800">₱{{ number_format($item->price * $item->quantity, 2) }}</p>
+                                </div>
                             </div>
-                            <div class="text-right">
-                                <p class="font-semibold text-gray-800">₱{{ number_format((float) ($item->total_price ?? ((($item->unit_price ?? 0) * $item->quantity))), 2) }}</p>
+                            @endforeach
+                        @else
+                            <!-- Custom Design Order Display -->
+                            <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                                <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                                    @if($order->reference_image)
+                                        <img src="{{ Storage::url($order->reference_image) }}" alt="Custom Barong" class="w-full h-full object-cover rounded-lg">
+                                    @else
+                                        <i class="fas fa-palette text-gray-400"></i>
+                                    @endif
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-medium text-gray-800">Custom Barong</h4>
+                                    <p class="text-sm text-gray-600">Fabric: {{ ucfirst($order->fabric) }}</p>
+                                    <p class="text-sm text-gray-600">Color: {{ ucfirst($order->color) }}</p>
+                                    <p class="text-sm text-gray-600">Quantity: {{ $order->quantity }}</p>
+                                    @if($order->embroidery && $order->embroidery !== 'none')
+                                        <p class="text-sm text-gray-600">Embroidery: {{ ucfirst($order->embroidery) }}</p>
+                                    @endif
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-semibold text-gray-800">₱{{ number_format($order->total_amount, 2) }}</p>
+                                </div>
                             </div>
-                        </div>
-                        @endforeach
+                        @endif
                     </div>
 
                     <!-- Order Details -->
@@ -128,12 +171,12 @@
                         <div>
                             <h5 class="font-semibold text-gray-700 mb-2">Customer Details</h5>
                             @php
-                                $user = $order->user;
+                                $user = $order->user ?? auth()->user();
                             @endphp
                             <dl class="text-sm text-gray-700 space-y-1">
-                                <div class="flex justify-between"><dt class="font-medium text-gray-600">Name</dt><dd class="text-gray-800">{{ $user->name ?? ($order->customer_name ?? 'N/A') }}</dd></div>
-                                <div class="flex justify-between"><dt class="font-medium text-gray-600">Email</dt><dd class="text-gray-800 break-all">{{ $user->email ?? ($order->customer_email ?? 'N/A') }}</dd></div>
-                                <div class="flex justify-between"><dt class="font-medium text-gray-600">Phone</dt><dd class="text-gray-800">{{ $user->phone ?? ($order->customer_phone ?? 'N/A') }}</dd></div>
+                                <div class="flex justify-between"><dt class="font-medium text-gray-600">Name</dt><dd class="text-gray-800">{{ $user->name ?? ($order->billing_address['full_name'] ?? 'N/A') }}</dd></div>
+                                <div class="flex justify-between"><dt class="font-medium text-gray-600">Email</dt><dd class="text-gray-800 break-all">{{ $user->email ?? ($order->billing_address['email'] ?? 'N/A') }}</dd></div>
+                                <div class="flex justify-between"><dt class="font-medium text-gray-600">Phone</dt><dd class="text-gray-800">{{ $user->phone ?? ($order->billing_address['phone'] ?? 'N/A') }}</dd></div>
                                 @php
                                     // Fallback address on user
                                     $uaddrRaw = $user->address ?? null;
@@ -202,21 +245,34 @@
 
                     <!-- Order Actions -->
                     <div class="flex justify-end space-x-4">
-                        <a href="{{ route('orders.details', $order->id) }}" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
-                            <i class="fas fa-eye mr-2"></i>View Details
-                        </a>
-                        @if($order->status === 'pending')
-                        <button class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 cancel-order-btn" data-order-id="{{ $order->id }}">
-                            <i class="fas fa-times mr-2"></i>Cancel Order
-                        </button>
-                        <button class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 pay-order-btn" data-order-id="{{ $order->id }}">
-                            <i class="fas fa-credit-card mr-2"></i>Pay Now
-                        </button>
-                        @endif
-                        @if($order->status === 'completed')
-                        <button class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 review-order-btn" data-order-id="{{ $order->id }}">
-                            <i class="fas fa-star mr-2"></i>Write Review
-                        </button>
+                        @if(isset($order->orderItems))
+                            <!-- Regular Order Actions -->
+                            <a href="{{ route('orders.details', $order->id) }}" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-eye mr-2"></i>View Details
+                            </a>
+                            @if($order->status === 'pending')
+                            <button class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 cancel-order-btn" data-order-id="{{ $order->id }}">
+                                <i class="fas fa-times mr-2"></i>Cancel Order
+                            </button>
+                            <button class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 pay-order-btn" data-order-id="{{ $order->id }}">
+                                <i class="fas fa-credit-card mr-2"></i>Pay Now
+                            </button>
+                            @endif
+                            @if($order->status === 'completed')
+                            <button class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 review-order-btn" data-order-id="{{ $order->id }}">
+                                <i class="fas fa-star mr-2"></i>Write Review
+                            </button>
+                            @endif
+                        @else
+                            <!-- Custom Design Order Actions -->
+                            <button class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors view-custom-order-btn" data-order-id="{{ $order->id }}">
+                                <i class="fas fa-eye mr-2"></i>View Details
+                            </button>
+                            @if($order->status === 'pending')
+                            <button class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 pay-custom-order-btn" data-order-id="{{ $order->id }}">
+                                <i class="fas fa-credit-card mr-2"></i>Pay Now
+                            </button>
+                            @endif
                         @endif
                     </div>
                 </div>
