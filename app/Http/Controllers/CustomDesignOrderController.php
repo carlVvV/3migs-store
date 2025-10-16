@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use App\Services\BuxService;
 
 class CustomDesignOrderController extends Controller
 {
@@ -371,7 +372,7 @@ class CustomDesignOrderController extends Controller
     /**
      * Generate Bux checkout URL for custom design order
      */
-    public function buxCheckout(Request $request, $id)
+    public function buxCheckout(Request $request, $id, BuxService $bux)
     {
         Log::info('Custom design order bux checkout started', [
             'order_id' => $id,
@@ -399,9 +400,12 @@ class CustomDesignOrderController extends Controller
             }
 
             // Get billing address
-            $billing = is_string($customOrder->billing_address) ? 
-                (json_decode($customOrder->billing_address, true) ?: []) : 
-                ($customOrder->billing_address ?? []);
+            $billing = [];
+            if (is_string($customOrder->billing_address)) {
+                $billing = json_decode($customOrder->billing_address, true) ?: [];
+            } elseif (is_array($customOrder->billing_address)) {
+                $billing = $customOrder->billing_address;
+            }
 
             // Create Bux checkout payload
             $payload = [
@@ -431,9 +435,8 @@ class CustomDesignOrderController extends Controller
                 'payload' => $payload
             ]);
 
-            // Generate Bux checkout URL (using the same service as regular orders)
-            $buxService = app(\App\Services\BuxService::class);
-            $checkoutUrl = $buxService->generateCheckoutUrl($payload);
+            // Generate Bux checkout URL (using the injected service)
+            $checkoutUrl = $bux->generateCheckoutUrl($payload);
 
             Log::info('Custom design order bux checkout URL generated', [
                 'order_id' => $id,
