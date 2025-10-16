@@ -47,29 +47,6 @@
             <!-- Pricing and Stock -->
             @include('admin.partials.product-form.pricing-stock')
 
-            <!-- Status and Settings -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 class="text-xl font-semibold text-gray-900 mb-6">Status and Settings</h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="flex items-center">
-                        <input type="hidden" name="is_available" value="0">
-                        <input type="checkbox" id="is_available" name="is_available" value="1"
-                               {{ old('is_available', $barongProduct->is_available ?? true ? 'checked' : '') }}
-                               class="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                        <label for="is_available" class="ml-2 text-sm font-medium text-gray-700">Available for Sale</label>
-                    </div>
-                    
-                    <div class="flex items-center">
-                        <input type="hidden" name="is_featured" value="0">
-                        <input type="checkbox" id="is_featured" name="is_featured" value="1"
-                               {{ old('is_featured', $barongProduct->is_featured ?? false ? 'checked' : '') }}
-                               class="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                        <label for="is_featured" class="ml-2 text-sm font-medium text-gray-700">Featured Product</label>
-                    </div>
-                </div>
-            </div>
-
             <!-- Submit Button -->
             <div class="flex justify-end space-x-4">
                 <a href="{{ route('admin.products') }}" 

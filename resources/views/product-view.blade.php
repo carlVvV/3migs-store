@@ -127,6 +127,15 @@
                         $sizes = ['S', 'M', 'L', 'XL', 'XXL'];
                         $rawStocks = $product->size_stocks ?? [];
                         $sizeStocks = [];
+                        
+                        // Debug: Log the raw stocks
+                        \Log::info('Product size stocks debug', [
+                            'product_id' => $product->id,
+                            'raw_stocks' => $rawStocks,
+                            'is_array' => is_array($rawStocks),
+                            'count' => is_array($rawStocks) ? count($rawStocks) : 'N/A'
+                        ]);
+                        
                         // If size stocks exist, use them; otherwise mirror simple stock across sizes so UI still renders
                         if (is_array($rawStocks) && count($rawStocks) > 0) {
                             foreach ($sizes as $s) { $sizeStocks[$s] = intval($rawStocks[$s] ?? 0); }
@@ -139,13 +148,32 @@
                         $hasAnyStock = false; foreach ($sizes as $s) { if (($sizeStocks[$s] ?? 0) > 0) { $hasAnyStock = true; break; } }
                         $defaultSize = 'M';
                         $selectedSize = null;
-                        foreach ($sizes as $s) {
-                            if (($sizeStocks[$s] ?? 0) > 0) {
-                                if ($s === $defaultSize) { $selectedSize = $s; break; }
-                                if ($selectedSize === null) { $selectedSize = $s; }
+                        
+                        // First try to select the default size if it has stock
+                        if (($sizeStocks[$defaultSize] ?? 0) > 0) {
+                            $selectedSize = $defaultSize;
+                        } else {
+                            // Otherwise, select the first available size
+                            foreach ($sizes as $s) {
+                                if (($sizeStocks[$s] ?? 0) > 0) {
+                                    $selectedSize = $s;
+                                    break;
+                                }
                             }
                         }
-                        if ($selectedSize === null) { $selectedSize = $defaultSize; }
+                        
+                        // If no sizes have stock, don't set a default (let user select manually)
+                        if ($selectedSize === null) { 
+                            $selectedSize = null; // Don't auto-select if no stock
+                        }
+                        
+                        // Debug: Log the final selected size
+                        \Log::info('Product selected size debug', [
+                            'product_id' => $product->id,
+                            'selected_size' => $selectedSize,
+                            'size_stocks' => $sizeStocks,
+                            'has_any_stock' => $hasAnyStock
+                        ]);
                     @endphp
 
                     <div class="flex space-x-3">
@@ -238,9 +266,24 @@
 
 <script>
 let currentQuantity = 2;
-let selectedSize = '{{ $selectedSize }}'; // Default size (first available)
+let selectedSize = @json($selectedSize); // Use JSON to properly handle null values
 let lastUpdateTime = '{{ $product->updated_at->toISOString() }}';
 let updateInterval;
+
+console.log('Initialized selectedSize from PHP:', @json($selectedSize));
+console.log('Initialized selectedSize variable:', selectedSize);
+console.log('Type of selectedSize:', typeof selectedSize);
+
+// Auto-select first available size if none is selected
+if (!selectedSize) {
+    const availableSizes = document.querySelectorAll('.size-btn:not(.opacity-50)');
+    if (availableSizes.length > 0) {
+        const firstAvailable = availableSizes[0];
+        const size = firstAvailable.getAttribute('data-size');
+        selectSize(size, firstAvailable);
+        console.log('Auto-selected first available size:', size);
+    }
+}
 
 function changeMainImage(imageSrc, element) {
     // Remove active class from all thumbnails
@@ -289,6 +332,7 @@ function selectSize(size, element) {
     selectedSize = size;
     
     console.log('Selected size:', selectedSize, 'Stock:', stock);
+    console.log('selectedSize variable updated to:', selectedSize);
 }
 
 // Real-time update functions
@@ -416,6 +460,16 @@ function addToCart() {
     const size = selectedSize;
     const color = document.getElementById('colorSelect').value;
     
+    console.log('Initial selectedSize value:', selectedSize);
+    console.log('Type of selectedSize:', typeof selectedSize);
+    
+    // Check if size is properly selected
+    if (!size || size === 'null' || size === '') {
+        console.error('No size selected! selectedSize =', selectedSize);
+        showError('Please select a size before adding to cart.');
+        return;
+    }
+    
     const payload = {
         product_id: Number(productId),
         quantity: Number(quantity),
@@ -425,12 +479,20 @@ function addToCart() {
     
     console.log('Final values:', { productId, quantity, size, color });
     
-    console.log(' Add to Cart Debug:', {
+    console.log('Add to Cart Debug:', {
         productId: productId,
         quantity: quantity,
         size: size,
-        color: color
+        color: color,
+        payload: payload
     });
+    
+    console.log('Raw payload being sent:', JSON.stringify(payload));
+    
+    // Debug CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+    console.log('CSRF Token element:', csrfToken);
+    console.log('CSRF Token value:', csrfToken ? csrfToken.getAttribute('content') : 'NOT FOUND');
     
     // Check stock availability
     const selectedButton = document.querySelector(`[data-size="${size}"]`);
@@ -455,8 +517,25 @@ function addToCart() {
         },
         body: JSON.stringify(payload)
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        
+        if (response.status === 419) {
+            console.error('CSRF token mismatch - 419 error');
+            showError('Session expired. Please refresh the page and try again.');
+            // Optionally refresh the page after a delay
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+            return;
+        }
+        
+        return response.json();
+    })
     .then(data => {
+        if (!data) return; // Handle 419 case
+        
         if (data.success) {
             // Position notification below header dynamically
             const notification = document.createElement('div');

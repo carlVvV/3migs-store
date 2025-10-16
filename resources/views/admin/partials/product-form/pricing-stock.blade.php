@@ -4,7 +4,8 @@
 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
     <h2 class="text-xl font-semibold text-gray-900 mb-6">Pricing and Stock</h2>
     
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column: Base Price -->
         <div>
             <label for="base_price" class="block text-sm font-medium text-gray-700 mb-2">Base Price (PHP) *</label>
             <div class="relative">
@@ -16,13 +17,34 @@
             </div>
         </div>
         
-        <!-- Special price removed per request -->
+        <!-- Middle Column: Status and Settings -->
+        <div>
+            <h3 class="text-lg font-medium text-gray-900 mb-3">Status and Settings</h3>
+            <div class="space-y-4">
+                <div class="flex items-center">
+                    <input type="hidden" name="is_available" value="0">
+                    <input type="checkbox" id="is_available" name="is_available" value="1"
+                           {{ old('is_available', $barongProduct->is_available ?? true ? 'checked' : '') }}
+                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    <label for="is_available" class="ml-2 text-sm font-medium text-gray-700">Available for Sale</label>
+                </div>
+                
+                <div class="flex items-center">
+                    <input type="hidden" name="is_featured" value="0">
+                    <input type="checkbox" id="is_featured" name="is_featured" value="1"
+                           {{ old('is_featured', $barongProduct->is_featured ?? false ? 'checked' : '') }}
+                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    <label for="is_featured" class="ml-2 text-sm font-medium text-gray-700">Featured Product</label>
+                </div>
+            </div>
+        </div>
         
+        <!-- Right Column: Size Stock Management -->
         <div>
             <input type="hidden" name="has_variations" value="0">
             
             <!-- Size Stock Management -->
-            <div class="mt-4">
+            <div>
                 <h3 class="text-lg font-medium text-gray-900 mb-3">Size Stock Management</h3>
                 <p class="text-sm text-gray-600 mb-4">Set individual stock quantities for each size. Total stock will be calculated automatically.</p>
                 

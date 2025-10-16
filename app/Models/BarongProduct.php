@@ -13,7 +13,6 @@ class BarongProduct extends Model
         'slug',
         'description',
         'type',
-        'brand_id',
         'category_id',
         'images',
         'cover_image',

@@ -76,12 +76,7 @@ class AdminController extends Controller
      */
     public function barongProducts(Request $request)
     {
-        $query = BarongProduct::with(['brand', 'category']);
-
-        // Filter by brand
-        if ($request->has('brand') && $request->brand) {
-            $query->where('brand_id', $request->brand);
-        }
+        $query = BarongProduct::with(['category']);
 
         // Filter by status
         if ($request->has('status') && $request->status) {
@@ -102,10 +97,9 @@ class AdminController extends Controller
         }
 
         $barongProducts = $query->orderBy('created_at', 'desc')->paginate(20);
-        $brands = Brand::active()->get();
         $categories = Category::active()->get();
 
-        return view('admin.products', compact('barongProducts', 'brands', 'categories'));
+        return view('admin.products', compact('barongProducts', 'categories'));
     }
 
     /**
@@ -113,10 +107,9 @@ class AdminController extends Controller
      */
     public function createBarongProduct()
     {
-        $brands = Brand::active()->get();
         $categories = Category::active()->get();
         
-        return view('admin.barong-product-form', compact('brands', 'categories'));
+        return view('admin.barong-product-form', compact('categories'));
     }
 
     /**
@@ -174,7 +167,7 @@ class AdminController extends Controller
 
             // Use mass assignment with only fillable fields
             $productData = $request->only([
-                'name', 'description', 'brand_id', 'category_id',
+                'name', 'description', 'category_id',
                 'sleeve_type', 'base_price', 'special_price', 'stock',
                 'size_stocks', 'fabric', 'embroidery_style', 'colors', 'collar_type',
                 'design_details', 'video_url', 'variations'
@@ -275,11 +268,10 @@ class AdminController extends Controller
      */
     public function editBarongProduct($id)
     {
-        $barongProduct = BarongProduct::with(['brand', 'category'])->findOrFail($id);
-        $brands = Brand::active()->get();
+        $barongProduct = BarongProduct::with(['category'])->findOrFail($id);
         $categories = Category::active()->get();
         
-        return view('admin.barong-product-form', compact('barongProduct', 'brands', 'categories'));
+        return view('admin.barong-product-form', compact('barongProduct', 'categories'));
     }
 
     /**
@@ -292,7 +284,6 @@ class AdminController extends Controller
         $request->validate([
             'name' => 'required|string|max:255|unique:barong_products,name,' . $id,
             'description' => 'nullable|string',
-            'brand_id' => 'required|exists:brands,id',
             'category_id' => 'required|exists:categories,id',
             'base_price' => 'required|numeric|min:0',
             'special_price' => 'nullable|numeric|min:0',
@@ -321,8 +312,6 @@ class AdminController extends Controller
             'variations.*.sku.unique' => 'A product with this SKU already exists. Please choose a different SKU.',
             'name.required' => 'Product name is required.',
             'name.max' => 'Product name cannot exceed 255 characters.',
-            'brand_id.required' => 'Brand selection is required.',
-            'brand_id.exists' => 'Selected brand does not exist.',
             'category_id.required' => 'Category selection is required.',
             'category_id.exists' => 'Selected category does not exist.',
             'base_price.required' => 'Base price is required.',
@@ -354,7 +343,7 @@ class AdminController extends Controller
 
             // Use mass assignment with only fillable fields
             $productData = $request->only([
-                'name', 'description', 'brand_id', 'category_id',
+                'name', 'description', 'category_id',
                 'sleeve_type', 'base_price', 'special_price', 'stock',
                 'size_stocks', 'fabric', 'embroidery_style', 'colors', 'collar_type',
                 'design_details', 'video_url', 'variations'

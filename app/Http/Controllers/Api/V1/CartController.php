@@ -151,7 +151,11 @@ class CartController extends Controller
             \Log::info('Cart add request received', [
                 'product_id' => $request->product_id,
                 'quantity' => $request->quantity,
-                'user' => Auth::user() ? Auth::user()->id : 'guest'
+                'size' => $request->size,
+                'color' => $request->color,
+                'user' => Auth::user() ? Auth::user()->id : 'guest',
+                'all_request_data' => $request->all(),
+                'raw_input' => $request->getContent()
             ]);
 
             // Fallback: infer product_id from Referer slug when not provided

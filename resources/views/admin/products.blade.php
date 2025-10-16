@@ -34,18 +34,6 @@
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Brand</label>
-                    <select name="brand" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="">All Brands</option>
-                        @foreach($brands as $brand)
-                            <option value="{{ $brand->id }}" {{ request('brand') == $brand->id ? 'selected' : '' }}>
-                                {{ $brand->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                
-                <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
                     <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">All Status</option>
@@ -73,7 +61,6 @@
                         <thead class="bg-gray-50">
                             <tr>
                     <th class="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                    <th class="w-1/8 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
                     <th class="w-1/8 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                     <th class="w-1/8 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                     <th class="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
@@ -97,9 +84,6 @@
                                                 <div class="text-xs text-gray-500 truncate" title="{{ $product->sku }}">{{ $product->sku }}</div>
                                             </div>
                                         </div>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-gray-900 truncate" title="{{ $product->brand->name }}">
-                                        {{ $product->brand->name }}
                                     </td>
                                     <td class="px-6 py-4 text-sm text-gray-900 truncate" title="{{ $product->category->name }}">
                                         {{ $product->category->name }}

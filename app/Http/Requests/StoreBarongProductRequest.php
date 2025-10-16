@@ -24,7 +24,6 @@ class StoreBarongProductRequest extends FormRequest
         return [
             'name' => 'required|string|max:255|unique:barong_products,name',
             'description' => 'nullable|string',
-            'brand_id' => 'required|exists:brands,id',
             'category_id' => 'required|exists:categories,id',
             'sleeve_type' => 'nullable|string|in:Long Sleeve,Short Sleeve',
             'base_price' => 'required|numeric|min:0',
@@ -73,8 +72,6 @@ class StoreBarongProductRequest extends FormRequest
             'variations.*.sku.unique' => 'A product with this SKU already exists. Please choose a different SKU.',
             'name.required' => 'Product name is required.',
             'name.max' => 'Product name cannot exceed 255 characters.',
-            'brand_id.required' => 'Brand selection is required.',
-            'brand_id.exists' => 'Selected brand does not exist.',
             'category_id.required' => 'Category selection is required.',
             'category_id.exists' => 'Selected category does not exist.',
             'base_price.required' => 'Base price is required.',

@@ -21,19 +21,6 @@
         </div>
         
         <div>
-            <label for="brand_id" class="block text-sm font-medium text-gray-700 mb-2">Brand *</label>
-            <select id="brand_id" name="brand_id" required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Select Brand</option>
-                @foreach($brands as $brand)
-                    <option value="{{ $brand->id }}" {{ old('brand_id', $barongProduct->brand_id ?? '') == $brand->id ? 'selected' : '' }}>
-                        {{ $brand->name }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-        
-        <div>
             <label for="category_id" class="block text-sm font-medium text-gray-700 mb-2">Category *</label>
             <select id="category_id" name="category_id" required
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">

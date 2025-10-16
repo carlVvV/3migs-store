@@ -63,24 +63,27 @@ class HomeController extends Controller
      */
     public function productDetails($slug)
     {
-        $product = BarongProduct::with(['brand', 'category'])
-            ->where('slug', $slug)
-            ->available()
-            ->first();
+        // Cache the product for 1 hour to reduce database calls
+        $product = cache()->remember("product.{$slug}", 3600, function () use ($slug) {
+            return BarongProduct::with(['brand', 'category'])
+                ->where('slug', $slug)
+                ->available()
+                ->first();
+        });
 
         if (!$product) {
             abort(404);
         }
-        
-        
 
-        // Get related products from the same category
-        $relatedProducts = BarongProduct::with(['brand', 'category'])
-            ->where('category_id', $product->category_id)
-            ->where('id', '!=', $product->id)
-            ->available()
-            ->limit(4)
-            ->get();
+        // Cache related products for 30 minutes
+        $relatedProducts = cache()->remember("product.{$slug}.related", 1800, function () use ($product) {
+            return BarongProduct::with(['brand', 'category'])
+                ->where('category_id', $product->category_id)
+                ->where('id', '!=', $product->id)
+                ->available()
+                ->limit(4)
+                ->get();
+        });
 
         return view('product-view', compact('product', 'relatedProducts'));
     }
