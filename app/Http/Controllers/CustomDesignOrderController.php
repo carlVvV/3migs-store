@@ -416,18 +416,9 @@ class CustomDesignOrderController extends Controller
                 'expiry' => 2, // 2 hours expiry
                 'notification_url' => url('/api/v1/payments/bux/webhook'),
                 'redirect_url' => url('/orders'),
-                'customer' => [
-                    'name' => $billing['full_name'] ?? 'Customer',
-                    'email' => $billing['email'] ?? 'customer@example.com',
-                    'phone' => $billing['phone'] ?? '',
-                ],
-                'address' => [
-                    'line1' => $billing['street_address'] ?? '',
-                    'city' => $billing['city'] ?? '',
-                    'state' => $billing['province'] ?? '',
-                    'postal_code' => $billing['postal_code'] ?? '',
-                    'country' => 'PH'
-                ]
+                'name' => $billing['full_name'] ?? 'Customer',
+                'contact' => $billing['phone'] ?? '',
+                'param1' => $customOrder->order_number,
             ];
 
             Log::info('Custom design order bux checkout payload', [
@@ -436,7 +427,32 @@ class CustomDesignOrderController extends Controller
             ]);
 
             // Generate Bux checkout URL (using the injected service)
-            $checkoutUrl = $bux->generateCheckoutUrl($payload);
+            $result = $bux->generateCheckoutUrl($payload);
+            
+            if (!$result['success']) {
+                Log::error('Custom design order bux checkout failed', [
+                    'order_id' => $id,
+                    'error' => $result['error'] ?? 'Unknown error'
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to create checkout',
+                    'error' => $result['error'] ?? 'Unknown error'
+                ], 500);
+            }
+            
+            $checkoutUrl = $result['data']['checkout_url'] ?? null;
+            
+            if (!$checkoutUrl) {
+                Log::error('Custom design order bux checkout - no URL returned', [
+                    'order_id' => $id,
+                    'result' => $result
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No checkout URL returned'
+                ], 500);
+            }
 
             Log::info('Custom design order bux checkout URL generated', [
                 'order_id' => $id,
