@@ -68,11 +68,22 @@ class BuxPostbackService
                 }
             }
 
-            // Find the order
-            $order = Order::where('order_number', $orderNumber)->first();
+            // Find the order - check both regular orders and custom design orders
+            $order = null;
+            $isCustomOrder = false;
+            
+            // Check if it's a custom design order (starts with CD-)
+            if (str_starts_with($orderNumber, 'CD-')) {
+                $order = \App\Models\CustomDesignOrder::where('order_number', $orderNumber)->first();
+                $isCustomOrder = true;
+            } else {
+                $order = Order::where('order_number', $orderNumber)->first();
+            }
+            
             if (!$order) {
                 Log::error('Bux.ph postback order not found', [
                     'order_number' => $orderNumber,
+                    'is_custom_order' => $isCustomOrder,
                     'payload' => $payload
                 ]);
                 return ['success' => false, 'message' => 'Order not found'];
@@ -83,7 +94,8 @@ class BuxPostbackService
                 'transaction_id' => $transactionId,
                 'amount' => $amount,
                 'payment_method' => $paymentMethod,
-                'payload' => $payload
+                'payload' => $payload,
+                'is_custom_order' => $isCustomOrder
             ]);
 
             // Record idempotency on success
@@ -139,7 +151,7 @@ class BuxPostbackService
     /**
      * Process order status based on payment notification
      */
-    private function processOrderStatus(Order $order, string $status, array $paymentData): array
+    private function processOrderStatus($order, string $status, array $paymentData): array
     {
         DB::beginTransaction();
 
@@ -181,7 +193,7 @@ class BuxPostbackService
     /**
      * Handle successful payment
      */
-    private function handlePaidOrder(Order $order, array $paymentData): array
+    private function handlePaidOrder($order, array $paymentData): array
     {
         // Update order with payment information
         $order->payment_status = 'paid';
@@ -232,7 +244,7 @@ class BuxPostbackService
     /**
      * Handle failed payment
      */
-    private function handleFailedOrder(Order $order, array $paymentData): array
+    private function handleFailedOrder($order, array $paymentData): array
     {
         $order->payment_status = 'failed';
         $order->status = 'cancelled';
@@ -260,7 +272,7 @@ class BuxPostbackService
     /**
      * Handle pending payment
      */
-    private function handlePendingOrder(Order $order, array $paymentData): array
+    private function handlePendingOrder($order, array $paymentData): array
     {
         $order->payment_status = 'pending';
         $order->save();
@@ -284,7 +296,7 @@ class BuxPostbackService
     /**
      * Handle expired payment
      */
-    private function handleExpiredOrder(Order $order, array $paymentData): array
+    private function handleExpiredOrder($order, array $paymentData): array
     {
         $order->payment_status = 'expired';
         $order->status = 'cancelled';
