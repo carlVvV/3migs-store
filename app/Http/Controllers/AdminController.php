@@ -815,26 +815,51 @@ class AdminController extends Controller
         $driver = DB::getDriverName();
         $ymExpr = $driver === 'pgsql' ? 'TO_CHAR(created_at, \'YYYY-MM\')' : 'DATE_FORMAT(created_at, "%Y-%m")';
 
-        $sales_by_month = Order::select(
+        // Get regular orders sales by month
+        $regular_sales_by_month = Order::select(
                 DB::raw($ymExpr . ' as ym'),
                 DB::raw('COUNT(*) as orders_count'),
                 DB::raw('SUM(total_amount) as revenue')
             )
-            ->whereIn('status', ['completed', 'delivered', 'shipped'])
+            ->whereIn('status', ['completed', 'delivered', 'shipped', 'processing'])
             ->where('created_at', '>=', now()->subMonths(12))
             ->groupBy('ym')
             ->orderBy('ym')
-            ->get()
-            ->map(function ($row) {
-                return (object) [
-                    'month' => $row->ym,
-                    'orders_count' => (int) $row->orders_count,
-                    'revenue' => (float) $row->revenue,
-                ];
-            });
+            ->get();
 
-        $total_revenue = (float) Order::whereIn('status', ['completed', 'delivered'])->sum('total_amount');
-        $total_orders = (int) Order::whereIn('status', ['completed', 'delivered'])->count();
+        // Get custom design orders sales by month
+        $custom_sales_by_month = \App\Models\CustomDesignOrder::select(
+                DB::raw($ymExpr . ' as ym'),
+                DB::raw('COUNT(*) as orders_count'),
+                DB::raw('SUM(total_amount) as revenue')
+            )
+            ->whereIn('status', ['completed', 'delivered', 'shipped', 'processing'])
+            ->where('created_at', '>=', now()->subMonths(12))
+            ->groupBy('ym')
+            ->orderBy('ym')
+            ->get();
+
+        // Combine both order types by month
+        $all_sales = $regular_sales_by_month->concat($custom_sales_by_month);
+        $sales_by_month = $all_sales->groupBy('ym')->map(function ($monthOrders) {
+            $totalOrders = $monthOrders->sum('orders_count');
+            $totalRevenue = $monthOrders->sum('revenue');
+            return (object) [
+                'month' => $monthOrders->first()->ym,
+                'orders_count' => (int) $totalOrders,
+                'revenue' => (float) $totalRevenue,
+            ];
+        })->sortBy('month')->values();
+
+        // Calculate totals including both order types
+        $regular_revenue = (float) Order::whereIn('status', ['completed', 'delivered', 'processing'])->sum('total_amount');
+        $custom_revenue = (float) \App\Models\CustomDesignOrder::whereIn('status', ['completed', 'delivered', 'processing'])->sum('total_amount');
+        $total_revenue = $regular_revenue + $custom_revenue;
+
+        $regular_orders = (int) Order::whereIn('status', ['completed', 'delivered', 'processing'])->count();
+        $custom_orders = (int) \App\Models\CustomDesignOrder::whereIn('status', ['completed', 'delivered', 'processing'])->count();
+        $total_orders = $regular_orders + $custom_orders;
+
         $average_order_value = $total_orders > 0 ? $total_revenue / $total_orders : 0;
 
         // Best selling products (by quantity)
@@ -846,6 +871,25 @@ class AdminController extends Controller
             ->limit(10)
             ->get();
 
+        // Custom design orders data
+        $custom_orders = \App\Models\CustomDesignOrder::with('user')
+            ->whereIn('status', ['completed', 'delivered', 'shipped', 'processing'])
+            ->orderBy('created_at', 'desc')
+            ->limit(20)
+            ->get();
+
+        // Custom design orders summary
+        $custom_orders_summary = [
+            'total_custom_orders' => \App\Models\CustomDesignOrder::whereIn('status', ['completed', 'delivered', 'shipped', 'processing'])->count(),
+            'total_custom_revenue' => \App\Models\CustomDesignOrder::whereIn('status', ['completed', 'delivered', 'shipped', 'processing'])->sum('total_amount'),
+            'pending_custom_orders' => \App\Models\CustomDesignOrder::where('status', 'pending')->count(),
+            'custom_orders_by_fabric' => \App\Models\CustomDesignOrder::select('fabric', DB::raw('COUNT(*) as count'), DB::raw('SUM(total_amount) as revenue'))
+                ->whereIn('status', ['completed', 'delivered', 'shipped', 'processing'])
+                ->groupBy('fabric')
+                ->orderByDesc('count')
+                ->get(),
+        ];
+
         $salesReport = [
             'total_revenue' => $total_revenue,
             'total_orders' => $total_orders,
@@ -853,6 +897,8 @@ class AdminController extends Controller
             'top_customers' => collect(), // can be filled later
             'sales_by_month' => $sales_by_month,
             'best_sellers' => $best_sellers,
+            'custom_orders' => $custom_orders,
+            'custom_orders_summary' => $custom_orders_summary,
         ];
 
         return view('admin.reports', compact('salesReport'));
@@ -909,33 +955,6 @@ class AdminController extends Controller
         ];
 
         return view('admin.reports-print', compact('salesReport'));
-    }
-
-    /**
-     * Export reports as CSV (download)
-     */
-    public function reportsExportCsv(Request $request)
-    {
-        // Example dataset – replace with real queries (orders, totals, etc.)
-        $rows = [
-            ['Report', 'Value'],
-            ['Total Revenue', 0],
-            ['Total Orders', 0],
-            ['Average Order Value', 0],
-        ];
-
-        $callback = function () use ($rows) {
-            $FH = fopen('php://output', 'w');
-            foreach ($rows as $row) {
-                fputcsv($FH, $row);
-            }
-            fclose($FH);
-        };
-
-        $filename = 'reports_' . now()->format('Ymd_His') . '.csv';
-        return response()->streamDownload($callback, $filename, [
-            'Content-Type' => 'text/csv',
-        ]);
     }
 
     /**

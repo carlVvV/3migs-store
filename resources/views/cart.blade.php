@@ -231,13 +231,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     <button onclick="showDeleteModal(${itemId})" class="text-red-500 hover:text-red-700 transition-colors">
                         <i class="fas fa-times"></i>
                     </button>
-                    <img src="${itemImage}" 
-                         alt="${item.name}" 
-                         class="w-16 h-16 object-cover rounded-md">
-                    <div>
-                        <h4 class="font-medium text-gray-900">${item.name}</h4>
-                        <p class="text-sm text-gray-500">${categoryName}</p>
-                    </div>
+                    <a href="/product/${item.slug}" class="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+                        <img src="${itemImage}" 
+                             alt="${item.name}" 
+                             class="w-16 h-16 object-cover rounded-md">
+                        <div>
+                            <h4 class="font-medium text-gray-900 hover:text-blue-600 transition-colors">${item.name}</h4>
+                            <p class="text-sm text-gray-500">${categoryName}</p>
+                        </div>
+                    </a>
                 </div>
                 <div class="text-gray-900 font-medium">
                     ₱${price.toFixed(2)}

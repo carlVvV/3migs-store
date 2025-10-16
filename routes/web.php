@@ -103,7 +103,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/coupons', [AdminController::class, 'coupons'])->name('coupons');
     Route::get('/reports', [AdminController::class, 'reports'])->name('reports');
     Route::get('/reports/print', [AdminController::class, 'reportsPrint'])->name('reports.print');
-    Route::get('/reports/export/csv', [AdminController::class, 'reportsExportCsv'])->name('reports.export.csv');
     // Helper route to seed a test delivered order for analytics
     Route::get('/reports/seed', [AdminController::class, 'seedTestDelivery'])->name('reports.seed');
     // Seed multiple random delivered orders across months (for chart testing)
