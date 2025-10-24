@@ -5,8 +5,9 @@
             <!-- Left Section: Brand & Navigation -->
             <div class="flex items-center space-x-8">
                 <!-- Brand Logo -->
-                <a href="{{ route('home') }}" class="text-2xl font-bold text-gray-900 hover:text-gray-700 transition-colors">
-                    3Migs Gowns & Barong
+                <a href="{{ route('home') }}" class="flex items-center space-x-3 text-2xl font-bold text-gray-900 hover:text-gray-700 transition-colors">
+                    <img src="{{ asset('3migs-logo.png') }}" alt="3Migs Logo" class="h-10 w-auto">
+                    <span>3Migs Gowns & Barong</span>
                 </a>
                 
                 <!-- Navigation Links -->

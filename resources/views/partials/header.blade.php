@@ -22,7 +22,10 @@
 <header class="bg-white shadow-md sticky top-0 z-40">
     <div class="container mx-auto px-4 py-4 flex items-center justify-between">
         <div class="flex items-center space-x-8">
-            <a href="{{ route('home') }}" class="text-2xl font-bold text-gray-800">3Migs Barong</a>
+            <a href="{{ route('home') }}" class="flex items-center space-x-3 text-2xl font-bold text-gray-800">
+                <img src="{{ asset('3migs-logo.png') }}" alt="3Migs Logo" class="h-10 w-auto">
+                <span>3Migs Barong</span>
+            </a>
             <nav class="hidden md:flex space-x-6">
                 <a href="{{ route('home') }}" class="text-gray-600 hover:text-gray-900 font-medium">Home</a>
                 <a href="#" class="text-gray-600 hover:text-gray-900 font-medium">Collections</a>
