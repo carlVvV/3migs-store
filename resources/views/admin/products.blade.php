@@ -168,13 +168,13 @@
         
         <!-- Content -->
         <p id="delete-modal-message" class="text-gray-600 mb-4 text-sm">
-            Do you want to delete this product?
+            This product will be moved to trash. You can restore it later from the Deleted Items section.
         </p>
         
         <!-- Actions -->
         <div class="flex space-x-2">
             <button id="delete-confirm-btn" class="flex-1 bg-red-600 text-white py-2 px-3 rounded-md hover:bg-red-700 transition-colors font-medium text-sm">
-                Yes
+                Move to Trash
             </button>
             <button id="delete-cancel-btn" class="flex-1 bg-gray-200 text-gray-800 py-2 px-3 rounded-md hover:bg-gray-300 transition-colors font-medium text-sm">
                 No

@@ -90,6 +90,37 @@
     </div>
     @endif
 
+    <!-- Recent Low Stock Notifications -->
+    @if($recentNotifications->count() > 0)
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="text-sm font-medium text-blue-800">Recent Low Stock Notifications</h3>
+            <span class="text-xs text-blue-600">{{ $recentNotifications->count() }} active alerts</span>
+        </div>
+        <div class="space-y-2">
+            @foreach($recentNotifications as $notification)
+            <div class="flex justify-between items-center bg-white rounded-md p-3 border border-blue-100">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-triangle text-yellow-500 mr-2"></i>
+                    <div>
+                        <span class="text-sm font-medium text-gray-900">{{ $notification->product_name }}</span>
+                        <span class="text-xs text-gray-500 ml-2">({{ $notification->product_sku }})</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-red-600 font-medium">{{ $notification->current_stock }} left</span>
+                    <span class="text-xs text-gray-500">{{ $notification->notified_at->diffForHumans() }}</span>
+                    <button onclick="markAsResolved({{ $notification->id }})" 
+                            class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded hover:bg-green-200">
+                        Mark Resolved
+                    </button>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
     <!-- Products Table -->
     <div class="bg-white shadow rounded-lg">
         <div class="px-4 py-5 sm:p-6">
@@ -170,4 +201,49 @@
         </div>
     </div>
 </div>
+
+<script>
+function markAsResolved(notificationId) {
+    if (confirm('Mark this notification as resolved?')) {
+        fetch(`/admin/notifications/${notificationId}/resolve`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove the notification from the UI
+                const notificationElement = document.querySelector(`[onclick="markAsResolved(${notificationId})"]`).closest('.bg-white');
+                notificationElement.remove();
+                
+                // Show success message
+                showNotification('Notification marked as resolved', 'success');
+            } else {
+                showNotification('Failed to mark notification as resolved', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('An error occurred', 'error');
+        });
+    }
+}
+
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-md shadow-lg text-white ${
+        type === 'success' ? 'bg-green-500' : 'bg-red-500'
+    }`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+</script>
 @endsection

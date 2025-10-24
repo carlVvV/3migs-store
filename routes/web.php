@@ -115,10 +115,18 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
     Route::post('/settings/change-password', [AdminController::class, 'changePassword'])->name('settings.change-password');
     
+    // Low Stock Notifications
+    Route::post('/notifications/{id}/resolve', [AdminController::class, 'resolveNotification'])->name('notifications.resolve');
+    
     // Barong Products Management (Replacing old products system)
     Route::get('/products', [AdminController::class, 'barongProducts'])->name('products');
     Route::get('/products/create', [AdminController::class, 'createBarongProduct'])->name('products.create');
     Route::get('/products/{id}/edit', [AdminController::class, 'editBarongProduct'])->name('products.edit');
+    
+    // Deleted Items Management
+    Route::get('/deleted-items', [AdminController::class, 'deletedItems'])->name('deleted-items');
+    Route::post('/products/{id}/restore', [AdminController::class, 'restoreProduct'])->name('products.restore');
+    Route::delete('/products/{id}/force-delete', [AdminController::class, 'forceDeleteProduct'])->name('products.force-delete');
     
     // Admin API routes
     Route::post('/products', [AdminController::class, 'storeBarongProduct'])->name('products.store');

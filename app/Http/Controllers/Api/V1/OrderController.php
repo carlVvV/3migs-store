@@ -392,6 +392,7 @@ class OrderController extends Controller
 
                 // Update product stock (size-aware)
                 $product = $cartItem->product;
+                $oldStock = $product->getTotalStock();
                 $usesSizeStocks = is_array($product->size_stocks) && count($product->size_stocks) > 0;
                 if ($usesSizeStocks) {
                     // Determine size from cart item or attributes
@@ -415,6 +416,10 @@ class OrderController extends Controller
                 } else {
                     $product->decrement('stock', $cartItem->quantity);
                 }
+
+                // Check for low stock alert after stock update
+                $product->refresh(); // Refresh to get updated stock
+                $product->checkLowStockAlert($oldStock);
             }
 
             // Clear user's cart

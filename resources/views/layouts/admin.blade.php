@@ -77,7 +77,8 @@
         <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 sidebar-transition sidebar-visible md:translate-x-0 shadow-xl flex flex-col h-screen">
             <!-- Sidebar Header -->
             <div class="flex items-center justify-between h-16 px-6 bg-gray-800 border-b border-gray-700">
-                <div class="flex items-center">
+                <div class="flex items-center space-x-3">
+                    <img src="{{ asset('3migs-logo.png') }}" alt="3Migs Logo" class="h-8 w-auto">
                     <span class="text-white text-lg font-bold">Admin Panel</span>
                 </div>
                 <button id="sidebar-toggle" class="text-gray-400 hover:text-white md:hidden">
@@ -130,6 +131,13 @@
                        class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 {{ (request()->routeIs('admin.inventory') || request()->routeIs('admin.products') || request()->routeIs('admin.products.*')) ? 'bg-gray-800 text-white' : 'text-gray-200 hover:bg-gray-700 hover:text-white' }}">
                         <i class="fas fa-boxes mr-3 text-gray-300 group-hover:text-white"></i>
                         Inventory
+                    </a>
+
+                    <!-- Deleted Items -->
+                    <a href="{{ route('admin.deleted-items') }}" 
+                       class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 {{ request()->routeIs('admin.deleted-items') ? 'bg-gray-800 text-white' : 'text-gray-200 hover:bg-gray-700 hover:text-white' }}">
+                        <i class="fas fa-trash-alt mr-3 text-gray-300 group-hover:text-white"></i>
+                        Deleted Items
                     </a>
 
                     <!-- Coupons -->
@@ -195,7 +203,10 @@
                         <button id="mobile-sidebar-toggle" class="text-gray-500 hover:text-gray-700 md:hidden">
                             <i class="fas fa-bars text-xl"></i>
                         </button>
-                        <h1 class="ml-4 text-2xl font-semibold text-gray-900">@yield('page-title', 'Admin Dashboard')</h1>
+                        <div class="flex items-center space-x-3 ml-4">
+                            <img src="{{ asset('3migs-logo.png') }}" alt="3Migs Logo" class="h-8 w-auto">
+                            <h1 class="text-2xl font-semibold text-gray-900">@yield('page-title', 'Admin Dashboard')</h1>
+                        </div>
                     </div>
                     
                     <div class="flex items-center space-x-4">

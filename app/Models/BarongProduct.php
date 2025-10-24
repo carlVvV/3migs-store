@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 class BarongProduct extends Model
 {
+    use SoftDeletes;
     protected $fillable = [
         'name',
         'slug',
@@ -378,5 +380,155 @@ class BarongProduct extends Model
         }
         
         return $updated;
+    }
+
+    /**
+     * Check if product is low on stock
+     */
+    public function isLowStock($threshold = 5)
+    {
+        return $this->getTotalStock() <= $threshold;
+    }
+
+    /**
+     * Get low stock products
+     */
+    public static function getLowStockProducts($threshold = 5)
+    {
+        return static::where('is_available', true)
+            ->get()
+            ->filter(function($product) use ($threshold) {
+                return $product->getTotalStock() <= $threshold;
+            });
+    }
+
+    /**
+     * Get out of stock products
+     */
+    public static function getOutOfStockProducts()
+    {
+        return static::where('is_available', false)->get();
+    }
+
+    /**
+     * Check if stock change triggers low stock alert
+     */
+    public function checkLowStockAlert($oldStock = null)
+    {
+        $currentStock = $this->getTotalStock();
+        $threshold = 5;
+        
+        // If current stock is at or below threshold, trigger alert
+        if ($currentStock <= $threshold) {
+            $this->triggerLowStockNotification($oldStock, $currentStock);
+        }
+    }
+
+    /**
+     * Trigger low stock notification
+     */
+    protected function triggerLowStockNotification($oldStock, $currentStock)
+    {
+        // Log the low stock event
+        \Log::warning('Low Stock Alert', [
+            'product_id' => $this->id,
+            'product_name' => $this->name,
+            'product_sku' => $this->sku,
+            'old_stock' => $oldStock,
+            'current_stock' => $currentStock,
+            'threshold' => 5,
+            'timestamp' => now()
+        ]);
+
+        // Store notification in database for admin dashboard
+        $this->createLowStockNotification($currentStock);
+    }
+
+    /**
+     * Create low stock notification record
+     */
+    protected function createLowStockNotification($currentStock)
+    {
+        // Check if notification already exists for this product
+        $existingNotification = \App\Models\LowStockNotification::where('product_id', $this->id)
+            ->where('is_resolved', false)
+            ->first();
+
+        if (!$existingNotification) {
+            \App\Models\LowStockNotification::create([
+                'product_id' => $this->id,
+                'product_name' => $this->name,
+                'product_sku' => $this->sku,
+                'current_stock' => $currentStock,
+                'threshold' => 5,
+                'is_resolved' => false,
+                'notified_at' => now()
+            ]);
+        } else {
+            // Update existing notification with new stock level
+            $existingNotification->update([
+                'current_stock' => $currentStock,
+                'notified_at' => now()
+            ]);
+        }
+    }
+
+    /**
+     * Get all deleted products
+     */
+    public static function getDeletedProducts()
+    {
+        return static::onlyTrashed()->with(['category', 'brand'])->get();
+    }
+
+    /**
+     * Restore a soft deleted product
+     */
+    public function restoreProduct()
+    {
+        $this->restore();
+        
+        // Log the restoration
+        \Log::info('Product restored', [
+            'product_id' => $this->id,
+            'product_name' => $this->name,
+            'product_sku' => $this->sku,
+            'restored_at' => now(),
+            'restored_by' => auth()->id()
+        ]);
+        
+        return $this;
+    }
+
+    /**
+     * Permanently delete a product
+     */
+    public function forceDeleteProduct()
+    {
+        $productData = [
+            'id' => $this->id,
+            'name' => $this->name,
+            'sku' => $this->sku,
+            'deleted_at' => $this->deleted_at
+        ];
+        
+        $this->forceDelete();
+        
+        // Log the permanent deletion
+        \Log::warning('Product permanently deleted', [
+            'product_data' => $productData,
+            'deleted_at' => now(),
+            'deleted_by' => auth()->id()
+        ]);
+        
+        return true;
+    }
+
+    /**
+     * Check if product is soft deleted
+     */
+    public function isDeleted()
+    {
+        return $this->trashed();
     }
 }

@@ -222,6 +222,9 @@ class AdminController extends Controller
             Log::info('Creating BarongProduct...');
             $barongProduct = BarongProduct::create($productData);
 
+            // Check for low stock alert after creation
+            $barongProduct->checkLowStockAlert();
+
             Log::info('Product created successfully:', [
                 'product_id' => $barongProduct->id,
                 'product_name' => $barongProduct->name,
@@ -433,7 +436,14 @@ class AdminController extends Controller
                 $productData['stock'] = $productData['has_variations'] ? 0 : ($productData['stock'] ?? 0);
             }
 
+            // Store old stock for low stock monitoring
+            $oldStock = $barongProduct->getTotalStock();
+            
             $barongProduct->update($productData);
+
+            // Check for low stock alert after update
+            $barongProduct->refresh();
+            $barongProduct->checkLowStockAlert($oldStock);
 
             DB::commit();
 
@@ -470,19 +480,122 @@ class AdminController extends Controller
     }
 
     /**
-     * Delete barong product
+     * Delete barong product (soft delete)
      */
     public function deleteBarongProduct($id)
     {
-        $barongProduct = BarongProduct::findOrFail($id);
-        $productName = $barongProduct->name; // Store name before deletion
-        $barongProduct->delete();
+        try {
+            $barongProduct = BarongProduct::findOrFail($id);
+            $productName = $barongProduct->name;
+            $productSku = $barongProduct->sku;
+            
+            // Soft delete the product
+            $barongProduct->delete();
+            
+            // Log the deletion
+            \Log::info('Product soft deleted', [
+                'product_id' => $id,
+                'product_name' => $productName,
+                'product_sku' => $productSku,
+                'deleted_at' => now(),
+                'deleted_by' => auth()->id()
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Barong product deleted successfully',
-            'product_name' => $productName
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Product moved to trash successfully. You can restore it from the deleted items section.',
+                'product_name' => $productName
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to delete product', [
+                'product_id' => $id,
+                'error' => $e->getMessage(),
+                'deleted_by' => auth()->id()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete product: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Show deleted items management
+     */
+    public function deletedItems(Request $request)
+    {
+        $query = BarongProduct::onlyTrashed()->with(['category', 'brand']);
+
+        // Search
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('sku', 'like', "%{$search}%");
+            });
+        }
+
+        $deletedProducts = $query->orderBy('deleted_at', 'desc')->paginate(20);
+
+        return view('admin.deleted-items', compact('deletedProducts'));
+    }
+
+    /**
+     * Restore a deleted product
+     */
+    public function restoreProduct($id)
+    {
+        try {
+            $product = BarongProduct::onlyTrashed()->findOrFail($id);
+            $product->restoreProduct();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product restored successfully',
+                'product_name' => $product->name
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to restore product', [
+                'product_id' => $id,
+                'error' => $e->getMessage(),
+                'restored_by' => auth()->id()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to restore product: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Permanently delete a product
+     */
+    public function forceDeleteProduct($id)
+    {
+        try {
+            $product = BarongProduct::onlyTrashed()->findOrFail($id);
+            $productName = $product->name;
+            $product->forceDeleteProduct();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product permanently deleted',
+                'product_name' => $productName
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to permanently delete product', [
+                'product_id' => $id,
+                'error' => $e->getMessage(),
+                'deleted_by' => auth()->id()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to permanently delete product: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -780,8 +893,71 @@ class AdminController extends Controller
      */
     public function inventory(Request $request)
     {
-        // To reduce redundancy, use the unified products panel
-        return redirect()->route('admin.products');
+        // Get low stock products (5 or less)
+        $lowStockProducts = BarongProduct::getLowStockProducts(5);
+        
+        // Get out of stock products
+        $outOfStockProducts = BarongProduct::getOutOfStockProducts();
+        
+        // Get all products for the table
+        $query = BarongProduct::with(['category', 'brand']);
+
+        // Filter by status
+        if ($request->has('status') && $request->status) {
+            if ($request->status === 'available') {
+                $query->where('is_available', true);
+            } elseif ($request->status === 'unavailable') {
+                $query->where('is_available', false);
+            } elseif ($request->status === 'low_stock') {
+                $query->where('is_available', true);
+            }
+        }
+
+        // Search
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('sku', 'like', "%{$search}%");
+            });
+        }
+
+        $products = $query->orderBy('created_at', 'desc')->paginate(20);
+
+        // Get recent low stock notifications
+        $recentNotifications = \App\Models\LowStockNotification::unresolved()
+            ->recent(7)
+            ->with('product')
+            ->orderBy('notified_at', 'desc')
+            ->get();
+
+        return view('admin.inventory', compact(
+            'lowStockProducts', 
+            'outOfStockProducts', 
+            'products',
+            'recentNotifications'
+        ));
+    }
+
+    /**
+     * Mark low stock notification as resolved
+     */
+    public function resolveNotification($id)
+    {
+        try {
+            $notification = \App\Models\LowStockNotification::findOrFail($id);
+            $notification->markAsResolved();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Notification marked as resolved'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to resolve notification'
+            ], 500);
+        }
     }
 
     /**
