@@ -118,6 +118,23 @@ Route::prefix('v1')->group(function () {
     });
 });
 
+// PSGC API endpoints for Philippine address data (public, no auth required)
+Route::prefix('v1/psgc')->withoutMiddleware([
+    \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+])->group(function () {
+    Route::get('/regions', [\App\Http\Controllers\Api\V1\PSGCController::class, 'getRegions']);
+    Route::get('/regions/{regionCode}/provinces', [\App\Http\Controllers\Api\V1\PSGCController::class, 'getProvincesByRegion']);
+    Route::get('/regions/{regionCode}/cities', [\App\Http\Controllers\Api\V1\PSGCController::class, 'getCitiesByRegion']);
+    Route::get('/provinces/{provinceCode}/cities', [\App\Http\Controllers\Api\V1\PSGCController::class, 'getCitiesByProvince']);
+    Route::get('/cities/{cityCode}/barangays', [\App\Http\Controllers\Api\V1\PSGCController::class, 'getBarangaysByCity']);
+    Route::get('/regions/{regionCode}/data', [\App\Http\Controllers\Api\V1\PSGCController::class, 'getRegionData']);
+    Route::post('/test', [\App\Http\Controllers\Api\V1\PSGCController::class, 'testPost']);
+    Route::get('/search/city', [\App\Http\Controllers\Api\V1\PSGCController::class, 'searchCity']);
+    Route::get('/search/barangay', [\App\Http\Controllers\Api\V1\PSGCController::class, 'searchBarangay']);
+    Route::get('/test-service', [\App\Http\Controllers\Api\V1\PSGCController::class, 'testService']); // Added for testing PSGC service
+    Route::get('/debug-manila', [\App\Http\Controllers\Api\V1\PSGCController::class, 'debugManila']); // Debug endpoint
+});
+
 // ============================================================================
 // AUTHENTICATED API ROUTES
 // ============================================================================

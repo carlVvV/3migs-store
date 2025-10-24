@@ -15,6 +15,8 @@ class Address extends Model
         'apartment',
         'city',
         'province',
+        'region',
+        'barangay',
         'postal_code',
         'phone',
         'email',

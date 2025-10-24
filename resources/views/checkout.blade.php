@@ -130,26 +130,69 @@
                                    placeholder="Apartment, floor, etc.">
                         </div>
                         
-                        <!-- City -->
+                        <!-- Region -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
-                                Town/City <span class="text-red-500">*</span>
+                                Region <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" name="city" id="city" required
-                                   class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                   placeholder="Enter city">
+                            <select name="region" id="region" required
+                                    class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent">
+                                <option value="">Select Region</option>
+                            </select>
+                            <div id="region_error" class="text-red-500 text-xs mt-1 hidden"></div>
+                        </div>
+                        
+                        <!-- Province -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Province <span class="text-red-500">*</span>
+                            </label>
+                            <select name="province" id="province" required
+                                    class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                                    disabled>
+                                <option value="">Select Province</option>
+                            </select>
+                            <div id="province_error" class="text-red-500 text-xs mt-1 hidden"></div>
+                        </div>
+                        
+                        <!-- City/Municipality -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                City/Municipality <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <select name="city" id="city" required
+                                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                                        disabled>
+                                    <option value="">Select City/Municipality</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
+                                </div>
+                            </div>
                             <div id="city_error" class="text-red-500 text-xs mt-1 hidden"></div>
                         </div>
                         
-                        <!-- Province/Municipality -->
+                        <!-- Barangay -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
-                                Province/Municipality <span class="text-red-500">*</span>
+                                Barangay <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" name="province" id="province" required
-                                   class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                   placeholder="Enter province or municipality">
-                            <div id="province_error" class="text-red-500 text-xs mt-1 hidden"></div>
+                            <div class="relative">
+                                <select name="barangay" id="barangay" required
+                                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                                        disabled>
+                                    <option value="">Select Barangay</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div id="barangay_error" class="text-red-500 text-xs mt-1 hidden"></div>
                         </div>
                         
                         <!-- Postal Code -->
@@ -380,9 +423,17 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             document.getElementById('new-address-btn').addEventListener('click', () => {
                 // Clear form for new address input
-                ['full_name','company_name','street_address','apartment','city','province','postal_code','phone','email'].forEach(id => {
+                ['full_name','company_name','street_address','apartment','city','province','region','barangay','postal_code','phone','email'].forEach(id => {
                     const el = document.getElementById(id); if (el) el.value = '';
                 });
+                // Clear search fields (removed - using dropdowns now)
+                // Reset dropdowns
+                document.getElementById('province').disabled = true;
+                document.getElementById('city').disabled = true;
+                document.getElementById('barangay').disabled = true;
+                document.getElementById('province').innerHTML = '<option value="">Select Province</option>';
+                document.getElementById('city').innerHTML = '<option value="">Select City/Municipality</option>';
+                document.getElementById('barangay').innerHTML = '<option value="">Select Barangay</option>';
                 document.getElementById('full_name').focus();
             });
         } catch (_) { /* ignore */ }
@@ -397,13 +448,43 @@ document.addEventListener('DOMContentLoaded', function() {
         set('apartment', addr.apartment);
         set('city', addr.city);
         set('province', addr.province);
+        set('region', addr.region);
+        set('barangay', addr.barangay);
         set('postal_code', addr.postal_code);
         set('phone', addr.phone);
         set('email', addr.email);
+        
+        // Handle dropdown dependencies
+        if (addr.region) {
+            const regionSelect = document.getElementById('region');
+            const provinceSelect = document.getElementById('province');
+            const citySelect = document.getElementById('city');
+            const barangaySelect = document.getElementById('barangay');
+            
+            // Trigger region change to populate provinces
+            regionSelect.dispatchEvent(new Event('change'));
+            
+            // Wait for provinces to load, then set province
+            setTimeout(() => {
+                set('province', addr.province);
+                provinceSelect.dispatchEvent(new Event('change'));
+                
+                // Wait for cities to load, then set city
+                setTimeout(() => {
+                    set('city', addr.city);
+                    citySelect.dispatchEvent(new Event('change'));
+                    
+                    // Wait for barangays to load, then set barangay
+                    setTimeout(() => {
+                        set('barangay', addr.barangay);
+                    }, 100);
+                }, 100);
+            }, 100);
+        }
     }
 
     function attachDraftPersistence() {
-        const ids = ['full_name','company_name','street_address','apartment','city','province','postal_code','phone','email'];
+        const ids = ['full_name','company_name','street_address','apartment','city','province','region','barangay','postal_code','phone','email'];
         const save = () => {
             const draft = {};
             ids.forEach(id => { const el = document.getElementById(id); if (el) draft[id] = el.value || ''; });
@@ -423,7 +504,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const raw = localStorage.getItem('checkoutDraft');
             if (!raw) return;
             const draft = JSON.parse(raw);
-            const ids = ['full_name','company_name','street_address','apartment','city','province','postal_code','phone','email'];
+            const ids = ['full_name','company_name','street_address','apartment','city','province','region','barangay','postal_code','phone','email'];
             // Only fill empty fields to avoid overriding a selected saved address
             ids.forEach(id => {
                 const el = document.getElementById(id);
@@ -431,6 +512,35 @@ document.addEventListener('DOMContentLoaded', function() {
                     el.value = draft[id];
                 }
             });
+            
+            // Handle dropdown dependencies for draft restoration
+            if (draft.region && !document.getElementById('region').value) {
+                const regionSelect = document.getElementById('region');
+                regionSelect.value = draft.region;
+                regionSelect.dispatchEvent(new Event('change'));
+                
+                setTimeout(() => {
+                    if (draft.province && !document.getElementById('province').value) {
+                        const provinceSelect = document.getElementById('province');
+                        provinceSelect.value = draft.province;
+                        provinceSelect.dispatchEvent(new Event('change'));
+                        
+                        setTimeout(() => {
+                            if (draft.city && !document.getElementById('city').value) {
+                                const citySelect = document.getElementById('city');
+                                citySelect.value = draft.city;
+                                citySelect.dispatchEvent(new Event('change'));
+                                
+                                setTimeout(() => {
+                                    if (draft.barangay && !document.getElementById('barangay').value) {
+                                        document.getElementById('barangay').value = draft.barangay;
+                                    }
+                                }, 100);
+                            }
+                        }, 100);
+                    }
+                }, 100);
+            }
         } catch(_) {}
     }
     
@@ -1023,6 +1133,8 @@ document.addEventListener('DOMContentLoaded', function() {
             apartment: formData.get('apartment'),
             city: formData.get('city'),
             province: formData.get('province'),
+            region: formData.get('region'),
+            barangay: formData.get('barangay'),
             postal_code: formData.get('postal_code'),
             phone: formData.get('phone'),
             email: formData.get('email'),
@@ -1031,7 +1143,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Basic validation
         if (!billingData.full_name || !billingData.street_address || !billingData.city || 
-            !billingData.province || !billingData.postal_code || !billingData.phone || !billingData.email) {
+            !billingData.province || !billingData.region || !billingData.barangay || !billingData.postal_code || !billingData.phone || !billingData.email) {
             showNotification('Please fill in all required fields', 'error');
             return null;
         }
@@ -1054,6 +1166,308 @@ document.addEventListener('DOMContentLoaded', function() {
             notification.remove();
         }, 5000);
     }
+
+    // PSGC-based Philippine Address Management
+    let psgcData = {
+        regions: [],
+        provinces: [],
+        cities: [],
+        barangays: [],
+        selectedRegion: null,
+        selectedProvince: null,
+        selectedCity: null,
+        selectedBarangay: null
+    };
+
+    let searchTimeout = null;
+
+    function initializePSGCAddressForm() {
+        loadRegions();
+        setupEventListeners();
+    }
+
+    async function loadRegions() {
+        try {
+            const response = await fetch('/api/v1/psgc/regions');
+            const data = await response.json();
+            
+            if (data.success) {
+                psgcData.regions = data.data;
+                populateRegionDropdown();
+            }
+        } catch (error) {
+            console.error('Failed to load regions:', error);
+        }
+    }
+
+    function populateRegionDropdown() {
+        const regionSelect = document.getElementById('region');
+        regionSelect.innerHTML = '<option value="">Select Region</option>';
+        
+        psgcData.regions.forEach(region => {
+            const option = document.createElement('option');
+            option.value = region.code;
+            option.textContent = region.name;
+            regionSelect.appendChild(option);
+        });
+    }
+
+    async function loadProvincesByRegion(regionCode) {
+        try {
+            const response = await fetch(`/api/v1/psgc/regions/${regionCode}/provinces`);
+            const data = await response.json();
+            
+            if (data.success) {
+                psgcData.provinces = data.data;
+                populateProvinceDropdown();
+            }
+        } catch (error) {
+            console.error('Failed to load provinces:', error);
+        }
+    }
+
+    function populateProvinceDropdown() {
+        const provinceSelect = document.getElementById('province');
+        provinceSelect.innerHTML = '<option value="">Select Province</option>';
+        
+        psgcData.provinces.forEach(province => {
+            const option = document.createElement('option');
+            option.value = province.code;
+            option.textContent = province.name;
+            provinceSelect.appendChild(option);
+        });
+        
+        provinceSelect.disabled = false;
+    }
+
+    async function loadCitiesByProvince(provinceCode) {
+        try {
+            const response = await fetch(`/api/v1/psgc/provinces/${provinceCode}/cities`);
+            const data = await response.json();
+            
+            if (data.success) {
+                psgcData.cities = data.data;
+                populateCityDropdown();
+            }
+        } catch (error) {
+            console.error('Failed to load cities:', error);
+        }
+    }
+
+    async function loadCitiesByRegion(regionCode) {
+        try {
+            const response = await fetch(`/api/v1/psgc/regions/${regionCode}/cities`);
+            const data = await response.json();
+            
+            if (data.success) {
+                psgcData.cities = data.data;
+                populateCityDropdown();
+            }
+        } catch (error) {
+            console.error('Failed to load cities:', error);
+        }
+    }
+
+    function populateCityDropdown() {
+        const citySelect = document.getElementById('city');
+        citySelect.innerHTML = '<option value="">Select City</option>';
+        
+        psgcData.cities.forEach(city => {
+            const option = document.createElement('option');
+            option.value = city.code;
+            option.textContent = city.name;
+            option.dataset.cityName = city.name;
+            citySelect.appendChild(option);
+        });
+        
+        citySelect.disabled = false;
+    }
+
+    async function loadBarangaysByCity(cityCode) {
+        try {
+            const response = await fetch(`/api/v1/psgc/cities/${cityCode}/barangays`);
+            const data = await response.json();
+            
+            if (data.success) {
+                psgcData.barangays = data.data;
+                populateBarangayDropdown();
+            }
+        } catch (error) {
+            console.error('Failed to load barangays:', error);
+        }
+    }
+
+    function populateBarangayDropdown() {
+        const barangaySelect = document.getElementById('barangay');
+        barangaySelect.innerHTML = '<option value="">Select Barangay</option>';
+        
+        psgcData.barangays.forEach(barangay => {
+            const option = document.createElement('option');
+            option.value = barangay.code;
+            option.textContent = barangay.name;
+            option.dataset.barangayName = barangay.name;
+            barangaySelect.appendChild(option);
+        });
+        
+        barangaySelect.disabled = false;
+    }
+
+    // Reverse lookup functions
+    async function searchCityAndAutoPopulate(cityName) {
+        try {
+            const response = await fetch(`/api/v1/psgc/search/city?name=${encodeURIComponent(cityName)}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success && data.data) {
+                const { city, province, region } = data.data;
+                
+                // Auto-populate higher administrative divisions
+                document.getElementById('region').value = region.code;
+                document.getElementById('province').value = province.code;
+                document.getElementById('city').value = city.code;
+                
+                // Update hidden fields
+                document.getElementById('city').dataset.cityName = city.name;
+                
+                // Load provinces and cities to ensure dropdowns are populated
+                await loadProvincesByRegion(region.code);
+                await loadCitiesByProvince(province.code);
+                
+                // Load barangays for the selected city
+                await loadBarangaysByCity(city.code);
+                
+                // Show success message
+                showNotification(`Found ${city.name}, ${province.name}, ${region.name}`, 'success');
+            } else {
+                showNotification('City not found. Please try a different name.', 'error');
+            }
+        } catch (error) {
+            console.error('Failed to search city:', error);
+            showNotification('Failed to search city. Please try again.', 'error');
+        }
+    }
+
+    async function searchBarangayAndAutoPopulate(barangayName, cityName = null) {
+        try {
+            const cityParam = cityName || psgcData.selectedCity?.name;
+            const url = `/api/v1/psgc/search/barangay?name=${encodeURIComponent(barangayName)}${cityParam ? `&city=${encodeURIComponent(cityParam)}` : ''}`;
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success && data.data) {
+                const { barangay, city, province, region } = data.data;
+                
+                // Auto-populate all higher administrative divisions
+                document.getElementById('region').value = region.code;
+                document.getElementById('province').value = province.code;
+                document.getElementById('city').value = city.code;
+                document.getElementById('barangay').value = barangay.code;
+                
+                // Update hidden fields
+                document.getElementById('city').dataset.cityName = city.name;
+                document.getElementById('barangay').dataset.barangayName = barangay.name;
+                
+                // Load all data to ensure dropdowns are populated
+                await loadProvincesByRegion(region.code);
+                await loadCitiesByProvince(province.code);
+                await loadBarangaysByCity(city.code);
+                
+                // Show success message
+                showNotification(`Found ${barangay.name}, ${city.name}, ${province.name}, ${region.name}`, 'success');
+            } else {
+                showNotification('Barangay not found. Please try a different name.', 'error');
+            }
+        } catch (error) {
+            console.error('Failed to search barangay:', error);
+            showNotification('Failed to search barangay. Please try again.', 'error');
+        }
+    }
+
+    function setupEventListeners() {
+        // Region change handler
+        document.getElementById('region').addEventListener('change', async function() {
+            const regionCode = this.value;
+            psgcData.selectedRegion = psgcData.regions.find(r => r.code === regionCode);
+            
+            // Clear dependent fields
+            clearProvinceAndBelow();
+            
+            if (regionCode) {
+                // Check if it's NCR (130000000) - load cities directly
+                if (regionCode === '130000000') {
+                    await loadCitiesByRegion(regionCode);
+                } else {
+                    // Load provinces for regular regions
+                    await loadProvincesByRegion(regionCode);
+                }
+            }
+        });
+
+        // Province change handler
+        document.getElementById('province').addEventListener('change', async function() {
+            const provinceCode = this.value;
+            psgcData.selectedProvince = psgcData.provinces.find(p => p.code === provinceCode);
+            
+            // Clear dependent fields
+            clearCityAndBelow();
+            
+            if (provinceCode) {
+                await loadCitiesByProvince(provinceCode);
+            }
+        });
+
+        // City change handler
+        document.getElementById('city').addEventListener('change', async function() {
+            const cityCode = this.value;
+            psgcData.selectedCity = psgcData.cities.find(c => c.code === cityCode);
+            
+            // Clear dependent fields
+            clearBarangay();
+            
+            if (cityCode) {
+                await loadBarangaysByCity(cityCode);
+            }
+        });
+
+        // City search handler - removed for pure dropdown approach
+        // Barangay search handler - removed for pure dropdown approach
+
+        // Hide suggestions event listener removed - not needed for pure dropdown approach
+    }
+
+    function clearProvinceAndBelow() {
+        document.getElementById('province').innerHTML = '<option value="">Select Province</option>';
+        document.getElementById('province').disabled = true;
+        clearCityAndBelow();
+    }
+
+    function clearCityAndBelow() {
+        document.getElementById('city').innerHTML = '<option value="">Select City/Municipality</option>';
+        document.getElementById('city').disabled = true;
+        clearBarangay();
+    }
+
+    function clearBarangay() {
+        document.getElementById('barangay').innerHTML = '<option value="">Select Barangay</option>';
+        document.getElementById('barangay').disabled = true;
+    }
+
+    // Hide suggestions function removed - not needed for pure dropdown approach
+
+    // Initialize the PSGC address form
+    initializePSGCAddressForm();
 });
 </script>
 @endsection

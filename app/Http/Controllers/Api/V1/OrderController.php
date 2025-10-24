@@ -360,6 +360,8 @@ class OrderController extends Controller
                             'street_address' => $request->street_address,
                             'city' => $request->city,
                             'province' => $request->province,
+                            'region' => $request->region,
+                            'barangay' => $request->barangay,
                             'postal_code' => $request->postal_code,
                             'phone' => $request->phone,
                             'email' => $request->email,
