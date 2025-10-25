@@ -420,6 +420,9 @@ class OrderController extends Controller
                 // Check for low stock alert after stock update
                 $product->refresh(); // Refresh to get updated stock
                 $product->checkLowStockAlert($oldStock);
+                
+                // Increment sales count for best-selling tracking
+                $product->incrementSales($cartItem->quantity);
             }
 
             // Clear user's cart

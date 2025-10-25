@@ -35,6 +35,9 @@ class BarongProduct extends Model
         'has_variations',
         'sku',
         'sort_order',
+        'sales_count',
+        'monthly_sales',
+        'last_sale_at',
     ];
 
     protected $casts = [
@@ -51,6 +54,7 @@ class BarongProduct extends Model
         'is_available' => 'boolean',
         'is_featured' => 'boolean',
         'has_variations' => 'boolean',
+        'last_sale_at' => 'datetime',
     ];
 
     /**
@@ -530,5 +534,47 @@ class BarongProduct extends Model
     public function isDeleted()
     {
         return $this->trashed();
+    }
+
+    /**
+     * Get best selling products
+     */
+    public static function getBestSellingProducts($limit = 8, $period = 'monthly')
+    {
+        $query = static::where('is_available', true);
+        
+        if ($period === 'monthly') {
+            $query->orderBy('monthly_sales', 'desc');
+        } else {
+            $query->orderBy('sales_count', 'desc');
+        }
+        
+        return $query->limit($limit)->get();
+    }
+
+    /**
+     * Get best selling products for this month
+     */
+    public static function getBestSellingThisMonth($limit = 8)
+    {
+        return static::getBestSellingProducts($limit, 'monthly');
+    }
+
+    /**
+     * Increment sales count when product is sold
+     */
+    public function incrementSales($quantity = 1)
+    {
+        $this->increment('sales_count', $quantity);
+        $this->increment('monthly_sales', $quantity);
+        $this->update(['last_sale_at' => now()]);
+    }
+
+    /**
+     * Reset monthly sales (should be called monthly)
+     */
+    public static function resetMonthlySales()
+    {
+        static::query()->update(['monthly_sales' => 0]);
     }
 }

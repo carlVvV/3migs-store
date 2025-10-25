@@ -62,6 +62,322 @@
             </section>
         </div>
         
+        <!-- Featured Products Section -->
+        <section class="mt-8" id="featured">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                    <span class="w-2 h-8 bg-red-500 mr-3 rounded-sm"></span>
+                    <div>
+                        <span class="text-sm text-red-600 font-medium">Featured</span>
+                        <h2 class="text-2xl font-bold text-gray-800">Featured Products</h2>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <a href="#products" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200" onclick="scrollToProducts()">
+                        View All
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Featured Products Carousel -->
+            <div class="carousel-container">
+                <div id="featured-carousel" class="product-carousel">
+                    @forelse($featuredProducts as $product)
+                    <div class="product-carousel-item">
+                        <a href="{{ route('product.details', $product->slug) }}" class="bg-white rounded-lg shadow-md overflow-hidden relative product-card hover:shadow-lg transition-shadow cursor-pointer block">
+                            @if($product->is_on_sale)
+                            <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-{{ $product->discount_percentage }}%</div>
+                            @endif
+                            
+                            <!-- Wishlist Button -->
+                            <button class="absolute top-2 right-2 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn" 
+                                    data-product-id="{{ $product->id }}" 
+                                    title="Add to Wishlist">
+                                <i class="far fa-heart text-gray-600 text-sm"></i>
+                            </button>
+                            
+                            <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full h-40 object-cover">
+                            <div class="p-3">
+                                <h3 class="font-semibold text-gray-800">{{ $product->name }}</h3>
+                                <div class="flex items-center mt-2">
+                                    @if($product->is_on_sale)
+                                    <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
+                                    <span class="text-gray-500 text-sm line-through ml-2">₱{{ number_format($product->base_price, 0) }}</span>
+                                    @else
+                                    <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
+                                    @endif
+                                </div>
+                                <div class="flex items-center text-sm text-gray-600 mt-1">
+                                    @for($i = 0; $i < floor($product->average_rating); $i++)
+                                        <i class="fas fa-star text-yellow-400"></i>
+                                    @endfor
+                                    @if($product->average_rating - floor($product->average_rating) > 0)
+                                        <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                    @endif
+                                    @for($i = 0; $i < (5 - ceil($product->average_rating)); $i++)
+                                        <i class="far fa-star text-yellow-400"></i>
+                                    @endfor
+                                    <span class="ml-1">({{ $product->review_count }})</span>
+                                </div>
+                                @php
+                                    $totalStock = 0;
+                                    if (!empty($product->variations)) {
+                                        $totalStock = array_sum(array_map(fn($v) => (int)($v['stock'] ?? 0), $product->variations));
+                                    } elseif (!empty($product->size_stocks)) {
+                                        $totalStock = array_sum(array_map('intval', $product->size_stocks));
+                                    } else {
+                                        $totalStock = (int) ($product->stock ?? 0);
+                                    }
+                                @endphp
+                                @if($totalStock > 0)
+                                    <button class="mt-4 w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 block text-center add-to-cart-btn" 
+                                            data-product-id="{{ $product->id }}"
+                                            onclick="event.preventDefault(); event.stopPropagation(); addToCart({{ $product->id }});">Add To Cart</button>
+                                @else
+                                    <button class="mt-4 w-full bg-red-600 text-white py-2 rounded-md hover:bg-red-700 block text-center" 
+                                            onclick="event.preventDefault(); event.stopPropagation(); addCardToWishlist({{ $product->id }});">
+                                        <i class="fas fa-heart mr-2"></i> Add to Wishlist
+                                    </button>
+                                @endif
+                            </div>
+                        </a>
+                    </div>
+                    @empty
+                    <div class="product-carousel-item">
+                        <div class="w-full text-center py-8">
+                            <p class="text-gray-500">No featured products available at the moment.</p>
+                        </div>
+                    </div>
+                    @endforelse
+                </div>
+                
+                <!-- Navigation Dots -->
+                @if($featuredProducts->count() > 5)
+                <div class="carousel-dots">
+                    @for($i = 0; $i < ceil($featuredProducts->count() / 5); $i++)
+                    <button class="featured-dot carousel-dot {{ $i === 0 ? 'active bg-red-500' : 'bg-gray-300' }}" 
+                            data-slide="{{ $i }}"></button>
+                    @endfor
+                </div>
+                @endif
+            </div>
+        </section>
+        
+        <!-- New Arrivals Section -->
+        <section class="mt-8" id="new-arrivals">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                    <span class="w-2 h-8 bg-red-500 mr-3 rounded-sm"></span>
+                    <div>
+                        <span class="text-sm text-red-600 font-medium">Latest</span>
+                        <h2 class="text-2xl font-bold text-gray-800">New Arrivals</h2>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <a href="#products" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200" onclick="scrollToProducts()">
+                        View All
+                    </a>
+                </div>
+            </div>
+            
+            <!-- New Arrivals Carousel -->
+            <div class="carousel-container">
+                <div id="new-arrivals-carousel" class="product-carousel">
+                    @forelse($newArrivals as $product)
+                    <div class="product-carousel-item">
+                        <a href="{{ route('product.details', $product->slug) }}" class="bg-white rounded-lg shadow-md overflow-hidden relative product-card hover:shadow-lg transition-shadow cursor-pointer block">
+                            @if($product->is_on_sale)
+                            <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-{{ $product->discount_percentage }}%</div>
+                            @endif
+                            
+                            <!-- New Badge -->
+                            <div class="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded font-bold">
+                                <i class="fas fa-star mr-1"></i>New
+                            </div>
+                            
+                            <!-- Wishlist Button -->
+                            <button class="absolute top-2 right-12 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn" 
+                                    data-product-id="{{ $product->id }}" 
+                                    title="Add to Wishlist">
+                                <i class="far fa-heart text-gray-600 text-sm"></i>
+                            </button>
+                            
+                            <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full h-40 object-cover">
+                            <div class="p-3">
+                                <h3 class="font-semibold text-gray-800">{{ $product->name }}</h3>
+                                <div class="flex items-center mt-2">
+                                    @if($product->is_on_sale)
+                                    <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
+                                    <span class="text-gray-500 text-sm line-through ml-2">₱{{ number_format($product->base_price, 0) }}</span>
+                                    @else
+                                    <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
+                                    @endif
+                                </div>
+                                <div class="flex items-center text-sm text-gray-600 mt-1">
+                                    @for($i = 0; $i < floor($product->average_rating); $i++)
+                                        <i class="fas fa-star text-yellow-400"></i>
+                                    @endfor
+                                    @if($product->average_rating - floor($product->average_rating) > 0)
+                                        <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                    @endif
+                                    @for($i = 0; $i < (5 - ceil($product->average_rating)); $i++)
+                                        <i class="far fa-star text-yellow-400"></i>
+                                    @endfor
+                                    <span class="ml-1">({{ $product->review_count }})</span>
+                                </div>
+                                @php
+                                    $totalStock = 0;
+                                    if (!empty($product->variations)) {
+                                        $totalStock = array_sum(array_map(fn($v) => (int)($v['stock'] ?? 0), $product->variations));
+                                    } elseif (!empty($product->size_stocks)) {
+                                        $totalStock = array_sum(array_map('intval', $product->size_stocks));
+                                    } else {
+                                        $totalStock = (int) ($product->stock ?? 0);
+                                    }
+                                @endphp
+                                @if($totalStock > 0)
+                                    <button class="mt-4 w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 block text-center add-to-cart-btn" 
+                                            data-product-id="{{ $product->id }}"
+                                            onclick="event.preventDefault(); event.stopPropagation(); addToCart({{ $product->id }});">Add To Cart</button>
+                                @else
+                                    <button class="mt-4 w-full bg-red-600 text-white py-2 rounded-md hover:bg-red-700 block text-center" 
+                                            onclick="event.preventDefault(); event.stopPropagation(); addCardToWishlist({{ $product->id }});">
+                                        <i class="fas fa-heart mr-2"></i> Add to Wishlist
+                                    </button>
+                                @endif
+                            </div>
+                        </a>
+                    </div>
+                    @empty
+                    <div class="product-carousel-item">
+                        <div class="w-full text-center py-8">
+                            <p class="text-gray-500">No new arrivals available at the moment.</p>
+                        </div>
+                    </div>
+                    @endforelse
+                </div>
+                
+                <!-- Navigation Dots -->
+                @if($newArrivals->count() > 5)
+                <div class="carousel-dots">
+                    @for($i = 0; $i < ceil($newArrivals->count() / 5); $i++)
+                    <button class="new-arrivals-dot carousel-dot {{ $i === 0 ? 'active bg-red-500' : 'bg-gray-300' }}" 
+                            data-slide="{{ $i }}"></button>
+                    @endfor
+                </div>
+                @endif
+            </div>
+        </section>
+        
+        <!-- Best Selling Products Section -->
+        <section class="mt-8" id="best-selling">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                    <span class="w-2 h-8 bg-red-500 mr-3 rounded-sm"></span>
+                    <div>
+                        <span class="text-sm text-red-600 font-medium">This Month</span>
+                        <h2 class="text-2xl font-bold text-gray-800">Best Selling Products</h2>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <a href="#products" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200" onclick="scrollToProducts()">
+                        View All
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Best Selling Products Carousel -->
+            <div class="carousel-container">
+                <div id="best-selling-carousel" class="product-carousel">
+                    @forelse($bestSellingProducts as $product)
+                    <div class="product-carousel-item">
+                        <a href="{{ route('product.details', $product->slug) }}" class="bg-white rounded-lg shadow-md overflow-hidden relative product-card hover:shadow-lg transition-shadow cursor-pointer block">
+                            @if($product->is_on_sale)
+                            <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-{{ $product->discount_percentage }}%</div>
+                            @endif
+                            
+                            <!-- Best Seller Badge -->
+                            <div class="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded font-bold">
+                                <i class="fas fa-crown mr-1"></i>Best Seller
+                            </div>
+                            
+                            <!-- Wishlist Button -->
+                            <button class="absolute top-2 right-12 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn" 
+                                    data-product-id="{{ $product->id }}" 
+                                    title="Add to Wishlist">
+                                <i class="far fa-heart text-gray-600 text-sm"></i>
+                            </button>
+                            
+                            <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full h-40 object-cover">
+                            <div class="p-3">
+                                <h3 class="font-semibold text-gray-800">{{ $product->name }}</h3>
+                                <div class="flex items-center mt-2">
+                                    @if($product->is_on_sale)
+                                    <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
+                                    <span class="text-gray-500 text-sm line-through ml-2">₱{{ number_format($product->base_price, 0) }}</span>
+                                    @else
+                                    <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
+                                    @endif
+                                </div>
+                                <div class="flex items-center justify-between text-sm text-gray-600 mt-1">
+                                    <div class="flex items-center">
+                                        @for($i = 0; $i < floor($product->average_rating); $i++)
+                                            <i class="fas fa-star text-yellow-400"></i>
+                                        @endfor
+                                        @if($product->average_rating - floor($product->average_rating) > 0)
+                                            <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                        @endif
+                                        @for($i = 0; $i < (5 - ceil($product->average_rating)); $i++)
+                                            <i class="far fa-star text-yellow-400"></i>
+                                        @endfor
+                                        <span class="ml-1">({{ $product->review_count }})</span>
+                                    </div>
+                                    <span class="text-xs text-gray-500">{{ $product->monthly_sales }} sold</span>
+                                </div>
+                                @php
+                                    $totalStock = 0;
+                                    if (!empty($product->variations)) {
+                                        $totalStock = array_sum(array_map(fn($v) => (int)($v['stock'] ?? 0), $product->variations));
+                                    } elseif (!empty($product->size_stocks)) {
+                                        $totalStock = array_sum(array_map('intval', $product->size_stocks));
+                                    } else {
+                                        $totalStock = (int) ($product->stock ?? 0);
+                                    }
+                                @endphp
+                                @if($totalStock > 0)
+                                    <button class="mt-4 w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 block text-center add-to-cart-btn" 
+                                            data-product-id="{{ $product->id }}"
+                                            onclick="event.preventDefault(); event.stopPropagation(); addToCart({{ $product->id }});">Add To Cart</button>
+                                @else
+                                    <button class="mt-4 w-full bg-red-600 text-white py-2 rounded-md hover:bg-red-700 block text-center" 
+                                            onclick="event.preventDefault(); event.stopPropagation(); addCardToWishlist({{ $product->id }});">
+                                        <i class="fas fa-heart mr-2"></i> Add to Wishlist
+                                    </button>
+                                @endif
+                            </div>
+                        </a>
+                    </div>
+                    @empty
+                    <div class="product-carousel-item">
+                        <div class="w-full text-center py-8">
+                            <p class="text-gray-500">No best-selling products available yet.</p>
+                        </div>
+                    </div>
+                    @endforelse
+                </div>
+                
+                <!-- Navigation Dots -->
+                @if($bestSellingProducts->count() > 5)
+                <div class="carousel-dots">
+                    @for($i = 0; $i < ceil($bestSellingProducts->count() / 5); $i++)
+                    <button class="best-selling-dot carousel-dot {{ $i === 0 ? 'active bg-red-500' : 'bg-gray-300' }}" 
+                            data-slide="{{ $i }}"></button>
+                    @endfor
+                </div>
+                @endif
+            </div>
+        </section>
+        
         <!-- All Products Section -->
         <section class="mt-6" id="products">
             <div class="flex items-center justify-between mb-4">
@@ -69,11 +385,11 @@
                     <span class="w-2 h-8 bg-red-500 mr-3 rounded-sm"></span> All Products
                 </h2>
                 <div class="flex items-center space-x-4">
-                    <span class="text-sm text-gray-600">{{ $featuredProducts->concat($newArrivals)->unique('id')->filter(function($product) { return !empty($product->slug); })->count() }} Products</span>
+                    <span class="text-sm text-gray-600">{{ $allProducts->count() }} Products</span>
                 </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                @foreach($featuredProducts->concat($newArrivals)->unique('id')->filter(function($product) { return !empty($product->slug); }) as $product)
+                @forelse($allProducts as $product)
                 <a href="{{ route('product.details', $product->slug) }}" class="bg-white rounded-lg shadow-md overflow-hidden relative product-card hover:shadow-lg transition-shadow cursor-pointer">
                     @if($product->is_on_sale)
                     <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-{{ $product->discount_percentage }}%</div>
@@ -131,7 +447,11 @@
                         @endif
                     </div>
                 </a>
-                @endforeach
+                @empty
+                <div class="col-span-full text-center py-8">
+                    <p class="text-gray-500">No products available at the moment.</p>
+                </div>
+                @endforelse
             </div>
         </section>
     </main>
@@ -445,6 +765,200 @@
         // Initialize wishlist status on page load
         checkWishlistStatus();
         updateWishlistCount();
+    });
+    </script>
+    
+    <!-- Product Carousel Styles -->
+    <style>
+        .product-carousel {
+            display: flex;
+            transition: transform 0.5s ease-in-out;
+        }
+        
+        .product-carousel-item {
+            flex: 0 0 100%;
+            padding: 0 8px;
+        }
+        
+        @media (min-width: 640px) {
+            .product-carousel-item {
+                flex: 0 0 50%;
+            }
+        }
+        
+        @media (min-width: 768px) {
+            .product-carousel-item {
+                flex: 0 0 33.333%;
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .product-carousel-item {
+                flex: 0 0 25%;
+            }
+        }
+        
+        @media (min-width: 1280px) {
+            .product-carousel-item {
+                flex: 0 0 20%;
+            }
+        }
+        
+        .carousel-container {
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .carousel-dots {
+            display: flex;
+            justify-content: center;
+            margin-top: 16px;
+            gap: 8px;
+        }
+        
+        .carousel-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #d1d5db;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        .carousel-dot.active {
+            background-color: #ef4444;
+        }
+        
+        .carousel-dot:hover {
+            background-color: #9ca3af;
+        }
+    </style>
+    
+    <!-- Product Carousel JavaScript -->
+    <script>
+    // Product Rotation Functionality
+    class ProductCarousel {
+        constructor(carouselId, dotClass, autoRotateInterval = 10000) {
+            this.carousel = document.getElementById(carouselId);
+            this.dots = document.querySelectorAll(`.${dotClass}`);
+            this.autoRotateInterval = autoRotateInterval;
+            this.currentSlide = 0;
+            this.intervalId = null;
+            this.slidesPerView = this.getSlidesPerView();
+            this.totalSlides = Math.ceil(this.carousel.children.length / this.slidesPerView);
+            
+            console.log(`Initializing ${carouselId}:`, {
+                carousel: this.carousel,
+                dots: this.dots,
+                slidesPerView: this.slidesPerView,
+                totalSlides: this.totalSlides,
+                childrenCount: this.carousel ? this.carousel.children.length : 0
+            });
+            
+            if (this.carousel && this.totalSlides > 1) {
+                this.init();
+            } else {
+                console.log(`Skipping ${carouselId} - not enough slides or carousel not found`);
+            }
+        }
+        
+        getSlidesPerView() {
+            const width = window.innerWidth;
+            if (width >= 1280) return 5; // xl
+            if (width >= 1024) return 4; // lg
+            if (width >= 768) return 3;  // md
+            if (width >= 640) return 2;  // sm
+            return 1; // mobile
+        }
+        
+        init() {
+            this.setupEventListeners();
+            this.startAutoRotate();
+            this.updateDots();
+            console.log(`Carousel initialized with ${this.totalSlides} slides`);
+        }
+        
+        setupEventListeners() {
+            // Navigation dots
+            this.dots.forEach((dot, index) => {
+                dot.addEventListener('click', () => {
+                    console.log(`Dot clicked: ${index}`);
+                    this.goToSlide(index);
+                });
+            });
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                const newSlidesPerView = this.getSlidesPerView();
+                if (newSlidesPerView !== this.slidesPerView) {
+                    this.slidesPerView = newSlidesPerView;
+                    this.totalSlides = Math.ceil(this.carousel.children.length / this.slidesPerView);
+                    this.currentSlide = Math.min(this.currentSlide, this.totalSlides - 1);
+                    this.updateCarousel();
+                    this.updateDots();
+                }
+            });
+        }
+        
+        startAutoRotate() {
+            if (this.totalSlides <= 1) return;
+            
+            console.log(`Starting auto-rotate for ${this.carousel.id} with ${this.autoRotateInterval}ms interval`);
+            this.intervalId = setInterval(() => {
+                this.nextSlide();
+            }, this.autoRotateInterval);
+        }
+        
+        nextSlide() {
+            this.currentSlide = (this.currentSlide + 1) % this.totalSlides;
+            console.log(`Next slide: ${this.currentSlide}`);
+            this.updateCarousel();
+            this.updateDots();
+        }
+        
+        goToSlide(slideIndex) {
+            this.currentSlide = slideIndex;
+            console.log(`Go to slide: ${this.currentSlide}`);
+            this.updateCarousel();
+            this.updateDots();
+        }
+        
+        updateCarousel() {
+            const translateX = -(this.currentSlide * 100);
+            this.carousel.style.transform = `translateX(${translateX}%)`;
+            console.log(`Updated carousel transform: translateX(${translateX}%)`);
+        }
+        
+        updateDots() {
+            this.dots.forEach((dot, index) => {
+                if (index === this.currentSlide) {
+                    dot.classList.add('active');
+                    dot.classList.remove('bg-gray-300');
+                    dot.classList.add('bg-red-500');
+                } else {
+                    dot.classList.remove('active');
+                    dot.classList.remove('bg-red-500');
+                    dot.classList.add('bg-gray-300');
+                }
+            });
+        }
+    }
+    
+    // Initialize carousels when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, initializing carousels...');
+        
+        // Wait a bit for all elements to be rendered
+        setTimeout(() => {
+            // Initialize Featured Products Carousel (10 second interval)
+            new ProductCarousel('featured-carousel', 'featured-dot', 10000);
+            
+            // Initialize New Arrivals Carousel (10 second interval)
+            new ProductCarousel('new-arrivals-carousel', 'new-arrivals-dot', 10000);
+            
+            // Initialize Best Selling Products Carousel (10 second interval)
+            new ProductCarousel('best-selling-carousel', 'best-selling-dot', 10000);
+        }, 100);
     });
     </script>
     

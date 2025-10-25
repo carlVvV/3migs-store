@@ -13,17 +13,26 @@ class HomeController extends Controller
      */
     public function index()
     {
-        // Get featured barong products
+        // Get all available products (remove the limit)
+        $allProducts = BarongProduct::with(['category'])
+            ->where('is_available', true)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Get featured barong products (keep limit for featured section)
         $featuredProducts = BarongProduct::with(['category'])
             ->featured()
             ->limit(8)
             ->get();
 
-        // Get new arrivals
+        // Get new arrivals (keep limit for new arrivals section)
         $newArrivals = BarongProduct::with(['category'])
             ->orderBy('created_at', 'desc')
             ->limit(8)
             ->get();
+
+        // Get best selling products for this month
+        $bestSellingProducts = BarongProduct::getBestSellingThisMonth(8);
 
         // Get categories
         $categories = Category::active()
@@ -31,7 +40,7 @@ class HomeController extends Controller
             ->withCount('barongProducts')
             ->get();
 
-        return view('home', compact('featuredProducts', 'newArrivals', 'categories'));
+        return view('home', compact('allProducts', 'featuredProducts', 'newArrivals', 'bestSellingProducts', 'categories'));
     }
 
     /**
