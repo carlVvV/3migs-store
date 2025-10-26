@@ -406,7 +406,8 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('checkout-form').classList.remove('hidden');
             document.getElementById('selected-address-display').classList.add('hidden');
             const savedAddressesDiv = document.getElementById('saved-addresses');
-            if (!savedAddressesDiv.classList.contains('hidden')) {
+            // Show the saved addresses dropdown when editing
+            if (savedAddressesDiv && savedAddressesDiv.classList.contains('hidden')) {
                 savedAddressesDiv.classList.remove('hidden');
             }
         });
@@ -443,19 +444,24 @@ document.addEventListener('DOMContentLoaded', function() {
             // Apply default to form and show selected address
             const defaultAddr = data.data.find(a => a.is_default) || data.data[0];
             if (defaultAddr) {
-                applyAddressToForm(defaultAddr);
-                displaySelectedAddress(defaultAddr);
+                applyAddressToForm(defaultAddr, function(addr) {
+                    displaySelectedAddress(addr);
+                    // Hide form and show address display for default address
+                    document.getElementById('checkout-form').classList.add('hidden');
+                    document.getElementById('selected-address-display').classList.remove('hidden');
+                });
             }
             
             sel.addEventListener('change', () => {
                 const addr = data.data.find(a => String(a.id) === sel.value);
                 if (addr) {
-                    applyAddressToForm(addr);
-                    displaySelectedAddress(addr);
-                    // Hide dropdown and form, show address display
-                    document.getElementById('saved-addresses').classList.add('hidden');
-                    document.getElementById('checkout-form').classList.add('hidden');
-                    document.getElementById('selected-address-display').classList.remove('hidden');
+                    applyAddressToForm(addr, function(addr) {
+                        displaySelectedAddress(addr);
+                        // Hide dropdown and form, show address display
+                        document.getElementById('saved-addresses').classList.add('hidden');
+                        document.getElementById('checkout-form').classList.add('hidden');
+                        document.getElementById('selected-address-display').classList.remove('hidden');
+                    });
                 }
             });
             
@@ -481,11 +487,123 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (_) { /* ignore */ }
     }
 
-    function displaySelectedAddress(addr) {
+    async function getCityNameFromCode(code) {
+        if (!code || !code.match(/^\d+$/)) return code;
+        
+        try {
+            const res = await fetch(`/api/v1/psgc/cities/${code}`);
+            const data = await res.json();
+            if (data.success && data.data && data.data.name) {
+                return data.data.name;
+            }
+        } catch (e) { /* ignore */ }
+        return code;
+    }
+    
+    async function getBarangayNameFromCode(code) {
+        if (!code || !code.match(/^\d+$/)) return code;
+        
+        try {
+            const res = await fetch(`/api/v1/psgc/barangays/${code}`);
+            const data = await res.json();
+            if (data.success && data.data && data.data.name) {
+                return data.data.name;
+            }
+        } catch (e) { /* ignore */ }
+        return code;
+    }
+    
+    async function getProvinceNameFromCode(code) {
+        if (!code || !code.match(/^\d+$/)) return code;
+        
+        try {
+            // Province code is like 031400000 (9 digits)
+            // To get provinces, we need to iterate through regions and find the matching province
+            const res = await fetch(`/api/v1/psgc/regions`);
+            const data = await res.json();
+            if (data.success && data.data && Array.isArray(data.data)) {
+                for (const region of data.data) {
+                    const provinceRes = await fetch(`/api/v1/psgc/regions/${region.code}/provinces`);
+                    const provinceData = await provinceRes.json();
+                    if (provinceData.success && provinceData.data && Array.isArray(provinceData.data)) {
+                        const province = provinceData.data.find(p => p.code === code);
+                        if (province && province.name) {
+                            return province.name;
+                        }
+                    }
+                }
+            }
+        } catch (e) { /* ignore */ }
+        return code;
+    }
+    
+    async function getRegionNameFromCode(code) {
+        if (!code || !code.match(/^\d+$/)) return code;
+        
+        try {
+            const res = await fetch(`/api/v1/psgc/regions`);
+            const data = await res.json();
+            if (data.success && data.data && Array.isArray(data.data)) {
+                const region = data.data.find(r => r.code === code);
+                if (region && region.name) {
+                    return region.name;
+                }
+            }
+        } catch (e) { /* ignore */ }
+        return code;
+    }
+    
+    async function displaySelectedAddress(addr) {
         if (!addr) return;
         
         const addressDisplay = document.getElementById('selected-address-display');
         const addressContent = document.getElementById('address-display-content');
+        
+        // Use stored names if available, otherwise try to get from dropdown options or fetch from API
+        let provinceName = addr.province;
+        let cityName = addr.city;
+        let regionName = addr.region || '';
+        let barangayName = addr.barangay;
+        
+        // Check if values are codes (numeric)
+        const isNumeric = (str) => str && str.match(/^\d+$/);
+        
+        // If city is a code, fetch the name from API
+        if (isNumeric(addr.city)) {
+            cityName = await getCityNameFromCode(addr.city);
+        }
+        
+        // If barangay is a code, fetch the name from API
+        if (isNumeric(addr.barangay)) {
+            barangayName = await getBarangayNameFromCode(addr.barangay);
+        }
+        
+        // If province is a code, fetch the name from API
+        if (isNumeric(addr.province)) {
+            provinceName = await getProvinceNameFromCode(addr.province);
+        }
+        
+        // If region is a code, fetch the name from API
+        if (isNumeric(addr.region)) {
+            regionName = await getRegionNameFromCode(addr.region);
+        }
+        
+        // Try to get names from dropdown if available
+        const provinceSelect = document.getElementById('province');
+        if (provinceSelect && addr.province && isNumeric(addr.province)) {
+            const provinceOption = provinceSelect.querySelector(`option[value="${addr.province}"]`);
+            if (provinceOption && provinceOption.textContent.trim() !== '') {
+                provinceName = provinceOption.textContent;
+            }
+        }
+        
+        const regionSelect = document.getElementById('region');
+        if (regionSelect && addr.region && isNumeric(addr.region)) {
+            const regionOption = regionSelect.querySelector(`option[value="${addr.region}"]`);
+            if (regionOption && regionOption.textContent.trim() !== '') {
+                regionName = regionOption.textContent;
+            }
+        }
         
         // Build address string
         let addressText = `<div class="mb-2"><strong>${addr.full_name}</strong></div>`;
@@ -493,10 +611,29 @@ document.addEventListener('DOMContentLoaded', function() {
         if (addr.apartment) {
             addressText += `<div>${addr.apartment}</div>`;
         }
-        addressText += `<div>${addr.city}, ${addr.province}</div>`;
-        if (addr.barangay) {
-            addressText += `<div>Barangay: ${addr.barangay}</div>`;
+        
+        // Build location line - show barangay, city, province
+        let locationParts = [];
+        if (barangayName && !isNumeric(barangayName)) {
+            locationParts.push(barangayName);
         }
+        if (cityName && !isNumeric(cityName)) {
+            locationParts.push(cityName);
+        }
+        if (provinceName && !isNumeric(provinceName)) {
+            locationParts.push(provinceName);
+        }
+        
+        const locationLine = locationParts.length > 0 ? locationParts.join(', ') : '';
+        if (locationLine) {
+            addressText += `<div>${locationLine}</div>`;
+        }
+        
+        // Add region if it's not already in the location line and it's not a code
+        if (regionName && !isNumeric(regionName) && !locationParts.includes(regionName)) {
+            addressText += `<div>Region: ${regionName}</div>`;
+        }
+        
         addressText += `<div>${addr.postal_code}</div>`;
         if (addr.phone) {
             addressText += `<div class="mt-2">Phone: ${addr.phone}</div>`;
@@ -508,7 +645,7 @@ document.addEventListener('DOMContentLoaded', function() {
         addressContent.innerHTML = addressText;
     }
 
-    function applyAddressToForm(addr) {
+    function applyAddressToForm(addr, callback) {
         if (!addr) return;
         const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
         set('full_name', addr.full_name);
@@ -546,9 +683,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Wait for barangays to load, then set barangay
                     setTimeout(() => {
                         set('barangay', addr.barangay);
+                        // Call callback after all dropdowns are populated
+                        if (callback && typeof callback === 'function') {
+                            callback(addr);
+                        }
                     }, 100);
                 }, 100);
             }, 100);
+        } else if (callback && typeof callback === 'function') {
+            callback(addr);
         }
     }
 
@@ -1170,15 +1313,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Fallback to form data if address not found in session storage
                 console.warn('Selected address not found in session, falling back to form data');
                 const formData = new FormData(document.getElementById('checkout-form'));
+                
+                // Get text content from select elements instead of values
+                const getSelectText = (id) => {
+                    const select = document.getElementById(id);
+                    if (!select) return '';
+                    const option = select.options[select.selectedIndex];
+                    return option ? option.text : '';
+                };
+                
                 orderData = {
                     full_name: formData.get('full_name'),
                     company_name: formData.get('company_name'),
                     street_address: formData.get('street_address'),
                     apartment: formData.get('apartment'),
-                    city: formData.get('city'),
-                    province: formData.get('province'),
-                    region: formData.get('region'),
-                    barangay: formData.get('barangay'),
+                    city: getSelectText('city') || formData.get('city'),
+                    province: getSelectText('province') || formData.get('province'),
+                    region: getSelectText('region') || formData.get('region'),
+                    barangay: getSelectText('barangay') || formData.get('barangay'),
                     postal_code: formData.get('postal_code'),
                 phone: formData.get('phone'),
                 email: formData.get('email'),
@@ -1189,15 +1341,24 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             // Get form data for manual entry
             const formData = new FormData(document.getElementById('checkout-form'));
+            
+            // Get text content from select elements instead of values
+            const getSelectText = (id) => {
+                const select = document.getElementById(id);
+                if (!select) return '';
+                const option = select.options[select.selectedIndex];
+                return option ? option.text : '';
+            };
+            
             orderData = {
                 full_name: formData.get('full_name'),
                 company_name: formData.get('company_name'),
                 street_address: formData.get('street_address'),
                 apartment: formData.get('apartment'),
-                city: formData.get('city'),
-                province: formData.get('province'),
-                region: formData.get('region'),
-                barangay: formData.get('barangay'),
+                city: getSelectText('city') || formData.get('city'),
+                province: getSelectText('province') || formData.get('province'),
+                region: getSelectText('region') || formData.get('region'),
+                barangay: getSelectText('barangay') || formData.get('barangay'),
                 postal_code: formData.get('postal_code'),
                 phone: formData.get('phone'),
                 email: formData.get('email'),
