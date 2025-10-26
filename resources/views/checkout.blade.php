@@ -1074,6 +1074,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const addressSelect = document.getElementById('address-select');
         const savedAddressesDiv = document.getElementById('saved-addresses');
         let orderData;
+        const paymentMethod = document.querySelector('input[name="payment_method"]:checked')?.value;
         
         if (!savedAddressesDiv.classList.contains('hidden') && addressSelect.value) {
             // Get saved address data from the stored addresses array
@@ -1094,7 +1095,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     phone: selectedAddress.phone,
                     email: selectedAddress.email,
                     save_info: document.getElementById('save_info')?.checked || false,
-                    payment_method: document.querySelector('input[name="payment_method"]:checked').value
+                    payment_method: paymentMethod
                 };
             } else {
                 // Fallback to form data if address not found in session storage
@@ -1110,10 +1111,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     region: formData.get('region'),
                     barangay: formData.get('barangay'),
                     postal_code: formData.get('postal_code'),
-                    phone: formData.get('phone'),
-                    email: formData.get('email'),
-                    save_info: formData.get('save_info') === 'on',
-                    payment_method: document.querySelector('input[name="payment_method"]:checked').value
+                phone: formData.get('phone'),
+                email: formData.get('email'),
+                save_info: formData.get('save_info') === 'on',
+                payment_method: paymentMethod
                 };
             }
         } else {
@@ -1132,7 +1133,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 phone: formData.get('phone'),
                 email: formData.get('email'),
                 save_info: formData.get('save_info') === 'on',
-                payment_method: document.querySelector('input[name="payment_method"]:checked').value
+                payment_method: paymentMethod
             };
         }
 
