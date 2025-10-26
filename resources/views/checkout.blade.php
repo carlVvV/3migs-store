@@ -85,6 +85,17 @@
                         </div>
                     </div>
 
+                    <!-- Display Selected Address -->
+                    <div id="selected-address-display" class="mb-4 hidden bg-gray-50 border border-gray-300 rounded-md p-4">
+                        <div class="flex items-start justify-between mb-2">
+                            <h3 class="font-semibold text-gray-900">Selected Address</h3>
+                            <button id="edit-address-btn" type="button" class="text-sm text-blue-600 hover:text-blue-800">Edit</button>
+                        </div>
+                        <div id="address-display-content" class="text-sm text-gray-700">
+                            <!-- Address will be displayed here -->
+                        </div>
+                    </div>
+
                     <form id="checkout-form" class="space-y-4">
                         @csrf
                         
@@ -387,6 +398,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Restore draft after attempting to load saved addresses
     restoreCheckoutDraft();
     
+    // Setup Edit button handler
+    const editBtn = document.getElementById('edit-address-btn');
+    if (editBtn) {
+        editBtn.addEventListener('click', () => {
+            // Show form and dropdown, hide address display
+            document.getElementById('checkout-form').classList.remove('hidden');
+            document.getElementById('selected-address-display').classList.add('hidden');
+            const savedAddressesDiv = document.getElementById('saved-addresses');
+            if (!savedAddressesDiv.classList.contains('hidden')) {
+                savedAddressesDiv.classList.remove('hidden');
+            }
+        });
+    }
+    
     // Persist form as draft on change
     attachDraftPersistence();
 
@@ -415,12 +440,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (addr.is_default) opt.selected = true;
                 sel.appendChild(opt);
             });
-            // Apply default to form
-            applyAddressToForm(data.data.find(a => a.is_default) || data.data[0]);
+            // Apply default to form and show selected address
+            const defaultAddr = data.data.find(a => a.is_default) || data.data[0];
+            if (defaultAddr) {
+                applyAddressToForm(defaultAddr);
+                displaySelectedAddress(defaultAddr);
+            }
+            
             sel.addEventListener('change', () => {
                 const addr = data.data.find(a => String(a.id) === sel.value);
-                if (addr) applyAddressToForm(addr);
+                if (addr) {
+                    applyAddressToForm(addr);
+                    displaySelectedAddress(addr);
+                    // Hide dropdown and form, show address display
+                    document.getElementById('saved-addresses').classList.add('hidden');
+                    document.getElementById('checkout-form').classList.add('hidden');
+                    document.getElementById('selected-address-display').classList.remove('hidden');
+                }
             });
+            
             document.getElementById('new-address-btn').addEventListener('click', () => {
                 // Clear form for new address input
                 ['full_name','company_name','street_address','apartment','city','province','region','barangay','postal_code','phone','email'].forEach(id => {
@@ -435,8 +473,39 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('city').innerHTML = '<option value="">Select City/Municipality</option>';
                 document.getElementById('barangay').innerHTML = '<option value="">Select Barangay</option>';
                 document.getElementById('full_name').focus();
+                
+                // Show form and hide address display when adding new address
+                document.getElementById('checkout-form').classList.remove('hidden');
+                document.getElementById('selected-address-display').classList.add('hidden');
             });
         } catch (_) { /* ignore */ }
+    }
+
+    function displaySelectedAddress(addr) {
+        if (!addr) return;
+        
+        const addressDisplay = document.getElementById('selected-address-display');
+        const addressContent = document.getElementById('address-display-content');
+        
+        // Build address string
+        let addressText = `<div class="mb-2"><strong>${addr.full_name}</strong></div>`;
+        addressText += `<div>${addr.street_address}</div>`;
+        if (addr.apartment) {
+            addressText += `<div>${addr.apartment}</div>`;
+        }
+        addressText += `<div>${addr.city}, ${addr.province}</div>`;
+        if (addr.barangay) {
+            addressText += `<div>Barangay: ${addr.barangay}</div>`;
+        }
+        addressText += `<div>${addr.postal_code}</div>`;
+        if (addr.phone) {
+            addressText += `<div class="mt-2">Phone: ${addr.phone}</div>`;
+        }
+        if (addr.email) {
+            addressText += `<div>Email: ${addr.email}</div>`;
+        }
+        
+        addressContent.innerHTML = addressText;
     }
 
     function applyAddressToForm(addr) {
