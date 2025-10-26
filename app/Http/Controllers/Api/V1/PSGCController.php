@@ -4,16 +4,19 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Services\PSGCService;
+use App\Services\PhilippineAddressService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class PSGCController extends Controller
 {
     protected $psgcService;
+    protected $philippineAddressService;
 
-    public function __construct(PSGCService $psgcService)
+    public function __construct(PSGCService $psgcService, PhilippineAddressService $philippineAddressService)
     {
         $this->psgcService = $psgcService;
+        $this->philippineAddressService = $philippineAddressService;
     }
 
     /**
@@ -22,7 +25,13 @@ class PSGCController extends Controller
     public function getRegions()
     {
         try {
-            $regions = $this->psgcService->getRegions();
+            // Use the new Philippine Address Service first, fallback to PSGC service
+            $regions = $this->philippineAddressService->getRegions();
+            
+            if (empty($regions)) {
+                $regions = $this->psgcService->getRegions();
+            }
+            
             return response()->json([
                 'success' => true,
                 'data' => $regions
@@ -42,7 +51,13 @@ class PSGCController extends Controller
     public function getProvincesByRegion(Request $request, $regionCode)
     {
         try {
-            $provinces = $this->psgcService->getProvincesByRegion($regionCode);
+            // Use the new Philippine Address Service first, fallback to PSGC service
+            $provinces = $this->philippineAddressService->getProvincesByRegion($regionCode);
+            
+            if (empty($provinces)) {
+                $provinces = $this->psgcService->getProvincesByRegion($regionCode);
+            }
+            
             return response()->json([
                 'success' => true,
                 'data' => $provinces
@@ -62,7 +77,13 @@ class PSGCController extends Controller
     public function getCitiesByProvince(Request $request, $provinceCode)
     {
         try {
-            $cities = $this->psgcService->getCitiesByProvince($provinceCode);
+            // Use the new Philippine Address Service first, fallback to PSGC service
+            $cities = $this->philippineAddressService->getCitiesByProvince($provinceCode);
+            
+            if (empty($cities)) {
+                $cities = $this->psgcService->getCitiesByProvince($provinceCode);
+            }
+            
             return response()->json([
                 'success' => true,
                 'data' => $cities
@@ -82,7 +103,13 @@ class PSGCController extends Controller
     public function getBarangaysByCity(Request $request, $cityCode)
     {
         try {
-            $barangays = $this->psgcService->getBarangaysByCity($cityCode);
+            // Use the new Philippine Address Service first, fallback to PSGC service
+            $barangays = $this->philippineAddressService->getBarangaysByCity($cityCode);
+            
+            if (empty($barangays)) {
+                $barangays = $this->psgcService->getBarangaysByCity($cityCode);
+            }
+            
             return response()->json([
                 'success' => true,
                 'data' => $barangays
