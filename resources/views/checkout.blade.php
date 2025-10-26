@@ -399,6 +399,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!res.ok || !data.success || !Array.isArray(data.data) || data.data.length === 0) {
                 return; // keep hidden
             }
+            
+            // Store addresses in sessionStorage for later use
+            sessionStorage.setItem('savedAddresses', JSON.stringify(data.data));
+            
             const wrap = document.getElementById('saved-addresses');
             const sel = document.getElementById('address-select');
             wrap.classList.remove('hidden');
@@ -883,6 +887,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function validateForm() {
+        // Check if a saved address is selected
+        const addressSelect = document.getElementById('address-select');
+        const savedAddressesDiv = document.getElementById('saved-addresses');
+        
+        if (!savedAddressesDiv.classList.contains('hidden') && addressSelect.value) {
+            // Saved address is selected, it's already validated
+            const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
+            if (!paymentMethod) {
+                showNotification('Please select a payment method', 'error');
+                return false;
+            }
+            return true;
+        }
+        
+        // Otherwise validate all required fields
         const requiredFields = ['full_name', 'street_address', 'region', 'province', 'city', 'barangay', 'postal_code', 'phone', 'email'];
         let isValid = true;
         
@@ -1050,25 +1069,72 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!validateForm()) {
             return;
         }
-        // Get form data
-        const formData = new FormData(document.getElementById('checkout-form'));
-        const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
-
-        const orderData = {
-            full_name: formData.get('full_name'),
-            company_name: formData.get('company_name'),
-            street_address: formData.get('street_address'),
-            apartment: formData.get('apartment'),
-            city: formData.get('city'),
-            province: formData.get('province'),
-            region: formData.get('region'),
-            barangay: formData.get('barangay'),
-            postal_code: formData.get('postal_code'),
-            phone: formData.get('phone'),
-            email: formData.get('email'),
-            save_info: formData.get('save_info') === 'on',
-            payment_method: paymentMethod
-        };
+        
+        // Check if saved address is selected
+        const addressSelect = document.getElementById('address-select');
+        const savedAddressesDiv = document.getElementById('saved-addresses');
+        let orderData;
+        
+        if (!savedAddressesDiv.classList.contains('hidden') && addressSelect.value) {
+            // Get saved address data from the stored addresses array
+            const savedAddresses = JSON.parse(sessionStorage.getItem('savedAddresses') || '[]');
+            const selectedAddress = savedAddresses.find(addr => String(addr.id) === addressSelect.value);
+            
+            if (selectedAddress) {
+                orderData = {
+                    full_name: selectedAddress.full_name,
+                    company_name: selectedAddress.company_name || '',
+                    street_address: selectedAddress.street_address,
+                    apartment: selectedAddress.apartment || '',
+                    city: selectedAddress.city,
+                    province: selectedAddress.province,
+                    region: selectedAddress.region,
+                    barangay: selectedAddress.barangay || '',
+                    postal_code: selectedAddress.postal_code,
+                    phone: selectedAddress.phone,
+                    email: selectedAddress.email,
+                    save_info: document.getElementById('save_info')?.checked || false,
+                    payment_method: document.querySelector('input[name="payment_method"]:checked').value
+                };
+            } else {
+                // Fallback to form data if address not found in session storage
+                console.warn('Selected address not found in session, falling back to form data');
+                const formData = new FormData(document.getElementById('checkout-form'));
+                orderData = {
+                    full_name: formData.get('full_name'),
+                    company_name: formData.get('company_name'),
+                    street_address: formData.get('street_address'),
+                    apartment: formData.get('apartment'),
+                    city: formData.get('city'),
+                    province: formData.get('province'),
+                    region: formData.get('region'),
+                    barangay: formData.get('barangay'),
+                    postal_code: formData.get('postal_code'),
+                    phone: formData.get('phone'),
+                    email: formData.get('email'),
+                    save_info: formData.get('save_info') === 'on',
+                    payment_method: document.querySelector('input[name="payment_method"]:checked').value
+                };
+            }
+        } else {
+            // Get form data for manual entry
+            const formData = new FormData(document.getElementById('checkout-form'));
+            orderData = {
+                full_name: formData.get('full_name'),
+                company_name: formData.get('company_name'),
+                street_address: formData.get('street_address'),
+                apartment: formData.get('apartment'),
+                city: formData.get('city'),
+                province: formData.get('province'),
+                region: formData.get('region'),
+                barangay: formData.get('barangay'),
+                postal_code: formData.get('postal_code'),
+                phone: formData.get('phone'),
+                email: formData.get('email'),
+                save_info: formData.get('save_info') === 'on',
+                payment_method: document.querySelector('input[name="payment_method"]:checked').value
+            };
+        }
 
         // Fast-path: if Online Payment selected, create the order and open Bux.ph directly
         if (paymentMethod === 'ewallet') {
