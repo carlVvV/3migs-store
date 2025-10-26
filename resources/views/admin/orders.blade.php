@@ -352,9 +352,12 @@ async function openAdminOrderModal(modal, orderId) {
         modal.querySelector('#adm-order-date').textContent = order.created_at ? new Date(order.created_at).toLocaleString() : '—';
         modal.querySelector('#adm-order-number').textContent = `#${order.order_number ?? order.id}`;
 
-        // Addresses
-        modal.querySelector('#adm-order-ship').textContent = formatAddress(order.shipping_address);
-        modal.querySelector('#adm-order-bill').textContent = formatAddress(order.billing_address);
+        // Addresses (fetch asynchronously)
+        const shippingAddr = await formatAddress(order.shipping_address);
+        const billingAddr = await formatAddress(order.billing_address);
+        
+        modal.querySelector('#adm-order-ship').textContent = shippingAddr;
+        modal.querySelector('#adm-order-bill').textContent = billingAddr;
 
         // Items
         const itemsTbody = modal.querySelector('#adm-order-items');
@@ -563,15 +566,88 @@ function openAdminProductQuickView(product) {
     modal.classList.remove('hidden');
 }
 
-function formatAddress(raw) {
+async function formatAddress(raw) {
     try {
         const addr = raw && typeof raw === 'string' ? (JSON.parse(raw) || {}) : (raw || {});
-        const parts = [addr.name, addr.line1, addr.line2, addr.city, addr.province, addr.postal_code, addr.country]
-            .filter(Boolean);
+        
+        // Fetch names for city, province, region, barangay if they are numeric codes
+        let cityName = addr.city || '';
+        let provinceName = addr.province || '';
+        let regionName = addr.region || '';
+        let barangayName = addr.barangay || '';
+        
+        // Check if values are numeric codes and fetch names from API
+        if (isNumeric(cityName)) {
+            try {
+                const res = await fetch(`/api/v1/psgc/cities/${cityName}`);
+                const data = await res.json();
+                if (data.success && data.data && data.data.name) {
+                    cityName = data.data.name;
+                }
+            } catch (e) {
+                // Keep the code if API fails
+            }
+        }
+        
+        if (isNumeric(provinceName)) {
+            try {
+                const res = await fetch(`/api/v1/psgc/provinces/${provinceName}`);
+                const data = await res.json();
+                if (data.success && data.data && data.data.name) {
+                    provinceName = data.data.name;
+                }
+            } catch (e) {
+                // Keep the code if API fails
+            }
+        }
+        
+        if (isNumeric(regionName)) {
+            try {
+                const res = await fetch('/api/v1/psgc/regions');
+                const data = await res.json();
+                if (data.success && data.data && Array.isArray(data.data)) {
+                    const region = data.data.find(r => r.code === regionName);
+                    if (region && region.name) {
+                        regionName = region.name;
+                    }
+                }
+            } catch (e) {
+                // Keep the code if API fails
+            }
+        }
+        
+        if (isNumeric(barangayName)) {
+            try {
+                const res = await fetch(`/api/v1/psgc/barangays/${barangayName}`);
+                const data = await res.json();
+                if (data.success && data.data && data.data.name) {
+                    barangayName = data.data.name;
+                }
+            } catch (e) {
+                // Keep the code if API fails
+            }
+        }
+        
+        const parts = [
+            addr.name || addr.full_name,
+            barangayName,
+            addr.line1 || addr.address,
+            addr.line2,
+            cityName,
+            provinceName,
+            regionName,
+            addr.postal_code,
+            addr.country
+        ].filter(Boolean);
+        
         return parts.length ? parts.join(', ') : 'N/A';
     } catch {
         return 'N/A';
     }
+}
+
+function isNumeric(str) {
+    return !isNaN(str) && str && str.match(/^\d+$/);
 }
 
 function formatText(s) {

@@ -334,6 +334,51 @@ class OrderController extends Controller
 
             $total = $subtotal - $discount;
 
+            // Validate stock availability before creating order
+            foreach ($cartItems as $cartItem) {
+                if (!$cartItem->product) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'One or more products in your cart are no longer available'
+                    ], 400);
+                }
+                
+                $product = $cartItem->product;
+                $usesSizeStocks = is_array($product->size_stocks) && count($product->size_stocks) > 0;
+                
+                if ($usesSizeStocks) {
+                    // Check size-specific stock
+                    $size = $cartItem->size;
+                    if ($size && isset($product->size_stocks[$size])) {
+                        $availableStock = intval($product->size_stocks[$size]);
+                        if ($availableStock < $cartItem->quantity) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => "Insufficient stock for {$product->name} (Size: {$size}). Only {$availableStock} available."
+                            ], 400);
+                        }
+                    } else {
+                        // Size not found in size_stocks
+                        $availableStock = intval($product->stock);
+                        if ($availableStock < $cartItem->quantity) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => "Insufficient stock for {$product->name}. Only {$availableStock} available."
+                            ], 400);
+                        }
+                    }
+                } else {
+                    // Check aggregate stock
+                    $availableStock = intval($product->stock);
+                    if ($availableStock < $cartItem->quantity) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Insufficient stock for {$product->name}. Only {$availableStock} available."
+                        ], 400);
+                    }
+                }
+            }
+
             DB::beginTransaction();
 
             // Normalize payment method to satisfy DB enum (map 'ewallet' → 'gcash')
@@ -449,26 +494,32 @@ class OrderController extends Controller
                 $product = $cartItem->product;
                 $oldStock = (int) ($product->stock ?? 0);
                 $usesSizeStocks = is_array($product->size_stocks) && count($product->size_stocks) > 0;
+                
                 if ($usesSizeStocks) {
-                    // Determine size from cart item or attributes
-                    $size = $cartItem->size ?? ($cartItem->product_attributes['size'] ?? null);
-                    if (!$size) {
-                        // Try to read size stored in user cart relation (if present)
-                        $size = $cartItem->getAttribute('size');
-                    }
-                    $sizeStocks = $product->size_stocks ?? [];
-                    if ($size && isset($sizeStocks[$size])) {
+                    // Get size from cart item
+                    $size = $cartItem->size;
+                    
+                    if ($size && isset($product->size_stocks[$size])) {
+                        // Deduct from specific size stock
+                        $sizeStocks = $product->size_stocks;
                         $sizeStocks[$size] = max(0, intval($sizeStocks[$size]) - intval($cartItem->quantity));
                         $product->size_stocks = $sizeStocks;
-                        // Also maintain aggregate stock for quick displays
+                        
+                        // Also update aggregate stock
                         $product->stock = array_sum(array_map('intval', $sizeStocks));
                         $product->is_available = $product->stock > 0;
                         $product->save();
                     } else {
-                        // Fallback: decrement overall stock
+                        // Size not found - fallback to decrement aggregate stock
+                        Log::warning('Size-specific stock not found', [
+                            'product_id' => $product->id,
+                            'size' => $size,
+                            'size_stocks' => $product->size_stocks
+                        ]);
                         $product->decrement('stock', $cartItem->quantity);
                     }
                 } else {
+                    // No size-based stock - decrement aggregate stock
                     $product->decrement('stock', $cartItem->quantity);
                 }
 

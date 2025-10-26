@@ -422,4 +422,63 @@ class PSGCController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get a single province by its PSGC code
+     */
+    public function getProvince($code)
+    {
+        try {
+            \Log::info('Getting province by code', ['code' => $code]);
+            
+            // Try Philippine Address Service first
+            try {
+                $regions = $this->philippineAddressService->getRegions();
+                if (!empty($regions)) {
+                    foreach ($regions as $region) {
+                        $provinces = $this->philippineAddressService->getProvincesByRegion($region['code']);
+                        foreach ($provinces as $province) {
+                            if ($province['code'] === $code) {
+                                return response()->json([
+                                    'success' => true,
+                                    'data' => $province
+                                ]);
+                            }
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                \Log::warning('Philippine Address Service failed, using PSGC Service', ['error' => $e->getMessage()]);
+            }
+            
+            // Fallback to PSGC service
+            $regions = $this->psgcService->getRegions();
+            if (!empty($regions)) {
+                foreach ($regions as $region) {
+                    $provinces = $this->psgcService->getProvincesByRegion($region['code']);
+                    foreach ($provinces as $province) {
+                        if ($province['code'] === $code) {
+                            return response()->json([
+                                'success' => true,
+                                'data' => $province
+                            ]);
+                        }
+                    }
+                }
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Province not found'
+            ], 404);
+            
+        } catch (\Exception $e) {
+            \Log::error('Failed to get province', ['code' => $code, 'error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch province',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

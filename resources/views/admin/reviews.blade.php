@@ -144,7 +144,7 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="text-sm text-gray-900 max-w-xs truncate">
-                                        {{ $review->comment ?? 'No comment' }}
+                                        {{ $review->review_text ?? 'No comment' }}
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

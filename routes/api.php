@@ -133,6 +133,7 @@ Route::prefix('v1/psgc')->withoutMiddleware([
     Route::get('/cities/{cityCode}/barangays', [\App\Http\Controllers\Api\V1\PSGCController::class, 'getBarangaysByCity']);
     Route::get('/cities/{code}', [\App\Http\Controllers\Api\V1\PSGCController::class, 'getCity']);
     Route::get('/barangays/{code}', [\App\Http\Controllers\Api\V1\PSGCController::class, 'getBarangay']);
+    Route::get('/provinces/{code}', [\App\Http\Controllers\Api\V1\PSGCController::class, 'getProvince']);
     Route::get('/regions/{regionCode}/data', [\App\Http\Controllers\Api\V1\PSGCController::class, 'getRegionData']);
     Route::post('/test', [\App\Http\Controllers\Api\V1\PSGCController::class, 'testPost']);
     Route::get('/search/city', [\App\Http\Controllers\Api\V1\PSGCController::class, 'searchCity']);

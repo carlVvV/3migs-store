@@ -202,17 +202,26 @@
                             @php
                                 $raw = $order->shipping_address ?? [];
                                 $addr = is_array($raw) ? $raw : (json_decode($raw, true) ?: []);
+                                
+                                // Use the stored names directly - no API calls here
+                                $cityName = $addr['city'] ?? '';
+                                $provinceName = $addr['province'] ?? '';
+                                $regionName = $addr['region'] ?? '';
+                                $barangayName = $addr['barangay'] ?? '';
+                                
                                 $formatted = collect([
                                     $addr['name'] ?? ($user->name ?? null),
+                                    $barangayName,
                                     $addr['line1'] ?? null,
                                     $addr['line2'] ?? null,
-                                    $addr['city'] ?? null,
-                                    $addr['province'] ?? null,
+                                    $cityName,
+                                    $provinceName,
+                                    $regionName,
                                     $addr['postal_code'] ?? null,
-                                    $addr['country'] ?? null,
+                                    $addr['country'] ?? 'Philippines',
                                 ])->filter()->join(', ');
                             @endphp
-                            <p class="text-sm text-gray-600">{{ $formatted ?: 'N/A' }}</p>
+                            <p class="text-sm text-gray-600" data-shipping-address="{{ json_encode($addr) }}">{{ $formatted ?: 'N/A' }}</p>
                         </div>
 
                         <!-- Billing Address / Payment -->
@@ -221,18 +230,30 @@
                             @php
                                 $braw = $order->billing_address ?? [];
                                 $baddr = is_array($braw) ? $braw : (json_decode($braw, true) ?: []);
+                                
+                                // Use the stored names directly - no API calls here
+                                $bcityName = $baddr['city'] ?? '';
+                                $bprovinceName = $baddr['province'] ?? '';
+                                $bregionName = $baddr['region'] ?? '';
+                                $bbarangayName = $baddr['barangay'] ?? '';
+                                
                                 $bformatted = collect([
                                     $baddr['name'] ?? ($user->name ?? null),
+                                    $bbarangayName,
                                     $baddr['line1'] ?? null,
                                     $baddr['line2'] ?? null,
-                                    $baddr['city'] ?? null,
-                                    $baddr['province'] ?? null,
+                                    $bcityName,
+                                    $bprovinceName,
+                                    $bregionName,
                                     $baddr['postal_code'] ?? null,
-                                    $baddr['country'] ?? null,
+                                    $baddr['country'] ?? 'Philippines',
                                 ])->filter()->join(', ');
                             @endphp
                             <p class="text-sm text-gray-600"><span class="font-medium text-gray-700">Payment:</span> {{ ucfirst(str_replace('_', ' ', $order->payment_method)) }}</p>
-                            <p class="text-sm text-gray-600 mt-1"><span class="font-medium text-gray-700">Billing:</span> {{ $bformatted ?: 'N/A' }}</p>
+                            <p class="text-sm text-gray-600 mt-1">
+                                <span class="font-medium text-gray-700">Billing:</span> 
+                                <span data-billing-address="{{ json_encode($baddr) }}">{{ $bformatted ?: 'N/A' }}</span>
+                            </p>
                         </div>
                     </div>
 
@@ -258,8 +279,8 @@
                                 <i class="fas fa-credit-card mr-2"></i>Pay Now
                             </button>
                             @endif
-                            @if($order->status === 'completed')
-                            <button class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 review-order-btn" data-order-id="{{ $order->id }}">
+                            @if($order->status === 'delivered' || $order->status === 'completed')
+                            <button class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 review-order-btn" data-order-id="{{ $order->id }}" data-product-id="{{ $order->orderItems->first()->product_id ?? '' }}">
                                 <i class="fas fa-star mr-2"></i>Write Review
                             </button>
                             @endif
@@ -384,8 +405,8 @@
         document.querySelectorAll('.review-order-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const orderId = this.getAttribute('data-order-id');
-                // This would open a review modal
-                showNotification('Review functionality coming soon!', 'info');
+                const productId = this.getAttribute('data-product-id');
+                openReviewModal(orderId, productId);
             });
         });
 
@@ -479,10 +500,10 @@
                 }
                 return r.json();
             })
-            .then(data => {
+            .then(async data => {
                 if (!data || data.success === false) throw new Error('Failed to load');
                 const order = data.data || data;
-                renderOrderIntoModal(order);
+                await renderOrderIntoModal(order);
                 loading.classList.add('hidden');
                 content.classList.remove('hidden');
             })
@@ -590,7 +611,7 @@
         }
 
         // Utility functions
-        function formatAddress(address) {
+        async function formatAddress(address) {
             if (!address) return 'Not provided';
             if (typeof address === 'string') {
                 try {
@@ -604,8 +625,70 @@
                 if (address.name || address.full_name) parts.push(address.name || address.full_name);
                 if (address.line1 || address.address) parts.push(address.line1 || address.address);
                 if (address.line2) parts.push(address.line2);
-                if (address.city) parts.push(address.city);
-                if (address.province || address.state) parts.push(address.province || address.state);
+                
+                // Fetch names for city, province, region, barangay if they are numeric codes
+                let cityName = address.city || '';
+                let provinceName = address.province || '';
+                let regionName = address.region || '';
+                let barangayName = address.barangay || '';
+                
+                // Check if values are numeric codes and fetch names from API
+                if (isNumeric(cityName)) {
+                    try {
+                        const res = await fetch(`/api/v1/psgc/cities/${cityName}`);
+                        const data = await res.json();
+                        if (data.success && data.data && data.data.name) {
+                            cityName = data.data.name;
+                        }
+                    } catch (e) {
+                        // Keep the code if API fails
+                    }
+                }
+                
+                if (isNumeric(provinceName)) {
+                    try {
+                        const res = await fetch(`/api/v1/psgc/provinces/${provinceName}`);
+                        const data = await res.json();
+                        if (data.success && data.data && data.data.name) {
+                            provinceName = data.data.name;
+                        }
+                    } catch (e) {
+                        // Keep the code if API fails
+                    }
+                }
+                
+                if (isNumeric(regionName)) {
+                    try {
+                        const res = await fetch('/api/v1/psgc/regions');
+                        const data = await res.json();
+                        if (data.success && data.data && Array.isArray(data.data)) {
+                            const region = data.data.find(r => r.code === regionName);
+                            if (region && region.name) {
+                                regionName = region.name;
+                            }
+                        }
+                    } catch (e) {
+                        // Keep the code if API fails
+                    }
+                }
+                
+                if (isNumeric(barangayName)) {
+                    try {
+                        const res = await fetch(`/api/v1/psgc/barangays/${barangayName}`);
+                        const data = await res.json();
+                        if (data.success && data.data && data.data.name) {
+                            barangayName = data.data.name;
+                        }
+                    } catch (e) {
+                        // Keep the code if API fails
+                    }
+                }
+                
+                if (barangayName) parts.push(barangayName);
+                if (cityName) parts.push(cityName);
+                if (provinceName) parts.push(provinceName);
+                if (regionName) parts.push(regionName);
+                
                 if (address.postal_code || address.zip) parts.push(address.postal_code || address.zip);
                 if (address.country) parts.push(address.country);
                 if (address.phone) parts.push(`Phone: ${address.phone}`);
@@ -662,7 +745,7 @@
             return 'Not provided';
         }
 
-        function renderOrderIntoModal(order) {
+        async function renderOrderIntoModal(order) {
             const modal = document.getElementById('order-details-modal');
             modal.querySelector('#ord-title').textContent = `Order #${order.order_number ?? order.id}`;
             modal.querySelector('#ord-subtitle').textContent = order.created_at ? new Date(order.created_at).toLocaleString() : '';
@@ -673,8 +756,13 @@
             modal.querySelector('#ord-payment-status').textContent = order.payment_status ? `Payment: ${formatText(order.payment_status)}` : '';
             modal.querySelector('#ord-date').textContent = order.created_at ? new Date(order.created_at).toLocaleString() : '—';
             modal.querySelector('#ord-number').textContent = `#${order.order_number ?? order.id}`;
-            modal.querySelector('#ord-ship').textContent = formatAddress(order.shipping_address);
-            modal.querySelector('#ord-bill').textContent = formatAddress(order.billing_address);
+            
+            // Fetch and format addresses
+            const shippingAddr = await formatAddress(order.shipping_address);
+            const billingAddr = await formatAddress(order.billing_address);
+            
+            modal.querySelector('#ord-ship').textContent = shippingAddr;
+            modal.querySelector('#ord-bill').textContent = billingAddr;
             modal.querySelector('#ord-cust-phone').textContent = inferPhone(order);
             modal.querySelector('#ord-notes').textContent = order.notes || '—';
 
@@ -709,6 +797,146 @@
             const taxEl = modal.querySelector('#ord-tax');
             if (taxEl) taxEl.textContent = `₱${formatMoney(tax)}`;
             modal.querySelector('#ord-total').textContent = `₱${formatMoney(grand)}`;
+        }
+
+        function openReviewModal(orderId, productId) {
+            let modal = document.getElementById('review-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'review-modal';
+                modal.className = 'fixed inset-0 z-50 hidden';
+                modal.innerHTML = `
+                    <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+                    <div class="absolute inset-0 flex items-center justify-center p-4">
+                        <div class="bg-white w-full max-w-md rounded-lg shadow-xl overflow-hidden">
+                            <div class="px-6 py-4 border-b flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-gray-800">Write a Review</h3>
+                                <button id="review-close" class="text-gray-500 hover:text-gray-700">
+                                    <i class="fas fa-times text-xl"></i>
+                                </button>
+                            </div>
+                            <div class="px-6 py-5 space-y-4">
+                                <!-- Star Rating -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+                                    <div class="flex space-x-1" id="star-rating">
+                                        <i class="far fa-star text-2xl text-gray-300 hover:text-yellow-400 cursor-pointer" data-rating="1"></i>
+                                        <i class="far fa-star text-2xl text-gray-300 hover:text-yellow-400 cursor-pointer" data-rating="2"></i>
+                                        <i class="far fa-star text-2xl text-gray-300 hover:text-yellow-400 cursor-pointer" data-rating="3"></i>
+                                        <i class="far fa-star text-2xl text-gray-300 hover:text-yellow-400 cursor-pointer" data-rating="4"></i>
+                                        <i class="far fa-star text-2xl text-gray-300 hover:text-yellow-400 cursor-pointer" data-rating="5"></i>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1">Click on a star to rate</p>
+                                </div>
+                                
+                                <!-- Comment -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Comment</label>
+                                    <textarea id="review-comment" rows="4" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Share your experience with this product..."></textarea>
+                                </div>
+                                
+                                <!-- Error Message -->
+                                <div id="review-error" class="hidden text-sm text-red-600"></div>
+                            </div>
+                            <div class="px-6 py-4 border-t flex justify-end space-x-2">
+                                <button id="review-cancel" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-gray-700">Cancel</button>
+                                <button id="review-submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Submit Review</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                modal.querySelector('#review-close').addEventListener('click', () => modal.classList.add('hidden'));
+                modal.querySelector('#review-cancel').addEventListener('click', () => modal.classList.add('hidden'));
+            }
+            
+            // Setup star rating
+            let currentRating = 0;
+            const stars = modal.querySelectorAll('#star-rating i');
+            stars.forEach((star, index) => {
+                star.addEventListener('click', function() {
+                    currentRating = parseInt(this.getAttribute('data-rating'));
+                    updateStarDisplay(stars, currentRating);
+                });
+                star.addEventListener('mouseenter', function() {
+                    const hoverRating = parseInt(this.getAttribute('data-rating'));
+                    updateStarDisplay(stars, hoverRating);
+                });
+            });
+            document.getElementById('star-rating').addEventListener('mouseleave', function() {
+                updateStarDisplay(stars, currentRating);
+            });
+            
+            function updateStarDisplay(stars, rating) {
+                stars.forEach((star, index) => {
+                    if (index < rating) {
+                        star.classList.remove('far');
+                        star.classList.add('fas', 'text-yellow-400');
+                    } else {
+                        star.classList.remove('fas', 'text-yellow-400');
+                        star.classList.add('far', 'text-gray-300');
+                    }
+                });
+            }
+            
+            // Reset form
+            document.getElementById('review-comment').value = '';
+            document.getElementById('review-error').classList.add('hidden');
+            currentRating = 0;
+            updateStarDisplay(stars, 0);
+            
+            // Setup submit handler
+            modal.querySelector('#review-submit').onclick = async () => {
+                const comment = document.getElementById('review-comment').value.trim();
+                const errorDiv = document.getElementById('review-error');
+                
+                if (currentRating === 0) {
+                    errorDiv.textContent = 'Please select a rating';
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+                
+                if (!comment) {
+                    errorDiv.textContent = 'Please write a comment';
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/v1/reviews', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            order_id: orderId,
+                            product_id: productId,
+                            rating: currentRating,
+                            review_text: comment
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok && data.success) {
+                        showNotification('Review submitted successfully!', 'success');
+                        modal.classList.add('hidden');
+                        // Reload to update the page
+                        setTimeout(() => window.location.reload(), 1000);
+                    } else {
+                        errorDiv.textContent = data.message || 'Failed to submit review';
+                        errorDiv.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    console.error('Review submission error:', error);
+                    errorDiv.textContent = 'An error occurred. Please try again.';
+                    errorDiv.classList.remove('hidden');
+                }
+            };
+            
+            modal.classList.remove('hidden');
         }
 
         function showNotification(message, type = 'info') {
@@ -882,7 +1110,136 @@
 
         // Initialize cart count on page load
         updateCartCount();
+        
+        // Fetch and replace address codes with names after page loads
+        loadAddressNames();
     });
+    
+    async function loadAddressNames() {
+        // Find all address containers with data attributes
+        const shippingContainers = document.querySelectorAll('[data-shipping-address]');
+        const billingContainers = document.querySelectorAll('[data-billing-address]');
+        
+        // Process shipping addresses
+        for (const container of shippingContainers) {
+            try {
+                const addressData = JSON.parse(container.dataset.shippingAddress);
+                if (addressData && (isNumeric(addressData.city) || isNumeric(addressData.province) || isNumeric(addressData.region) || isNumeric(addressData.barangay))) {
+                    const formatted = await formatAddressInOrder(addressData);
+                    if (formatted) {
+                        container.textContent = formatted;
+                    }
+                }
+            } catch (e) {
+                console.error('Error formatting shipping address:', e);
+            }
+        }
+        
+        // Process billing addresses
+        for (const container of billingContainers) {
+            try {
+                const addressData = JSON.parse(container.dataset.billingAddress);
+                if (addressData && (isNumeric(addressData.city) || isNumeric(addressData.province) || isNumeric(addressData.region) || isNumeric(addressData.barangay))) {
+                    const formatted = await formatAddressInOrder(addressData);
+                    if (formatted) {
+                        container.textContent = formatted;
+                    }
+                }
+            } catch (e) {
+                console.error('Error formatting billing address:', e);
+            }
+        }
+    }
+    
+    async function formatAddressInOrder(address) {
+        if (!address) return 'Not provided';
+        if (typeof address === 'string') {
+            try {
+                address = JSON.parse(address);
+            } catch (e) {
+                return address;
+            }
+        }
+        if (typeof address === 'object' && address !== null) {
+            const parts = [];
+            if (address.name || address.full_name) parts.push(address.name || address.full_name);
+            if (address.line1 || address.address) parts.push(address.line1 || address.address);
+            if (address.line2) parts.push(address.line2);
+            
+            // Fetch names for city, province, region, barangay if they are numeric codes
+            let cityName = address.city || '';
+            let provinceName = address.province || '';
+            let regionName = address.region || '';
+            let barangayName = address.barangay || '';
+            
+            // Check if values are numeric codes and fetch names from API
+            if (isNumeric(cityName)) {
+                try {
+                    const res = await fetch(`/api/v1/psgc/cities/${cityName}`);
+                    const data = await res.json();
+                    if (data.success && data.data && data.data.name) {
+                        cityName = data.data.name;
+                    }
+                } catch (e) {
+                    // Keep the code if API fails
+                }
+            }
+            
+            if (isNumeric(provinceName)) {
+                try {
+                    const res = await fetch(`/api/v1/psgc/provinces/${provinceName}`);
+                    const data = await res.json();
+                    if (data.success && data.data && data.data.name) {
+                        provinceName = data.data.name;
+                    }
+                } catch (e) {
+                    // Keep the code if API fails
+                }
+            }
+            
+            if (isNumeric(regionName)) {
+                try {
+                    const res = await fetch('/api/v1/psgc/regions');
+                    const data = await res.json();
+                    if (data.success && data.data && Array.isArray(data.data)) {
+                        const region = data.data.find(r => r.code === regionName);
+                        if (region && region.name) {
+                            regionName = region.name;
+                        }
+                    }
+                } catch (e) {
+                    // Keep the code if API fails
+                }
+            }
+            
+            if (isNumeric(barangayName)) {
+                try {
+                    const res = await fetch(`/api/v1/psgc/barangays/${barangayName}`);
+                    const data = await res.json();
+                    if (data.success && data.data && data.data.name) {
+                        barangayName = data.data.name;
+                    }
+                } catch (e) {
+                    // Keep the code if API fails
+                }
+            }
+            
+            if (barangayName) parts.push(barangayName);
+            if (cityName) parts.push(cityName);
+            if (provinceName) parts.push(provinceName);
+            if (regionName) parts.push(regionName);
+            
+            if (address.postal_code || address.zip) parts.push(address.postal_code || address.zip);
+            if (address.country) parts.push(address.country);
+            if (address.phone) parts.push(`Phone: ${address.phone}`);
+            return parts.join(', ') || 'Address not available';
+        }
+        return 'Address not available';
+    }
+    
+    function isNumeric(str) {
+        return !isNaN(str) && str.match(/^\d+$/);
+    }
     </script>
     
     @include('layouts.footer')
