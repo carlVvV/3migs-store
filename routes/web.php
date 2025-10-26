@@ -32,6 +32,13 @@ Route::get('/test-notifications', function () {
 });
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/test-home', [HomeController::class, 'testHome'])->name('test-home');
+Route::get('/simple-home', [HomeController::class, 'simpleHome'])->name('simple-home');
+Route::get('/no-includes-home', [HomeController::class, 'noIncludesHome'])->name('no-includes-home');
+Route::get('/header-test-home', [HomeController::class, 'headerTestHome'])->name('header-test-home');
+Route::get('/categories-test-home', [HomeController::class, 'categoriesTestHome'])->name('categories-test-home');
+Route::get('/notification-test-home', [HomeController::class, 'notificationTestHome'])->name('notification-test-home');
+Route::get('/migsbot-test-home', [HomeController::class, 'migsbotTestHome'])->name('migsbot-test-home');
 Route::get('/cart', [HomeController::class, 'cart'])->name('cart');
 Route::get('/checkout', [HomeController::class, 'checkout'])->name('checkout');
 Route::get('/custom-design', [HomeController::class, 'customDesign'])->name('custom-design');

@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         statusEl.textContent = 'Order placed. Redirecting…';
-        setTimeout(() => window.location.href = '/orders', 1200);
+        setTimeout(() => window.location.href = '/checkout', 1200);
     } catch (e) {
         console.error(e);
         statusEl.textContent = 'An error occurred. Redirecting…';

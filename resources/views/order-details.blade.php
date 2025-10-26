@@ -162,6 +162,9 @@
                                         <th class="px-4 py-3 w-1/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
                                         <th class="px-4 py-3 w-2/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                                         <th class="px-4 py-3 w-2/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                        @if($order->status === 'delivered')
+                                        <th class="px-4 py-3 w-2/12 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Review</th>
+                                        @endif
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
@@ -174,6 +177,28 @@
                                         <td class="px-4 py-3 text-sm text-gray-600">{{ $item->quantity }}</td>
                                         <td class="px-4 py-3 text-sm text-gray-600">₱{{ number_format($item->unit_price, 2) }}</td>
                                         <td class="px-4 py-3 text-sm text-gray-800 font-medium">₱{{ number_format($item->total_price, 2) }}</td>
+                                        @if($order->status === 'delivered')
+                                        <td class="px-4 py-3 text-sm">
+                                            @php
+                                                $hasReviewed = \App\Models\Review::where('user_id', auth()->id())
+                                                    ->where('product_id', $item->product_id)
+                                                    ->where('order_id', $order->id)
+                                                    ->exists();
+                                            @endphp
+                                            @if($hasReviewed)
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                    <i class="fas fa-check mr-1"></i>
+                                                    Reviewed
+                                                </span>
+                                            @else
+                                                <button onclick="openReviewModal({{ $item->product_id }}, {{ $order->id }}, '{{ $item->product_name ?? ($item->product->name ?? 'Item') }}')" 
+                                                        class="inline-flex items-center px-3 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors">
+                                                    <i class="fas fa-star mr-1"></i>
+                                                    Review
+                                                </button>
+                                            @endif
+                                        </td>
+                                        @endif
                                     </tr>
                                     @endforeach
                                 </tbody>
@@ -418,6 +443,421 @@
             setTimeout(() => {
                 notification.remove();
             }, 3000);
+        }
+
+        // Review modal variables
+        let currentProductId = null;
+        let currentOrderId = null;
+        let selectedRating = 0;
+
+        // Review modal functions
+        function openReviewModal(productId, orderId, productName) {
+            currentProductId = productId;
+            currentOrderId = orderId;
+            selectedRating = 0;
+            
+            // Create modal if it doesn't exist
+            if (!document.getElementById('reviewModal')) {
+                createReviewModal();
+            }
+            
+            document.getElementById('reviewProductName').textContent = productName;
+            document.getElementById('reviewText').value = '';
+            document.getElementById('reviewModal').classList.remove('hidden');
+            
+            // Reset stars
+            resetStars();
+        }
+
+        function createReviewModal() {
+            const modalHTML = `
+                <div id="reviewModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+                    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                        <div class="mt-3">
+                            <!-- Modal Header -->
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-medium text-gray-900">Write a Review</h3>
+                                <button onclick="closeReviewModal()" class="text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-times text-xl"></i>
+                                </button>
+                            </div>
+
+                            <!-- Modal Body -->
+                            <div class="mb-4">
+                                <p class="text-sm text-gray-600 mb-4">Product: <span id="reviewProductName" class="font-medium"></span></p>
+                                
+                                <!-- Star Rating -->
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+                                    <div class="flex space-x-1" id="starRating">
+                                        <button type="button" class="star-btn text-gray-300 hover:text-yellow-400 text-2xl" data-rating="1">
+                                            <i class="far fa-star"></i>
+                                        </button>
+                                        <button type="button" class="star-btn text-gray-300 hover:text-yellow-400 text-2xl" data-rating="2">
+                                            <i class="far fa-star"></i>
+                                        </button>
+                                        <button type="button" class="star-btn text-gray-300 hover:text-yellow-400 text-2xl" data-rating="3">
+                                            <i class="far fa-star"></i>
+                                        </button>
+                                        <button type="button" class="star-btn text-gray-300 hover:text-yellow-400 text-2xl" data-rating="4">
+                                            <i class="far fa-star"></i>
+                                        </button>
+                                        <button type="button" class="star-btn text-gray-300 hover:text-yellow-400 text-2xl" data-rating="5">
+                                            <i class="far fa-star"></i>
+                                        </button>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1">Click to rate</p>
+                                </div>
+
+                                <!-- Review Text -->
+                                <div class="mb-4">
+                                    <label for="reviewText" class="block text-sm font-medium text-gray-700 mb-2">Review (Optional)</label>
+                                    <textarea id="reviewText" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Share your experience with this product..."></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Modal Footer -->
+                            <div class="flex justify-end space-x-3">
+                                <button onclick="closeReviewModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors">
+                                    Cancel
+                                </button>
+                                <button onclick="submitReview()" id="submitReviewBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                                    Submit Review
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            setupStarRating();
+        }
+
+        function closeReviewModal() {
+            const modal = document.getElementById('reviewModal');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+            currentProductId = null;
+            currentOrderId = null;
+            selectedRating = 0;
+        }
+
+        function setupStarRating() {
+            const starButtons = document.querySelectorAll('.star-btn');
+            starButtons.forEach((btn, index) => {
+                btn.addEventListener('click', function() {
+                    selectedRating = parseInt(this.getAttribute('data-rating'));
+                    updateStars(selectedRating);
+                });
+
+                btn.addEventListener('mouseenter', function() {
+                    const rating = parseInt(this.getAttribute('data-rating'));
+                    updateStars(rating);
+                });
+            });
+
+            // Reset stars when mouse leaves the rating area
+            const starRating = document.getElementById('starRating');
+            if (starRating) {
+                starRating.addEventListener('mouseleave', function() {
+                    updateStars(selectedRating);
+                });
+            }
+        }
+
+        function updateStars(rating) {
+            const starButtons = document.querySelectorAll('.star-btn');
+            starButtons.forEach((btn, index) => {
+                const starIcon = btn.querySelector('i');
+                if (index < rating) {
+                    starIcon.className = 'fas fa-star text-yellow-400';
+                } else {
+                    starIcon.className = 'far fa-star text-gray-300';
+                }
+            });
+        }
+
+        function resetStars() {
+            const starButtons = document.querySelectorAll('.star-btn');
+            starButtons.forEach(btn => {
+                const starIcon = btn.querySelector('i');
+                starIcon.className = 'far fa-star text-gray-300';
+            });
+        }
+
+        async function submitReview() {
+            if (selectedRating === 0) {
+                alert('Please select a rating');
+                return;
+            }
+
+            const reviewText = document.getElementById('reviewText').value.trim();
+            const submitBtn = document.getElementById('submitReviewBtn');
+            const originalText = submitBtn.innerHTML;
+
+            // Show loading state
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Submitting...';
+            submitBtn.disabled = true;
+
+            try {
+                // Submit review
+                const response = await fetch('/api/v1/reviews', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        product_id: currentProductId,
+                        order_id: currentOrderId,
+                        rating: selectedRating,
+                        review_text: reviewText
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification('Review submitted successfully!', 'success');
+                    closeReviewModal();
+                    // Reload the page to show updated review status
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    throw new Error(result.message || 'Failed to submit review');
+                }
+            } catch (error) {
+                console.error('Review submission error:', error);
+                showNotification('Failed to submit review. Please try again.', 'error');
+                
+                // Reset button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
+
+            } catch (error) {
+                console.error('Payment processing error:', error);
+                showNotification('Failed to process payment. Please try again.', 'error');
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-md shadow-lg text-white ${
+                type === 'success' ? 'bg-green-500' : 
+                type === 'error' ? 'bg-red-500' : 
+                type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
+            }`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Review modal variables
+        let currentProductId = null;
+        let currentOrderId = null;
+        let selectedRating = 0;
+
+        // Review modal functions
+        function openReviewModal(productId, orderId, productName) {
+            currentProductId = productId;
+            currentOrderId = orderId;
+            selectedRating = 0;
+            
+            // Create modal if it doesn't exist
+            if (!document.getElementById('reviewModal')) {
+                createReviewModal();
+            }
+            
+            document.getElementById('reviewProductName').textContent = productName;
+            document.getElementById('reviewText').value = '';
+            document.getElementById('reviewModal').classList.remove('hidden');
+            
+            // Reset stars
+            resetStars();
+        }
+
+        function createReviewModal() {
+            const modalHTML = `
+                <div id="reviewModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+                    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                        <div class="mt-3">
+                            <!-- Modal Header -->
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-medium text-gray-900">Write a Review</h3>
+                                <button onclick="closeReviewModal()" class="text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-times text-xl"></i>
+                                </button>
+                            </div>
+
+                            <!-- Modal Body -->
+                            <div class="mb-4">
+                                <p class="text-sm text-gray-600 mb-4">Product: <span id="reviewProductName" class="font-medium"></span></p>
+                                
+                                <!-- Star Rating -->
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+                                    <div class="flex space-x-1" id="starRating">
+                                        <button type="button" class="star-btn text-gray-300 hover:text-yellow-400 text-2xl" data-rating="1">
+                                            <i class="far fa-star"></i>
+                                        </button>
+                                        <button type="button" class="star-btn text-gray-300 hover:text-yellow-400 text-2xl" data-rating="2">
+                                            <i class="far fa-star"></i>
+                                        </button>
+                                        <button type="button" class="star-btn text-gray-300 hover:text-yellow-400 text-2xl" data-rating="3">
+                                            <i class="far fa-star"></i>
+                                        </button>
+                                        <button type="button" class="star-btn text-gray-300 hover:text-yellow-400 text-2xl" data-rating="4">
+                                            <i class="far fa-star"></i>
+                                        </button>
+                                        <button type="button" class="star-btn text-gray-300 hover:text-yellow-400 text-2xl" data-rating="5">
+                                            <i class="far fa-star"></i>
+                                        </button>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1">Click to rate</p>
+                                </div>
+
+                                <!-- Review Text -->
+                                <div class="mb-4">
+                                    <label for="reviewText" class="block text-sm font-medium text-gray-700 mb-2">Review (Optional)</label>
+                                    <textarea id="reviewText" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Share your experience with this product..."></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Modal Footer -->
+                            <div class="flex justify-end space-x-3">
+                                <button onclick="closeReviewModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors">
+                                    Cancel
+                                </button>
+                                <button onclick="submitReview()" id="submitReviewBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                                    Submit Review
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            setupStarRating();
+        }
+
+        function closeReviewModal() {
+            const modal = document.getElementById('reviewModal');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+            currentProductId = null;
+            currentOrderId = null;
+            selectedRating = 0;
+        }
+
+        function setupStarRating() {
+            const starButtons = document.querySelectorAll('.star-btn');
+            starButtons.forEach((btn, index) => {
+                btn.addEventListener('click', function() {
+                    selectedRating = parseInt(this.getAttribute('data-rating'));
+                    updateStars(selectedRating);
+                });
+
+                btn.addEventListener('mouseenter', function() {
+                    const rating = parseInt(this.getAttribute('data-rating'));
+                    updateStars(rating);
+                });
+            });
+
+            // Reset stars when mouse leaves the rating area
+            const starRating = document.getElementById('starRating');
+            if (starRating) {
+                starRating.addEventListener('mouseleave', function() {
+                    updateStars(selectedRating);
+                });
+            }
+        }
+
+        function updateStars(rating) {
+            const starButtons = document.querySelectorAll('.star-btn');
+            starButtons.forEach((btn, index) => {
+                const starIcon = btn.querySelector('i');
+                if (index < rating) {
+                    starIcon.className = 'fas fa-star text-yellow-400';
+                } else {
+                    starIcon.className = 'far fa-star text-gray-300';
+                }
+            });
+        }
+
+        function resetStars() {
+            const starButtons = document.querySelectorAll('.star-btn');
+            starButtons.forEach(btn => {
+                const starIcon = btn.querySelector('i');
+                starIcon.className = 'far fa-star text-gray-300';
+            });
+        }
+
+        async function submitReview() {
+            if (selectedRating === 0) {
+                alert('Please select a rating');
+                return;
+            }
+
+            const reviewText = document.getElementById('reviewText').value.trim();
+            const submitBtn = document.getElementById('submitReviewBtn');
+            const originalText = submitBtn.innerHTML;
+
+            // Show loading state
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Submitting...';
+            submitBtn.disabled = true;
+
+            try {
+                // Submit review
+                const response = await fetch('/api/v1/reviews', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        product_id: currentProductId,
+                        order_id: currentOrderId,
+                        rating: selectedRating,
+                        review_text: reviewText
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification('Review submitted successfully!', 'success');
+                    closeReviewModal();
+                    // Reload the page to show updated review status
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    throw new Error(result.message || 'Failed to submit review');
+                }
+            } catch (error) {
+                console.error('Review submission error:', error);
+                showNotification('Failed to submit review. Please try again.', 'error');
+                
+                // Reset button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
         }
     </script>
 </body>

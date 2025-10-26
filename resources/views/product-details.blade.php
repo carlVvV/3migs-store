@@ -53,11 +53,22 @@
                     <!-- Rating -->
                     <div class="flex items-center space-x-4 mb-4">
                         <div class="flex items-center">
+                            @php
+                                $averageRating = $product->average_rating ?? 0;
+                                $fullStars = floor($averageRating);
+                                $hasHalfStar = ($averageRating - $fullStars) >= 0.5;
+                            @endphp
                             @for($i = 1; $i <= 5; $i++)
-                                <i class="fas fa-star text-yellow-400"></i>
+                                @if($i <= $fullStars)
+                                    <i class="fas fa-star text-yellow-400"></i>
+                                @elseif($i == $fullStars + 1 && $hasHalfStar)
+                                    <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                @else
+                                    <i class="far fa-star text-yellow-400"></i>
+                                @endif
                             @endfor
                         </div>
-                        <span class="text-gray-600">({{ $product->review_count }} reviews)</span>
+                        <span class="text-gray-600">{{ number_format($averageRating, 1) }} ({{ $product->review_count }} reviews)</span>
                         <span class="text-sm text-gray-500">|</span>
                         <span class="text-sm text-gray-500">{{ $product->category->name ?? 'Uncategorized' }}</span>
                     </div>
@@ -166,6 +177,74 @@
                         <p class="text-blue-800">{{ $product->care_instructions }}</p>
                     </div>
                     @endif
+                </div>
+            </div>
+        </div>
+        
+        <!-- Reviews Section -->
+        <div class="mt-16">
+            <div class="bg-white rounded-2xl shadow-lg p-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Customer Reviews</h2>
+                
+                <!-- Rating Summary -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <!-- Overall Rating -->
+                    <div class="text-center">
+                        <div class="text-4xl font-bold text-gray-900 mb-2">{{ number_format($product->average_rating ?? 0, 1) }}</div>
+                        <div class="flex items-center justify-center mb-2">
+                            @php
+                                $averageRating = $product->average_rating ?? 0;
+                                $fullStars = floor($averageRating);
+                                $hasHalfStar = ($averageRating - $fullStars) >= 0.5;
+                            @endphp
+                            @for($i = 1; $i <= 5; $i++)
+                                @if($i <= $fullStars)
+                                    <i class="fas fa-star text-yellow-400 text-xl"></i>
+                                @elseif($i == $fullStars + 1 && $hasHalfStar)
+                                    <i class="fas fa-star-half-alt text-yellow-400 text-xl"></i>
+                                @else
+                                    <i class="far fa-star text-yellow-400 text-xl"></i>
+                                @endif
+                            @endfor
+                        </div>
+                        <p class="text-gray-600">Based on {{ $product->review_count }} reviews</p>
+                    </div>
+                    
+                    <!-- Rating Distribution -->
+                    <div class="space-y-2">
+                        @php
+                            $ratingDistribution = $product->getRatingDistribution();
+                            $totalReviews = $product->review_count;
+                        @endphp
+                        @for($rating = 5; $rating >= 1; $rating--)
+                            @php
+                                $count = $ratingDistribution->where('rating', $rating)->first()->count ?? 0;
+                                $percentage = $totalReviews > 0 ? ($count / $totalReviews) * 100 : 0;
+                            @endphp
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm font-medium text-gray-700 w-8">{{ $rating }}★</span>
+                                <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                    <div class="bg-yellow-400 h-2 rounded-full" style="width: {{ $percentage }}%"></div>
+                                </div>
+                                <span class="text-sm text-gray-600 w-8">{{ $count }}</span>
+                            </div>
+                        @endfor
+                    </div>
+                </div>
+                
+                <!-- Reviews List -->
+                <div id="reviews-container">
+                    <div class="text-center py-8">
+                        <i class="fas fa-spinner fa-spin text-2xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-600">Loading reviews...</p>
+                    </div>
+                </div>
+                
+                <!-- Load More Reviews Button -->
+                <div class="text-center mt-6">
+                    <button id="load-more-reviews" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors hidden">
+                        Load More Reviews
+                    </button>
                 </div>
             </div>
         </div>
@@ -309,6 +388,309 @@ function toggleWishlist(productId) {
         console.error('Error:', error);
         showNotification('An error occurred', 'error');
     });
+}
+
+// Reviews functionality
+let currentPage = 1;
+const reviewsPerPage = 5;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadReviews();
+    
+    // Load more reviews button
+    document.getElementById('load-more-reviews').addEventListener('click', function() {
+        currentPage++;
+        loadReviews();
+    });
+});
+
+async function loadReviews() {
+    try {
+        const response = await fetch(`/api/v1/products/{{ $product->id }}/reviews?page=${currentPage}&limit=${reviewsPerPage}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayReviews(data.data);
+            
+            // Show/hide load more button
+            const loadMoreBtn = document.getElementById('load-more-reviews');
+            if (data.data.next_page_url) {
+                loadMoreBtn.classList.remove('hidden');
+            } else {
+                loadMoreBtn.classList.add('hidden');
+            }
+        } else {
+            throw new Error(data.message || 'Failed to load reviews');
+        }
+    } catch (error) {
+        console.error('Error loading reviews:', error);
+        document.getElementById('reviews-container').innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-exclamation-triangle text-2xl text-gray-400 mb-4"></i>
+                <p class="text-gray-600">Failed to load reviews. Please try again later.</p>
+            </div>
+        `;
+    }
+}
+
+function displayReviews(reviewsData) {
+    const container = document.getElementById('reviews-container');
+    
+    if (currentPage === 1) {
+        container.innerHTML = '';
+    }
+    
+    if (reviewsData.data && reviewsData.data.length > 0) {
+        reviewsData.data.forEach(review => {
+            const reviewElement = createReviewElement(review);
+            container.appendChild(reviewElement);
+        });
+    } else if (currentPage === 1) {
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-comment-slash text-2xl text-gray-400 mb-4"></i>
+                <p class="text-gray-600">No reviews yet. Be the first to review this product!</p>
+            </div>
+        `;
+    }
+}
+
+function createReviewElement(review) {
+    const reviewDiv = document.createElement('div');
+    reviewDiv.className = 'border-b border-gray-200 py-6 last:border-b-0';
+    
+    const stars = generateStars(review.rating);
+    const reviewDate = new Date(review.created_at).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    
+    reviewDiv.innerHTML = `
+        <div class="flex items-start space-x-4">
+            <div class="flex-shrink-0">
+                <div class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                    <i class="fas fa-user text-gray-600"></i>
+                </div>
+            </div>
+            <div class="flex-1">
+                <div class="flex items-center space-x-2 mb-2">
+                    <h4 class="font-medium text-gray-900">${review.user.name}</h4>
+                    <div class="flex items-center">
+                        ${stars}
+                    </div>
+                    <span class="text-sm text-gray-500">${reviewDate}</span>
+                    ${review.is_verified_purchase ? '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"><i class="fas fa-check mr-1"></i>Verified Purchase</span>' : ''}
+                </div>
+                ${review.review_text ? `<p class="text-gray-700">${review.review_text}</p>` : ''}
+            </div>
+        </div>
+    `;
+    
+    return reviewDiv;
+}
+
+function generateStars(rating) {
+    let stars = '';
+    for (let i = 1; i <= 5; i++) {
+        if (i <= rating) {
+            stars += '<i class="fas fa-star text-yellow-400"></i>';
+        } else {
+            stars += '<i class="far fa-star text-yellow-400"></i>';
+        }
+    }
+    return stars;
+}
+</script>
+@endsection
+        thumb.classList.remove('ring-2', 'ring-blue-500');
+    });
+    element.classList.add('ring-2', 'ring-blue-500');
+}
+
+function increaseQuantity() {
+    const quantityInput = document.getElementById('quantity');
+    const maxQuantity = parseInt(quantityInput.getAttribute('max'));
+    const currentQuantity = parseInt(quantityInput.value);
+    
+    if (currentQuantity < maxQuantity) {
+        quantityInput.value = currentQuantity + 1;
+    }
+}
+
+function decreaseQuantity() {
+    const quantityInput = document.getElementById('quantity');
+    const currentQuantity = parseInt(quantityInput.value);
+    
+    if (currentQuantity > 1) {
+        quantityInput.value = currentQuantity - 1;
+    }
+}
+
+function addToCart(productId) {
+    const quantity = parseInt(document.getElementById('quantity').value);
+    
+    fetch('/api/v1/cart/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            product_id: productId,
+            quantity: quantity
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Product added to cart successfully!', 'success');
+            updateCartCount();
+        } else {
+            showNotification('Failed to add product to cart', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('An error occurred', 'error');
+    });
+}
+
+function toggleWishlist(productId) {
+    fetch('/api/v1/wishlist/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            product_id: productId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Added to wishlist!', 'success');
+        } else {
+            showNotification('Failed to add to wishlist', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('An error occurred', 'error');
+    });
+}
+
+// Reviews functionality
+let currentPage = 1;
+const reviewsPerPage = 5;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadReviews();
+    
+    // Load more reviews button
+    document.getElementById('load-more-reviews').addEventListener('click', function() {
+        currentPage++;
+        loadReviews();
+    });
+});
+
+async function loadReviews() {
+    try {
+        const response = await fetch(`/api/v1/products/{{ $product->id }}/reviews?page=${currentPage}&limit=${reviewsPerPage}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayReviews(data.data);
+            
+            // Show/hide load more button
+            const loadMoreBtn = document.getElementById('load-more-reviews');
+            if (data.data.next_page_url) {
+                loadMoreBtn.classList.remove('hidden');
+            } else {
+                loadMoreBtn.classList.add('hidden');
+            }
+        } else {
+            throw new Error(data.message || 'Failed to load reviews');
+        }
+    } catch (error) {
+        console.error('Error loading reviews:', error);
+        document.getElementById('reviews-container').innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-exclamation-triangle text-2xl text-gray-400 mb-4"></i>
+                <p class="text-gray-600">Failed to load reviews. Please try again later.</p>
+            </div>
+        `;
+    }
+}
+
+function displayReviews(reviewsData) {
+    const container = document.getElementById('reviews-container');
+    
+    if (currentPage === 1) {
+        container.innerHTML = '';
+    }
+    
+    if (reviewsData.data && reviewsData.data.length > 0) {
+        reviewsData.data.forEach(review => {
+            const reviewElement = createReviewElement(review);
+            container.appendChild(reviewElement);
+        });
+    } else if (currentPage === 1) {
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-comment-slash text-2xl text-gray-400 mb-4"></i>
+                <p class="text-gray-600">No reviews yet. Be the first to review this product!</p>
+            </div>
+        `;
+    }
+}
+
+function createReviewElement(review) {
+    const reviewDiv = document.createElement('div');
+    reviewDiv.className = 'border-b border-gray-200 py-6 last:border-b-0';
+    
+    const stars = generateStars(review.rating);
+    const reviewDate = new Date(review.created_at).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    
+    reviewDiv.innerHTML = `
+        <div class="flex items-start space-x-4">
+            <div class="flex-shrink-0">
+                <div class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                    <i class="fas fa-user text-gray-600"></i>
+                </div>
+            </div>
+            <div class="flex-1">
+                <div class="flex items-center space-x-2 mb-2">
+                    <h4 class="font-medium text-gray-900">${review.user.name}</h4>
+                    <div class="flex items-center">
+                        ${stars}
+                    </div>
+                    <span class="text-sm text-gray-500">${reviewDate}</span>
+                    ${review.is_verified_purchase ? '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"><i class="fas fa-check mr-1"></i>Verified Purchase</span>' : ''}
+                </div>
+                ${review.review_text ? `<p class="text-gray-700">${review.review_text}</p>` : ''}
+            </div>
+        </div>
+    `;
+    
+    return reviewDiv;
+}
+
+function generateStars(rating) {
+    let stars = '';
+    for (let i = 1; i <= 5; i++) {
+        if (i <= rating) {
+            stars += '<i class="fas fa-star text-yellow-400"></i>';
+        } else {
+            stars += '<i class="far fa-star text-yellow-400"></i>';
+        }
+    }
+    return stars;
 }
 </script>
 @endsection

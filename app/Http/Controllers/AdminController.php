@@ -32,7 +32,7 @@ class AdminController extends Controller
     {
         $stats = [
             'total_products' => BarongProduct::count(),
-            'active_products' => BarongProduct::available()->count(),
+            'active_products' => BarongProduct::where('is_available', true)->count(),
             'total_categories' => Category::count(),
             'total_orders' => Order::count(),
             'pending_orders' => Order::where('status', 'pending')->count(),
@@ -48,7 +48,7 @@ class AdminController extends Controller
             ->get();
 
         // Top selling barong products
-        $topProducts = BarongProduct::with(['brand'])
+        $topProducts = BarongProduct::select('id', 'name', 'slug', 'is_featured', 'created_at')
             ->where('is_featured', true)
             ->orderBy('created_at', 'desc')
             ->limit(5)

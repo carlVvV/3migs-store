@@ -174,6 +174,52 @@ class BarongProduct extends Model
     }
 
     /**
+     * Get the reviews for this product
+     */
+    public function reviews()
+    {
+        return $this->hasMany(Review::class, 'product_id');
+    }
+
+    /**
+     * Get approved reviews for this product
+     */
+    public function approvedReviews()
+    {
+        return $this->hasMany(Review::class, 'product_id')->where('is_approved', true);
+    }
+
+    /**
+     * Get the average rating for this product
+     */
+    public function getAverageRatingAttribute()
+    {
+        // Use the stored average_rating column instead of calculating dynamically
+        return $this->attributes['average_rating'] ?? 0;
+    }
+
+    /**
+     * Get the review count for this product
+     */
+    public function getReviewCountAttribute()
+    {
+        // Use the stored review_count column instead of calculating dynamically
+        return $this->attributes['review_count'] ?? 0;
+    }
+
+    /**
+     * Get rating distribution for this product
+     */
+    public function getRatingDistribution()
+    {
+        return $this->approvedReviews()
+            ->selectRaw('rating, COUNT(*) as count')
+            ->groupBy('rating')
+            ->orderBy('rating', 'desc')
+            ->get();
+    }
+
+    /**
      * Get the current price (special price if available, otherwise base price)
      */
     public function getCurrentPriceAttribute()
@@ -211,10 +257,8 @@ class BarongProduct extends Model
                 return $this->cover_image;
             }
             
-            // Check if it's a local file
-            if (file_exists(storage_path('app/public/' . $this->cover_image))) {
-                return asset('storage/' . $this->cover_image);
-            }
+            // Return asset URL without checking file existence (performance optimization)
+            return asset('storage/' . $this->cover_image);
         }
         
         return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMCAxMkMxNi42ODYzIDEyIDE0IDE0LjY4NjMgMTQgMThDMTQgMjEuMzEzNyAxNi42ODYzIDI0IDIwIDI0QzIzLjMxMzcgMjQgMjYgMjEuMzEzNyAyNiAxOEMyNiAxNC42ODYzIDIzLjMxMzcgMTIgMjAgMTJaIiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik0xMiAyOEMxMiAyNi44OTU0IDEyLjg5NTQgMjYgMTQgMjZIMjZDMjcuMTA0NiAyNiAyOCAyNi44OTU0IDI4IDI4VjMwSDI4VjI4SDEyVjI4WiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4K';
@@ -232,12 +276,8 @@ class BarongProduct extends Model
                     return $image;
                 }
                 
-                // Check if it's a local file
-                if (file_exists(storage_path('app/public/' . $image))) {
-                    return asset('storage/' . $image);
-                }
-                
-                return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMCAxMkMxNi42ODYzIDEyIDE0IDE0LjY4NjMgMTQgMThDMTQgMjEuMzEzNyAxNi42ODYzIDI0IDIwIDI0QzIzLjMxMzcgMjQgMjYgMjEuMzEzNyAyNiAxOEMyNiAxNC42ODYzIDIzLjMxMzcgMTIgMjAgMTJaIiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik0xMiAyOEMxMiAyNi44OTU0IDEyLjg5NTQgMjYgMTQgMjZIMjZDMjcuMTA0NiAyNiAyOCAyNi44OTU0IDI4IDI4VjMwSDI4VjI4SDEyVjI4WiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4K';
+                // Return asset URL without checking file existence (performance optimization)
+                return asset('storage/' . $image);
             }, $this->images);
         }
         return ['data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMCAxMkMxNi42ODYzIDEyIDE0IDE0LjY4NjMgMTQgMThDMTQgMjEuMzEzNyAxNi42ODYzIDI0IDIwIDI0QzIzLjMxMzcgMjQgMjYgMjEuMzEzNyAyNiAxOEMyNiAxNC42ODYzIDIzLjMxMzcgMTIgMjAgMTJaIiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik0xMiAyOEMxMiAyNi44OTU0IDEyLjg5NTQgMjYgMTQgMjZIMjZDMjcuMTA0NiAyNiAyOCAyNi44OTU0IDI4IDI4VjMwSDI4VjI4SDEyVjI4WiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4K'];
@@ -248,8 +288,9 @@ class BarongProduct extends Model
      */
     public function getTotalStockAttribute()
     {
-        // Delegate to unified calculator to keep logic in one place
-        return $this->getTotalStock();
+        // For performance, use stored stock column directly
+        // If you need calculated stock, call getTotalStock() method directly
+        return (int) ($this->attributes['stock'] ?? 0);
     }
 
     /**

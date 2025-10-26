@@ -167,9 +167,7 @@
                                     <option value="">Select City/Municipality</option>
                                 </select>
                                 <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                                    </svg>
+
                                 </div>
                             </div>
                             <div id="city_error" class="text-red-500 text-xs mt-1 hidden"></div>
@@ -187,9 +185,7 @@
                                     <option value="">Select Barangay</option>
                                 </select>
                                 <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                                    </svg>
+
                                 </div>
                             </div>
                             <div id="barangay_error" class="text-red-500 text-xs mt-1 hidden"></div>
@@ -887,7 +883,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function validateForm() {
-        const requiredFields = ['full_name', 'street_address', 'city', 'province', 'postal_code', 'phone', 'email'];
+        const requiredFields = ['full_name', 'street_address', 'region', 'province', 'city', 'barangay', 'postal_code', 'phone', 'email'];
         let isValid = true;
         
         requiredFields.forEach(fieldName => {
@@ -1065,6 +1061,8 @@ document.addEventListener('DOMContentLoaded', function() {
             apartment: formData.get('apartment'),
             city: formData.get('city'),
             province: formData.get('province'),
+            region: formData.get('region'),
+            barangay: formData.get('barangay'),
             postal_code: formData.get('postal_code'),
             phone: formData.get('phone'),
             email: formData.get('email'),
@@ -1144,7 +1142,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Basic validation
         if (!billingData.full_name || !billingData.street_address || !billingData.city || 
             !billingData.province || !billingData.region || !billingData.barangay || !billingData.postal_code || !billingData.phone || !billingData.email) {
-            showNotification('Please fill in all required fields', 'error');
+            showNotification('Please fill in all required fields including Region and Barangay', 'error');
             return null;
         }
 

@@ -262,19 +262,43 @@ class OrderController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'full_name' => 'required|string|max:255',
-            'company_name' => 'nullable|string|max:255',
-            'street_address' => 'required|string|max:500',
-            'apartment' => 'nullable|string|max:255',
-            'city' => 'required|string|max:255',
-            'province' => 'required|string|max:255',
-            'postal_code' => 'required|string|max:10',
-            'phone' => 'required|string|max:20',
-            'email' => 'required|email|max:255',
-            'save_info' => 'boolean',
-            'payment_method' => 'required|in:ewallet,cod'
-        ]);
+        try {
+            $request->validate([
+                'full_name' => 'required|string|max:255',
+                'company_name' => 'nullable|string|max:255',
+                'street_address' => 'required|string|max:500',
+                'apartment' => 'nullable|string|max:255',
+                'city' => 'required|string|max:255',
+                'province' => 'required|string|max:255',
+                'region' => 'nullable|string|max:255',
+                'barangay' => 'nullable|string|max:255',
+                'postal_code' => 'required|string|max:10',
+                'phone' => 'required|string|max:20',
+                'email' => 'required|email|max:255',
+                'save_info' => 'boolean',
+                'payment_method' => 'required|in:ewallet,cod'
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Order validation failed', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Order validation error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error: ' . $e->getMessage()
+            ], 422);
+        }
 
         try {
             $user = Auth::user();
@@ -333,6 +357,8 @@ class OrderController extends Controller
                     'apartment' => $request->apartment,
                     'city' => $request->city,
                     'province' => $request->province,
+                    'region' => $request->region,
+                    'barangay' => $request->barangay,
                     'postal_code' => $request->postal_code,
                     'phone' => $request->phone,
                     'email' => $request->email,
@@ -344,6 +370,8 @@ class OrderController extends Controller
                     'apartment' => $request->apartment,
                     'city' => $request->city,
                     'province' => $request->province,
+                    'region' => $request->region,
+                    'barangay' => $request->barangay,
                     'postal_code' => $request->postal_code,
                     'phone' => $request->phone,
                     'email' => $request->email,
@@ -380,6 +408,15 @@ class OrderController extends Controller
 
             // Create order items
             foreach ($cartItems as $cartItem) {
+                // Check if product exists
+                if (!$cartItem->product) {
+                    Log::warning('Cart item has no product', [
+                        'cart_item_id' => $cartItem->id,
+                        'product_id' => $cartItem->product_id
+                    ]);
+                    continue; // Skip items with deleted products
+                }
+                
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $cartItem->product_id,
@@ -392,7 +429,7 @@ class OrderController extends Controller
 
                 // Update product stock (size-aware)
                 $product = $cartItem->product;
-                $oldStock = $product->getTotalStock();
+                $oldStock = (int) ($product->stock ?? 0);
                 $usesSizeStocks = is_array($product->size_stocks) && count($product->size_stocks) > 0;
                 if ($usesSizeStocks) {
                     // Determine size from cart item or attributes
@@ -425,6 +462,15 @@ class OrderController extends Controller
                 $product->incrementSales($cartItem->quantity);
             }
 
+            // Check if any order items were created
+            if ($order->orderItems()->count() === 0) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot place order: No valid products found in cart'
+                ], 400);
+            }
+
             // Clear user's cart
             $user->cart()->delete();
 
@@ -444,9 +490,15 @@ class OrderController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Order creation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'user_id' => Auth::id(),
+                'request_data' => $request->all()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to place order',
+                'message' => 'Failed to place order: ' . $e->getMessage(),
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -558,7 +610,7 @@ class OrderController extends Controller
             'email' => $order->user->email ?? ($shipping['email'] ?? null),
             'expiry' => 2, // 2 hours expiry
             'notification_url' => url('/api/v1/payments/bux/webhook'),
-            'redirect_url' => url('/orders'),
+            'redirect_url' => url('/checkout'),
             'name' => $order->user->name ?? ($shipping['full_name'] ?? null),
             'contact' => $shipping['phone'] ?? $billing['phone'] ?? null,
             'param1' => $order->order_number,

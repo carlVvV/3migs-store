@@ -49,6 +49,10 @@ Route::prefix('v1')->group(function () {
     Route::get('/products/{slug}', [ProductController::class, 'show']);
     Route::get('/products/category/{categorySlug}', [ProductController::class, 'byCategory']);
     
+    // Review routes (public)
+    Route::get('/products/{productId}/reviews', [\App\Http\Controllers\Api\V1\ReviewController::class, 'getProductReviews']);
+    Route::get('/products/{productId}/rating-distribution', [\App\Http\Controllers\Api\V1\ReviewController::class, 'getRatingDistribution']);
+    
     // Cart routes (session-based, no auth required)
     Route::get('/cart', [CartController::class, 'index']);
     Route::post('/cart/add', [CartController::class, 'add']);
@@ -169,6 +173,13 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::get('/seed/sample', [OrderController::class, 'seedSample']);
     });
 
+    // Review routes
+    Route::prefix('reviews')->group(function () {
+        Route::post('/', [\App\Http\Controllers\Api\V1\ReviewController::class, 'store']);
+        Route::get('/user', [\App\Http\Controllers\Api\V1\ReviewController::class, 'getUserReviews']);
+        Route::post('/can-review', [\App\Http\Controllers\Api\V1\ReviewController::class, 'canReview']);
+    });
+
     // Payments (authenticated utilities)
     Route::post('/payments/bux/test-webhook', [OrderController::class, 'testBuxWebhook']);
     
@@ -185,6 +196,17 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 });
 
 // Public payments webhook endpoints (no auth, no CSRF)
+Route::prefix('v1')->group(function () {
+    Route::post('/payments/bux/webhook', [OrderController::class, 'buxWebhook'])
+        ->withoutMiddleware([
+            \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+        ]);
+});
 Route::prefix('v1')->group(function () {
     Route::post('/payments/bux/webhook', [OrderController::class, 'buxWebhook'])
         ->withoutMiddleware([

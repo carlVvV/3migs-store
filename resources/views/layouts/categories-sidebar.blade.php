@@ -1,5 +1,5 @@
 <!-- Categories Sidebar -->
-<div class="w-64 bg-white rounded-lg shadow-md p-4 h-80 flex flex-col">
+<div class="w-64 bg-white rounded-lg shadow-md p-4 max-h-[calc(100vh-8rem)] flex flex-col sticky top-20" style="align-self: start;">
     <div class="flex items-center mb-3">
         <span class="w-2 h-6 bg-red-500 mr-2 rounded-sm"></span>
         <h3 class="text-base font-semibold text-gray-800">Categories</h3>

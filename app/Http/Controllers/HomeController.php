@@ -13,6 +13,66 @@ class HomeController extends Controller
      */
     public function index()
     {
+        // Get all available products without accessors to avoid timeout
+        $allProducts = BarongProduct::select('id', 'name', 'slug', 'cover_image', 'base_price', 'special_price', 'is_available', 'is_featured', 'created_at', 'average_rating', 'review_count', 'monthly_sales', 'variations', 'size_stocks', 'stock')
+            ->where('is_available', true)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Get featured barong products
+        $featuredProducts = BarongProduct::select('id', 'name', 'slug', 'cover_image', 'base_price', 'special_price', 'is_available', 'is_featured', 'created_at', 'average_rating', 'review_count', 'monthly_sales', 'variations', 'size_stocks', 'stock')
+            ->where('is_featured', true)
+            ->where('is_available', true)
+            ->limit(8)
+            ->get();
+
+        // Get new arrivals
+        $newArrivals = BarongProduct::select('id', 'name', 'slug', 'cover_image', 'base_price', 'special_price', 'is_available', 'is_featured', 'created_at', 'average_rating', 'review_count', 'monthly_sales', 'variations', 'size_stocks', 'stock')
+            ->where('is_available', true)
+            ->orderBy('created_at', 'desc')
+            ->limit(8)
+            ->get();
+
+        // Get best selling products for this month
+        $bestSellingProducts = BarongProduct::where('is_available', true)
+            ->orderBy('monthly_sales', 'desc')
+            ->limit(8)
+            ->get();
+
+        // Get categories
+        $categories = Category::where('is_active', true)
+            ->orderBy('sort_order')
+            ->withCount('barongProducts')
+            ->get();
+
+        return view('home', compact('allProducts', 'featuredProducts', 'newArrivals', 'bestSellingProducts', 'categories'));
+    }
+
+    /**
+     * Display a test version of the homepage.
+     */
+    public function testHome()
+    {
+        // Get all available products (remove the limit)
+        $allProducts = BarongProduct::with(['category'])
+            ->where('is_available', true)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Get categories
+        $categories = Category::active()
+            ->ordered()
+            ->withCount('barongProducts')
+            ->get();
+
+        return view('test-home', compact('allProducts', 'categories'));
+    }
+
+    /**
+     * Display a simplified version of the homepage.
+     */
+    public function simpleHome()
+    {
         // Get all available products (remove the limit)
         $allProducts = BarongProduct::with(['category'])
             ->where('is_available', true)
@@ -25,14 +85,25 @@ class HomeController extends Controller
             ->limit(8)
             ->get();
 
-        // Get new arrivals (keep limit for new arrivals section)
-        $newArrivals = BarongProduct::with(['category'])
-            ->orderBy('created_at', 'desc')
-            ->limit(8)
+        // Get categories
+        $categories = Category::active()
+            ->ordered()
+            ->withCount('barongProducts')
             ->get();
 
-        // Get best selling products for this month
-        $bestSellingProducts = BarongProduct::getBestSellingThisMonth(8);
+        return view('simple-home', compact('allProducts', 'featuredProducts', 'categories'));
+    }
+
+    /**
+     * Display a version of the homepage without any includes.
+     */
+    public function noIncludesHome()
+    {
+        // Get all available products (remove the limit)
+        $allProducts = BarongProduct::with(['category'])
+            ->where('is_available', true)
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         // Get categories
         $categories = Category::active()
@@ -40,7 +111,87 @@ class HomeController extends Controller
             ->withCount('barongProducts')
             ->get();
 
-        return view('home', compact('allProducts', 'featuredProducts', 'newArrivals', 'bestSellingProducts', 'categories'));
+        return view('no-includes-home', compact('allProducts', 'categories'));
+    }
+
+    /**
+     * Display a version of the homepage with only header include.
+     */
+    public function headerTestHome()
+    {
+        // Get all available products (remove the limit)
+        $allProducts = BarongProduct::with(['category'])
+            ->where('is_available', true)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Get categories
+        $categories = Category::active()
+            ->ordered()
+            ->withCount('barongProducts')
+            ->get();
+
+        return view('header-test-home', compact('allProducts', 'categories'));
+    }
+
+    /**
+     * Display a version of the homepage with header and categories sidebar.
+     */
+    public function categoriesTestHome()
+    {
+        // Get all available products (remove the limit)
+        $allProducts = BarongProduct::with(['category'])
+            ->where('is_available', true)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Get categories
+        $categories = Category::active()
+            ->ordered()
+            ->withCount('barongProducts')
+            ->get();
+
+        return view('categories-test-home', compact('allProducts', 'categories'));
+    }
+
+    /**
+     * Display a version of the homepage with header, categories, and notification system.
+     */
+    public function notificationTestHome()
+    {
+        // Get all available products (remove the limit)
+        $allProducts = BarongProduct::with(['category'])
+            ->where('is_available', true)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Get categories
+        $categories = Category::active()
+            ->ordered()
+            ->withCount('barongProducts')
+            ->get();
+
+        return view('notification-test-home', compact('allProducts', 'categories'));
+    }
+
+    /**
+     * Display a version of the homepage with all includes including MigsBot.
+     */
+    public function migsbotTestHome()
+    {
+        // Get all available products (remove the limit)
+        $allProducts = BarongProduct::with(['category'])
+            ->where('is_available', true)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Get categories
+        $categories = Category::active()
+            ->ordered()
+            ->withCount('barongProducts')
+            ->get();
+
+        return view('migsbot-test-home', compact('allProducts', 'categories'));
     }
 
     /**
