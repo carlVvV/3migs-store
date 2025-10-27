@@ -197,9 +197,21 @@
                             'product_id' => $product->id,
                             'selected_size' => $selectedSize,
                             'size_stocks' => $sizeStocks,
-                            'has_any_stock' => $hasAnyStock
+                            'has_any_stock' => $hasAnyStock,
+                            'color_stocks_from_method' => $colorStocks,
+                            'calculated_size_stocks' => $sizeStocks
                         ]);
                     @endphp
+                    
+                    <!-- Debug output -->
+                    @if(config('app.debug'))
+                    <div class="mb-4 p-2 bg-yellow-100 text-xs">
+                        <strong>Debug Info:</strong>
+                        <br>Available Sizes: {{ json_encode($availableSizes) }}
+                        <br>Size Stocks: {{ json_encode($sizeStocks) }}
+                        <br>Selected Size: {{ $selectedSize ?? 'None' }}
+                    </div>
+                    @endif
 
                     <div class="flex space-x-3">
                         <div class="flex space-x-3">
@@ -602,24 +614,26 @@ function proceedWithCartAdd(payload) {
     const size = payload.size;
     const quantity = payload.quantity;
     
-    // Check stock availability
-    const selectedButton = document.querySelector(`[data-size="${size}"]`);
-    if (!selectedButton) {
-        console.error('Selected size button not found for size:', size);
-        showError('Size selection error. Please select a size again.');
-        return;
-    }
-    
-    const availableStock = parseInt(selectedButton.getAttribute('data-stock'));
-    
-    if (availableStock <= 0) {
-        showError(`Size ${size} is out of stock`);
-        return;
-    }
-    
-    if (quantity > availableStock) {
-        showError(`Only ${availableStock} items available in size ${size}`);
-        return;
+    // Check stock availability only if size is provided
+    if (size) {
+        const selectedButton = document.querySelector(`[data-size="${size}"]`);
+        if (!selectedButton) {
+            console.error('Selected size button not found for size:', size);
+            showError('Size selection error. Please select a size again.');
+            return;
+        }
+        
+        const availableStock = parseInt(selectedButton.getAttribute('data-stock'));
+        
+        if (availableStock <= 0) {
+            showError(`Size ${size} is out of stock`);
+            return;
+        }
+        
+        if (quantity > availableStock) {
+            showError(`Only ${availableStock} items available in size ${size}`);
+            return;
+        }
     }
     
     // Show loading state
