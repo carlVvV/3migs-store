@@ -110,7 +110,7 @@
                 <div class="flex items-center space-x-4">
                     <span class="text-sm text-red-600 font-medium">{{ $notification->current_stock }} left</span>
                     <span class="text-xs text-gray-500">{{ $notification->notified_at->diffForHumans() }}</span>
-                    <button onclick="markAsResolved({{ $notification->id }})" 
+                    <button onclick="markAsResolved({{ $notification->id }}, '{{ $notification->product_name }}', {{ $notification->current_stock }})" 
                             class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded hover:bg-green-200">
                         Mark Resolved
                     </button>
@@ -203,33 +203,197 @@
 </div>
 
 <script>
-function markAsResolved(notificationId) {
-    if (confirm('Mark this notification as resolved?')) {
-        fetch(`/admin/notifications/${notificationId}/resolve`, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'Content-Type': 'application/json',
-            },
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Remove the notification from the UI
-                const notificationElement = document.querySelector(`[onclick="markAsResolved(${notificationId})"]`).closest('.bg-white');
-                notificationElement.remove();
-                
-                // Show success message
-                showNotification('Notification marked as resolved', 'success');
-            } else {
-                showNotification('Failed to mark notification as resolved', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showNotification('An error occurred', 'error');
-        });
+let currentNotificationId = null;
+let currentProductName = null;
+let currentStock = null;
+
+function markAsResolved(notificationId, productName, currentStock) {
+    currentNotificationId = notificationId;
+    currentProductName = productName;
+    currentStock = currentStock;
+    showResolveModal(notificationId, productName, currentStock);
+}
+
+function showResolveModal(notificationId, productName, stock) {
+    // Create modal overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'resolve-modal-overlay';
+    overlay.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+    
+    // Create modal
+    const modal = document.createElement('div');
+    modal.className = 'bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all';
+    
+    modal.innerHTML = `
+        <div class="p-6">
+            <div class="flex items-center mb-4">
+                <div class="flex-shrink-0 bg-blue-100 rounded-full p-3">
+                    <i class="fas fa-check-circle text-blue-600 text-2xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Mark as Resolved?</h3>
+                    <p class="text-sm text-gray-500 mt-1">Are you sure you want to mark this low stock notification as resolved?</p>
+                </div>
+            </div>
+            
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                <div class="flex items-center">
+                    <i class="fas fa-info-circle text-yellow-600 mr-2"></i>
+                    <div class="text-sm text-gray-700">
+                        <p class="font-medium">Product: ${productName}</p>
+                        <p class="text-yellow-700">Current Stock: ${stock} units</p>
+                        <p class="text-xs text-gray-600 mt-1">Please make sure the stock has been updated before marking as resolved.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="closeResolveModal()" 
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                    Cancel
+                </button>
+                <button onclick="confirmResolve()" 
+                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                    <i class="fas fa-check mr-2"></i>
+                    Mark as Resolved
+                </button>
+            </div>
+        </div>
+    `;
+    
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    
+    // Close on overlay click
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+            closeResolveModal();
+        }
+    });
+}
+
+function closeResolveModal() {
+    const overlay = document.getElementById('resolve-modal-overlay');
+    if (overlay) {
+        overlay.remove();
     }
+    currentNotificationId = null;
+    currentProductName = null;
+    currentStock = null;
+}
+
+function confirmResolve() {
+    if (!currentNotificationId) return;
+    
+    const notificationId = currentNotificationId;
+    
+    // Validation: Check if stock is still low
+    if (currentStock <= 5) {
+        showWarningModal(notificationId);
+        return;
+    }
+    
+    // Proceed with resolution
+    proceedResolve(notificationId);
+}
+
+function showWarningModal(notificationId) {
+    // Create warning modal
+    const warningModal = document.createElement('div');
+    warningModal.id = 'warning-modal-overlay';
+    warningModal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+    
+    const warningContent = document.createElement('div');
+    warningContent.className = 'bg-white rounded-lg shadow-xl max-w-md w-full mx-4';
+    
+    warningContent.innerHTML = `
+        <div class="p-6">
+            <div class="flex items-center mb-4">
+                <div class="flex-shrink-0 bg-yellow-100 rounded-full p-3">
+                    <i class="fas fa-exclamation-triangle text-yellow-600 text-2xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Stock Still Low</h3>
+                    <p class="text-sm text-gray-500 mt-1">This product is still low on stock (${currentStock} units).</p>
+                </div>
+            </div>
+            
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                <div class="flex items-center">
+                    <i class="fas fa-info-circle text-yellow-600 mr-2"></i>
+                    <div class="text-sm text-gray-700">
+                        <p class="font-medium">Product: ${currentProductName}</p>
+                        <p class="text-yellow-700">Current Stock: ${currentStock} units</p>
+                        <p class="text-xs text-gray-600 mt-1">Please restock or update the inventory before marking as resolved.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="closeWarningModal()" 
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                    Cancel
+                </button>
+                <button onclick="proceedResolve(${notificationId})" 
+                        class="px-4 py-2 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 rounded-lg transition-colors">
+                    <i class="fas fa-check mr-2"></i>
+                    Mark Anyway
+                </button>
+            </div>
+        </div>
+    `;
+    
+    warningModal.appendChild(warningContent);
+    document.body.appendChild(warningModal);
+    
+    // Close on overlay click
+    warningModal.addEventListener('click', function(e) {
+        if (e.target === warningModal) {
+            closeWarningModal();
+        }
+    });
+}
+
+function closeWarningModal() {
+    const warningModal = document.getElementById('warning-modal-overlay');
+    if (warningModal) {
+        warningModal.remove();
+    }
+}
+
+function proceedResolve(notificationId) {
+    // Close any open modals
+    closeWarningModal();
+    closeResolveModal();
+    
+    fetch(`/admin/notifications/${notificationId}/resolve`, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Remove the notification from the UI
+            const notificationElement = document.querySelector(`[onclick*="markAsResolved(${notificationId})"]`).closest('.bg-white');
+            if (notificationElement) {
+                notificationElement.style.transition = 'opacity 0.3s ease';
+                notificationElement.style.opacity = '0';
+                setTimeout(() => notificationElement.remove(), 300);
+            }
+            
+            // Show success message
+            showNotification('Notification marked as resolved', 'success');
+        } else {
+            showNotification('Failed to mark notification as resolved', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('An error occurred', 'error');
+    });
 }
 
 function showNotification(message, type) {
