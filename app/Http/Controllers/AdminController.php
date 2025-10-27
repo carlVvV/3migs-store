@@ -7,7 +7,6 @@ use App\Models\Category;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\Review;
-use App\Models\Brand;
 use App\Models\BarongProduct;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -244,7 +243,7 @@ class AdminController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Barong product created successfully',
-                'product' => $barongProduct->load(['brand', 'category'])
+                'product' => $barongProduct->load(['category'])
             ]);
 
         } catch (\Exception $e) {
@@ -492,7 +491,7 @@ class AdminController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Barong product updated successfully',
-                'product' => $barongProduct->load(['brand', 'category']),
+                'product' => $barongProduct->load(['category']),
                 'size_stocks' => $barongProduct->size_stocks,
                 'timestamp' => now()->toISOString()
             ]);
@@ -553,7 +552,7 @@ class AdminController extends Controller
      */
     public function deletedItems(Request $request)
     {
-        $query = BarongProduct::onlyTrashed()->with(['category', 'brand']);
+        $query = BarongProduct::onlyTrashed()->with(['category']);
 
         // Search
         if ($request->has('search') && $request->search) {
@@ -1263,7 +1262,6 @@ class AdminController extends Controller
                 'name' => $faker->randomElement($names) . ' ' . strtoupper($faker->bothify('##?')),
                 'description' => $faker->sentence(8),
                 'type' => 'Barong',
-                'brand_id' => $brands->random()->id,
                 'category_id' => $categories->random()->id,
                 'images' => [],
                 'cover_image' => null,

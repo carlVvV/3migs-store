@@ -162,14 +162,6 @@ class BarongProduct extends Model
     }
 
     /**
-     * Get the brand that owns the barong product
-     */
-    public function brand(): BelongsTo
-    {
-        return $this->belongsTo(Brand::class);
-    }
-
-    /**
      * Get the category that owns the barong product
      */
     public function category(): BelongsTo
@@ -470,14 +462,6 @@ class BarongProduct extends Model
     public function scopeFeatured($query)
     {
         return $query->where('is_featured', true);
-    }
-
-    /**
-     * Scope for products by brand
-     */
-    public function scopeByBrand($query, $brandId)
-    {
-        return $query->where('brand_id', $brandId);
     }
 
     /**

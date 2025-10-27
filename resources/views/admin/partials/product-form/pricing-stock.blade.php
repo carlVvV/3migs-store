@@ -19,23 +19,6 @@
                 </div>
             </div>
             
-            <!-- Stock Management Type Selection -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-3">Stock Management Type</label>
-                <div class="space-y-2">
-                    <label class="flex items-center">
-                        <input type="radio" name="stock_type" value="size" onchange="handleStockTypeChange()" checked
-                               class="mr-2 text-blue-600 focus:ring-blue-500">
-                        <span class="text-sm text-gray-700">Size-Based</span>
-                    </label>
-                    <label class="flex items-center">
-                        <input type="radio" name="stock_type" value="color" onchange="handleStockTypeChange()"
-                               class="mr-2 text-blue-600 focus:ring-blue-500">
-                        <span class="text-sm text-gray-700">Color & Size</span>
-                    </label>
-                </div>
-            </div>
-            
             <!-- Status and Settings -->
             <div>
                 <h3 class="text-lg font-medium text-gray-900 mb-3">Status and Settings</h3>
@@ -71,7 +54,7 @@
         <div>
             <!-- Size-Based Stock -->
             <div id="size-stock-section" class="stock-section">
-                <h3 class="text-lg font-medium text-gray-900 mb-3">Size-Based Stock Management</h3>
+                <h3 class="text-lg font-medium text-gray-900 mb-3">Stock Management</h3>
                 <p class="text-sm text-gray-600 mb-4">Set individual stock quantities for each size.</p>
                 
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -97,65 +80,6 @@
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-sm font-semibold text-gray-700">Total Stock:</span>
                         <span id="total-stock-display" class="text-2xl font-bold text-blue-600">0</span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Color & Size Stock -->
-            <div id="color-stock-section" class="stock-section hidden">
-                <h3 class="text-lg font-medium text-gray-900 mb-3">Color & Size Stock Management</h3>
-                <p class="text-sm text-gray-600 mb-4">Select available colors, then set stock quantities for each size.</p>
-                
-                <div id="color-stock-container" class="space-y-3">
-                    @php
-                        $sizes = ['S', 'M', 'L', 'XL', 'XXL'];
-                        $colors = ['White', 'Red', 'Blue', 'Black', 'Navy'];
-                        $colorStocks = old('color_stocks', $barongProduct->color_stocks ?? []);
-                    @endphp
-                    
-                    @foreach($colors as $color)
-                        @php
-                            $colorChecked = (old('selected_colors.'.$color, false) || 
-                                            (isset($colorStocks) && in_array($color, array_keys(array_filter(array_merge(...array_map(function($sizes) { return $sizes; }, $colorStocks ?? [])), 'count')))));
-                        @endphp
-                        <div class="border border-gray-200 rounded-lg p-3">
-                            <!-- Color Checkbox -->
-                            <label class="flex items-center mb-2 cursor-pointer">
-                                <input type="checkbox" 
-                                       name="selected_colors[]" 
-                                       value="{{ $color }}"
-                                       onchange="toggleColorSizes('{{ $color }}')"
-                                       class="color-checkbox h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                       @if($colorChecked) checked @endif>
-                                <span class="ml-2 font-semibold text-gray-900">{{ $color }}</span>
-                            </label>
-                            
-                            <!-- Size Inputs (hidden by default) -->
-                            <div id="color-{{ strtolower($color) }}-sizes" class="grid grid-cols-5 gap-2 {{ !$colorChecked ? 'hidden' : '' }}">
-                                @foreach($sizes as $size)
-                                    <div>
-                                        <label for="stock_{{ strtolower($color) }}_{{ $size }}" class="block text-xs text-gray-600 mb-1">{{ $size }}</label>
-                                        <input type="number" 
-                                               id="stock_{{ strtolower($color) }}_{{ $size }}" 
-                                               name="color_stocks[{{ $size }}][{{ $color }}]" 
-                                               value="{{ $colorStocks[$size][$color] ?? 0 }}" 
-                                               min="0" autocomplete="off"
-                                               class="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 color-stock-input"
-                                               placeholder="0"
-                                               onchange="calculateColorTotalStock()"
-                                               oninput="calculateColorTotalStock()">
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-                
-                <!-- Total Stock Display -->
-                <div class="mt-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm font-semibold text-gray-700">Total Stock:</span>
-                        <span id="total-color-stock-display" class="text-xl font-bold text-blue-600">0</span>
                     </div>
                 </div>
             </div>

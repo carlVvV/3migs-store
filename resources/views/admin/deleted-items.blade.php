@@ -58,7 +58,6 @@
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deleted At</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -79,9 +78,6 @@
                                             <div class="text-sm text-gray-500">SKU: {{ $product->sku }}</div>
                                         </div>
                                     </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {{ $product->brand->name ?? 'N/A' }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     {{ $product->category->name ?? 'N/A' }}
@@ -105,7 +101,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                                <td colspan="4" class="px-6 py-4 text-center text-gray-500">
                                     <div class="flex flex-col items-center py-8">
                                         <i class="fas fa-trash-alt text-4xl text-gray-300 mb-4"></i>
                                         <p class="text-lg font-medium text-gray-900 mb-2">No deleted items found</p>

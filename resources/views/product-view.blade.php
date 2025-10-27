@@ -99,29 +99,6 @@
                     </p>
                 </div>
                 
-                <!-- Colors -->
-                @php
-                    $availableData = $product->getAvailableColorsAndSizes();
-                    $availableColors = $availableData['colors'] ?? [];
-                    $colorStocksData = $availableData['color_stocks'] ?? [];
-                @endphp
-                <div class="mb-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-3">Colours:</h3>
-                    <select id="colorSelect" class="w-48 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm">
-                        @if(count($availableColors) > 0)
-                            @foreach($availableColors as $index => $color)
-                                <option value="{{ $color }}" {{ $index == 0 ? 'selected' : '' }}>{{ ucfirst($color) }}</option>
-                            @endforeach
-                        @elseif($product->colors && count($product->colors) > 0)
-                            @foreach($product->colors as $index => $color)
-                                <option value="{{ $color }}" {{ $index == 0 ? 'selected' : '' }}>{{ ucfirst($color) }}</option>
-                            @endforeach
-                        @else
-                            <option value="white" selected>White</option>
-                        @endif
-                    </select>
-                </div>
-                
                 <!-- Stock / Size Selection -->
                 <div class="mb-6">
                     <div class="flex items-center justify-between mb-3">
@@ -528,14 +505,12 @@ function addToCart() {
     
     const quantity = currentQuantity;
     const size = selectedSize;
-    const color = document.getElementById('colorSelect') ? document.getElementById('colorSelect').value : null;
     
     console.log('=== AddToCart Debug ===');
     console.log('Product ID:', productId);
     console.log('Quantity:', quantity);
     console.log('Selected Size:', selectedSize);
     console.log('Size variable:', size);
-    console.log('Color:', color);
     console.log('Type of selectedSize:', typeof selectedSize);
     
     // Check if size is properly selected
@@ -561,11 +536,6 @@ function addToCart() {
                 quantity: Number(quantity),
                 size: updatedSize
             };
-            
-            // Only add color if it has a valid value
-            if (color && color !== 'null' && color !== null && color !== '') {
-                updatedPayload.color = color;
-            }
             
             console.log('Emergency payload:', updatedPayload);
             // Continue with the request using updatedPayload instead of payload
@@ -594,13 +564,9 @@ function addToCart() {
         quantity: Number(quantity)
     };
     
-    // Only add size and color if they have valid values
+    // Only add size if it has a valid value
     if (size && size !== 'null' && size !== null && size !== '') {
         payload.size = size;
-    }
-    
-    if (color && color !== 'null' && color !== null && color !== '') {
-        payload.color = color;
     }
     
     console.log('Final payload:', payload);
