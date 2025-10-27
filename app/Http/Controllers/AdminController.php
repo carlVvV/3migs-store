@@ -1026,6 +1026,27 @@ class AdminController extends Controller
     }
 
     /**
+     * Remove low stock notification
+     */
+    public function removeNotification(Request $request, $id)
+    {
+        try {
+            $notification = \App\Models\LowStockNotification::findOrFail($id);
+            $notification->delete();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Notification removed successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to remove notification: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Display the coupons page
      */
     public function coupons(Request $request)

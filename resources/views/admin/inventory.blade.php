@@ -100,6 +100,7 @@
         <div class="space-y-2">
             @foreach($recentNotifications as $notification)
             <div class="flex justify-between items-center bg-white rounded-md p-3 border border-blue-100 hover:shadow-md transition-shadow cursor-pointer notification-item" 
+                 data-notification-id="{{ $notification->id }}"
                  onclick="window.location.href='{{ route('admin.products.edit', $notification->product_id) }}'">
                 <div class="flex items-center flex-1">
                     <i class="fas fa-exclamation-triangle text-yellow-500 mr-2"></i>
@@ -111,9 +112,9 @@
                 <div class="flex items-center space-x-4" onclick="event.stopPropagation();">
                     <span class="text-sm text-red-600 font-medium">{{ $notification->current_stock }} left</span>
                     <span class="text-xs text-gray-500">{{ $notification->notified_at->diffForHumans() }}</span>
-                    <button onclick="markAsResolved({{ $notification->id }}, '{{ $notification->product_name }}', {{ $notification->current_stock }}); event.stopPropagation();" 
-                            class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded hover:bg-green-200">
-                        Mark Resolved
+                    <button onclick="removeNotification({{ $notification->id }}); event.stopPropagation();" 
+                            class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded hover:bg-red-200" title="Remove notification">
+                        <i class="fas fa-times"></i> Remove
                     </button>
                 </div>
             </div>
@@ -200,9 +201,47 @@
 </div>
 
 <script>
-let currentNotificationId = null;
-let currentProductName = null;
-let currentStock = null;
+function removeNotification(notificationId) {
+    if (!confirm('Are you sure you want to remove this notification?')) {
+        return;
+    }
+    
+    fetch(`/admin/inventory/notifications/${notificationId}/remove`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Remove the notification element from the DOM
+            const notificationElement = document.querySelector(`[data-notification-id="${notificationId}"]`);
+            if (notificationElement) {
+                notificationElement.style.transition = 'opacity 0.3s ease';
+                notificationElement.style.opacity = '0';
+                setTimeout(() => {
+                    notificationElement.remove();
+                }, 300);
+            }
+            
+            // Show success message
+            const successMsg = document.createElement('div');
+            successMsg.className = 'fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-md shadow-lg z-50';
+            successMsg.textContent = 'Notification removed successfully';
+            document.body.appendChild(successMsg);
+            setTimeout(() => successMsg.remove(), 3000);
+        } else {
+            alert('Failed to remove notification: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error removing notification:', error);
+        alert('An error occurred while removing the notification');
+    });
+}
 
 function markAsResolved(notificationId, productName, currentStock) {
     currentNotificationId = notificationId;

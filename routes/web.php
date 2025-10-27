@@ -124,6 +124,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     
     // Low Stock Notifications
     Route::post('/notifications/{id}/resolve', [AdminController::class, 'resolveNotification'])->name('notifications.resolve');
+    Route::post('/inventory/notifications/{id}/remove', [AdminController::class, 'removeNotification'])->name('notifications.remove');
     
     // Barong Products Management (Replacing old products system)
     Route::get('/products', [AdminController::class, 'barongProducts'])->name('products');
