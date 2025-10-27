@@ -507,6 +507,24 @@ class BarongProduct extends Model
      */
     public function getStockForSize($size)
     {
+        // First check color_stocks (size + color specific)
+        if (!empty($this->color_stocks) && is_array($this->color_stocks) && isset($this->color_stocks[$size])) {
+            $stockValue = $this->color_stocks[$size];
+            
+            if (is_array($stockValue)) {
+                // Sum all color quantities for this size
+                $totalStock = 0;
+                foreach ($stockValue as $color => $qty) {
+                    $totalStock += intval($qty);
+                }
+                return $totalStock;
+            } else {
+                // Numeric value (size-based stock format)
+                return intval($stockValue);
+            }
+        }
+        
+        // Fallback to size_stocks
         $sizeStocks = $this->size_stocks ?? [];
         return $sizeStocks[$size] ?? 0;
     }

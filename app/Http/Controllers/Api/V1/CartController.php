@@ -274,12 +274,14 @@ class CartController extends Controller
                 ], 400);
             }
 
-            // If product uses per-size stocks, enforce size selection and validate per-size availability
-            $usesSizeStocks = is_array($product->size_stocks) && count($product->size_stocks) > 0;
+            // If product uses per-size stocks (check both size_stocks and color_stocks), enforce size selection and validate per-size availability
+            $usesSizeStocks = (is_array($product->size_stocks) && count($product->size_stocks) > 0) || 
+                             (is_array($product->color_stocks) && count($product->color_stocks) > 0);
             \Log::info('Stock validation debug', [
                 'product_id' => $product->id,
                 'uses_size_stocks' => $usesSizeStocks,
                 'size_stocks' => $product->size_stocks,
+                'color_stocks' => $product->color_stocks,
                 'selected_size' => $validator['size'] ?? null,
                 'requested_quantity' => $validator['quantity'],
             ]);
