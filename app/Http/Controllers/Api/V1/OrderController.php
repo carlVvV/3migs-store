@@ -345,28 +345,10 @@ class OrderController extends Controller
                 
                 $product = $cartItem->product;
                 $size = $cartItem->size;
-                $color = $cartItem->color;
                 $quantity = intval($cartItem->quantity);
                 
-                // Check if product uses color_stocks (size + color specific)
-                if ($product->color_stocks && is_array($product->color_stocks) && $size && $color) {
-                    if (isset($product->color_stocks[$size][$color])) {
-                        $availableStock = intval($product->color_stocks[$size][$color]);
-                        if ($availableStock < $quantity) {
-                            return response()->json([
-                                'success' => false,
-                                'message' => "Insufficient stock for {$product->name} (Size: {$size}, Color: {$color}). Only {$availableStock} available."
-                            ], 400);
-                        }
-                    } else {
-                        return response()->json([
-                            'success' => false,
-                            'message' => "Selected size and color combination for {$product->name} is not available."
-                        ], 400);
-                    }
-                }
-                // Check if product uses size_stocks only
-                elseif ($product->size_stocks && is_array($product->size_stocks) && $size) {
+                // Check if product uses size_stocks
+                if ($product->size_stocks && is_array($product->size_stocks) && $size) {
                     if (isset($product->size_stocks[$size])) {
                         $availableStock = intval($product->size_stocks[$size]);
                         if ($availableStock < $quantity) {
@@ -508,45 +490,14 @@ class OrderController extends Controller
                     'total_price' => $cartItem->price * $cartItem->quantity
                 ]);
 
-                // Update product stock (size and color-aware)
+                // Update product stock (size-aware)
                 $product = $cartItem->product;
                 $oldStock = (int) ($product->stock ?? 0);
                 $size = $cartItem->size;
-                $color = $cartItem->color;
                 $quantity = intval($cartItem->quantity);
                 
-                // Check if product uses color_stocks (size + color specific)
-                if ($product->color_stocks && is_array($product->color_stocks) && $size && $color) {
-                    $colorStocks = $product->color_stocks;
-                    
-                    if (isset($colorStocks[$size][$color])) {
-                        // Deduct from size + color specific stock
-                        $colorStocks[$size][$color] = max(0, intval($colorStocks[$size][$color]) - $quantity);
-                        $product->color_stocks = $colorStocks;
-                        
-                        // Recalculate aggregate stock from color_stocks
-                        $totalStock = 0;
-                        foreach ($colorStocks as $sizeKey => $colors) {
-                            foreach ($colors as $colorKey => $qty) {
-                                $totalStock += intval($qty);
-                            }
-                        }
-                        $product->stock = $totalStock;
-                        $product->is_available = $totalStock > 0;
-                        $product->save();
-                    } else {
-                        Log::warning('Color-specific stock not found', [
-                            'product_id' => $product->id,
-                            'size' => $size,
-                            'color' => $color,
-                            'color_stocks' => $product->color_stocks
-                        ]);
-                        // Fallback to aggregate stock deduction
-                        $product->decrement('stock', $quantity);
-                    }
-                } 
-                // Check if product uses size_stocks only
-                elseif ($product->size_stocks && is_array($product->size_stocks) && $size) {
+                // Check if product uses size_stocks
+                if ($product->size_stocks && is_array($product->size_stocks) && $size) {
                     if (isset($product->size_stocks[$size])) {
                         // Deduct from specific size stock
                         $sizeStocks = $product->size_stocks;

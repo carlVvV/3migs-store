@@ -335,19 +335,6 @@ class BarongProduct extends Model
      */
     public function getTotalStock(): int
     {
-        // Prefer color_stocks when present (size + color specific)
-        if (!empty($this->color_stocks) && is_array($this->color_stocks)) {
-            $totalStock = 0;
-            foreach ($this->color_stocks as $size => $colors) {
-                if (is_array($colors)) {
-                    foreach ($colors as $color => $qty) {
-                        $totalStock += intval($qty);
-                    }
-                }
-            }
-            return (int) $totalStock;
-        }
-        
         // Prefer size-based stocks when present
         if (!empty($this->size_stocks) && is_array($this->size_stocks)) {
             $sizeTotal = array_sum(array_map('intval', $this->size_stocks));
@@ -382,37 +369,11 @@ class BarongProduct extends Model
     }
 
     /**
-     * Get available colors and sizes from color_stocks
+     * Get available sizes from size_stocks
      */
     public function getAvailableColorsAndSizes(): array
     {
-        // First check color_stocks (size + color specific)
-        if (!empty($this->color_stocks) && is_array($this->color_stocks)) {
-            $sizes = [];
-            $colors = [];
-
-            foreach ($this->color_stocks as $size => $colorData) {
-                if (!in_array($size, $sizes)) {
-                    $sizes[] = $size;
-                }
-                
-                if (is_array($colorData)) {
-                    foreach ($colorData as $color => $qty) {
-                        if (intval($qty) > 0 && !in_array($color, $colors)) {
-                            $colors[] = $color;
-                        }
-                    }
-                }
-            }
-
-            return [
-                'colors' => $colors,
-                'sizes' => $sizes,
-                'color_stocks' => $this->color_stocks
-            ];
-        }
-        
-        // Fallback to size_stocks if available
+        // Get sizes from size_stocks
         if (!empty($this->size_stocks) && is_array($this->size_stocks)) {
             $sizes = [];
             $sizeStocksForView = [];
@@ -427,8 +388,7 @@ class BarongProduct extends Model
             return [
                 'colors' => [],
                 'sizes' => $sizes,
-                'color_stocks' => $sizeStocksForView, // Pass size stocks in compatible format
-                'size_stocks' => $this->size_stocks // Pass original size_stocks for reference
+                'size_stocks' => $this->size_stocks
             ];
         }
 
@@ -436,30 +396,10 @@ class BarongProduct extends Model
         return [
             'colors' => [],
             'sizes' => [],
-            'color_stocks' => []
+            'size_stocks' => []
         ];
     }
 
-    /**
-     * Get available colors for a specific size
-     */
-    public function getAvailableColorsForSize(string $size): array
-    {
-        if (empty($this->color_stocks) || !is_array($this->color_stocks)) {
-            return [];
-        }
-
-        $colors = [];
-        if (isset($this->color_stocks[$size]) && is_array($this->color_stocks[$size])) {
-            foreach ($this->color_stocks[$size] as $color => $qty) {
-                if (intval($qty) > 0) {
-                    $colors[] = $color;
-                }
-            }
-        }
-
-        return $colors;
-    }
 
     /**
      * Get available sizes

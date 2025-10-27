@@ -116,33 +116,17 @@
                         // Get available data
                         $availableData = $product->getAvailableColorsAndSizes();
                         $availableSizes = $availableData['sizes'] ?? [];
-                        $colorStocks = $availableData['color_stocks'] ?? [];
                         
-                        // Calculate stock per size from color_stocks
-                        if (!empty($colorStocks) && is_array($colorStocks)) {
-                            foreach ($sizes as $s) {
-                                $stock = 0;
-                                if (isset($colorStocks[$s])) {
-                                    if (is_array($colorStocks[$s])) {
-                                        // Sum all color quantities for this size
-                                        foreach ($colorStocks[$s] as $color => $qty) {
-                                            $stock += intval($qty);
-                                        }
-                                    } else {
-                                        // Numeric value (size-based stock)
-                                        $stock = intval($colorStocks[$s]);
-                                    }
-                                }
-                                $sizeStocks[$s] = $stock;
+                        // Calculate stock per size from size_stocks
+                        $rawStocks = $product->size_stocks ?? [];
+                        if (is_array($rawStocks) && count($rawStocks) > 0) {
+                            foreach ($sizes as $s) { 
+                                $sizeStocks[$s] = intval($rawStocks[$s] ?? 0); 
                             }
                         } else {
-                            // Fallback to size_stocks or simple stock
-                            $rawStocks = $product->size_stocks ?? [];
-                            if (is_array($rawStocks) && count($rawStocks) > 0) {
-                                foreach ($sizes as $s) { $sizeStocks[$s] = intval($rawStocks[$s] ?? 0); }
-                            } else {
-                                $simple = (int) ($product->total_stock ?? $product->stock ?? 0);
-                                foreach ($sizes as $s) { $sizeStocks[$s] = $simple; }
+                            $simple = (int) ($product->total_stock ?? $product->stock ?? 0);
+                            foreach ($sizes as $s) { 
+                                $sizeStocks[$s] = $simple; 
                             }
                         }
 
@@ -175,20 +159,10 @@
                             'selected_size' => $selectedSize,
                             'size_stocks' => $sizeStocks,
                             'has_any_stock' => $hasAnyStock,
-                            'color_stocks_from_method' => $colorStocks,
                             'calculated_size_stocks' => $sizeStocks
                         ]);
                     @endphp
                     
-                    <!-- Debug output -->
-                    @if(config('app.debug'))
-                    <div class="mb-4 p-2 bg-yellow-100 text-xs">
-                        <strong>Debug Info:</strong>
-                        <br>Available Sizes: {{ json_encode($availableSizes) }}
-                        <br>Size Stocks: {{ json_encode($sizeStocks) }}
-                        <br>Selected Size: {{ $selectedSize ?? 'None' }}
-                    </div>
-                    @endif
 
                     <div class="flex space-x-3">
                         <div class="flex space-x-3">
@@ -284,27 +258,16 @@ let selectedSize = @json($selectedSize); // Use JSON to properly handle null val
 let lastUpdateTime = '{{ $product->updated_at->toISOString() }}';
 let updateInterval;
 
-console.log('Initialized selectedSize from PHP:', @json($selectedSize));
-console.log('Initialized selectedSize variable:', selectedSize);
-console.log('Type of selectedSize:', typeof selectedSize);
-
 // Auto-select first available size if none is selected
 if (!selectedSize || selectedSize === null || selectedSize === 'null') {
-    console.log('No size selected, attempting auto-selection...');
     const availableSizes = document.querySelectorAll('.size-btn:not(.opacity-50)');
-    console.log('Available sizes found:', availableSizes.length);
     
     if (availableSizes.length > 0) {
         const firstAvailable = availableSizes[0];
         const size = firstAvailable.getAttribute('data-size');
-        console.log('Auto-selecting size:', size);
         selectSize(size, firstAvailable);
-        console.log('Auto-selected first available size:', size);
-    } else {
-        console.warn('No available sizes found for auto-selection');
     }
 } else {
-    console.log('Size already selected:', selectedSize);
     // Ensure the selected size button is visually selected
     const selectedButton = document.querySelector(`[data-size="${selectedSize}"]`);
     if (selectedButton) {
@@ -358,9 +321,6 @@ function selectSize(size, element) {
     
     // Update selected size
     selectedSize = size;
-    
-    console.log('Selected size:', selectedSize, 'Stock:', stock);
-    console.log('selectedSize variable updated to:', selectedSize);
 }
 
 // Real-time update functions
@@ -381,13 +341,11 @@ function checkForUpdates() {
         })
         .then(data => {
             if (data.success && data.updated_at !== lastUpdateTime) {
-                console.log('Product updated, refreshing size stocks...');
                 updateSizeStocks(data.size_stocks);
                 lastUpdateTime = data.updated_at;
             }
         })
         .catch(error => {
-            console.log('Error checking for updates:', error);
             // Don't stop updates for network errors, only for 404s
             if (error.message.includes('404')) {
                 stopRealTimeUpdates();
@@ -469,7 +427,6 @@ function showUpdateNotification(message) {
 function startRealTimeUpdates() {
     // Check for updates every 10 seconds
     updateInterval = setInterval(checkForUpdates, 10000);
-    console.log('Real-time updates started');
 }
 
 // Stop real-time updates
@@ -477,7 +434,6 @@ function stopRealTimeUpdates() {
     if (updateInterval) {
         clearInterval(updateInterval);
         updateInterval = null;
-        console.log('Real-time updates stopped');
     }
 }
 
@@ -506,39 +462,20 @@ function addToCart() {
     const quantity = currentQuantity;
     const size = selectedSize;
     
-    console.log('=== AddToCart Debug ===');
-    console.log('Product ID:', productId);
-    console.log('Quantity:', quantity);
-    console.log('Selected Size:', selectedSize);
-    console.log('Size variable:', size);
-    console.log('Type of selectedSize:', typeof selectedSize);
-    
     // Check if size is properly selected
     if (!size || size === 'null' || size === '' || size === null) {
-        console.error('No size selected! selectedSize =', selectedSize);
-        console.error('Attempting emergency size selection...');
-        
-        // Emergency fallback: try to select the first available size
         const availableSizes = document.querySelectorAll('.size-btn:not(.opacity-50)');
         if (availableSizes.length > 0) {
             const firstAvailable = availableSizes[0];
             const emergencySize = firstAvailable.getAttribute('data-size');
-            console.log('Emergency selecting size:', emergencySize);
             selectSize(emergencySize, firstAvailable);
             
-            // Update the size variable
-            const updatedSize = emergencySize;
-            console.log('Updated size to:', updatedSize);
-            
-            // Continue with the updated size
             const updatedPayload = {
                 product_id: Number(productId),
                 quantity: Number(quantity),
-                size: updatedSize
+                size: emergencySize
             };
             
-            console.log('Emergency payload:', updatedPayload);
-            // Continue with the request using updatedPayload instead of payload
             proceedWithCartAdd(updatedPayload);
             return;
         } else {
@@ -549,15 +486,9 @@ function addToCart() {
     
     // Validate product ID
     if (!productId || productId === null) {
-        console.error('No product ID found!');
         showError('Product information is missing. Please refresh the page and try again.');
         return;
     }
-    
-    // Debug CSRF token
-    const csrfToken = document.querySelector('meta[name="csrf-token"]');
-    console.log('CSRF Token element:', csrfToken);
-    console.log('CSRF Token value:', csrfToken ? csrfToken.getAttribute('content') : 'NOT FOUND');
     
     const payload = {
         product_id: Number(productId),
@@ -568,9 +499,6 @@ function addToCart() {
     if (size && size !== 'null' && size !== null && size !== '') {
         payload.size = size;
     }
-    
-    console.log('Final payload:', payload);
-    console.log('Raw payload being sent:', JSON.stringify(payload));
     
     // Proceed with cart addition
     proceedWithCartAdd(payload);
@@ -584,7 +512,6 @@ function proceedWithCartAdd(payload) {
     if (size) {
         const selectedButton = document.querySelector(`[data-size="${size}"]`);
         if (!selectedButton) {
-            console.error('Selected size button not found for size:', size);
             showError('Size selection error. Please select a size again.');
             return;
         }
@@ -620,11 +547,7 @@ function proceedWithCartAdd(payload) {
         body: JSON.stringify(payload)
     })
     .then(response => {
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
-        
         if (response.status === 419) {
-            console.error('CSRF token mismatch - 419 error');
             showError('Session expired. Please refresh the page and try again.');
             // Optionally refresh the page after a delay
             setTimeout(() => {
@@ -637,8 +560,6 @@ function proceedWithCartAdd(payload) {
     })
     .then(data => {
         if (!data) return; // Handle 419 case
-        
-        console.log('Response data:', data);
         
         if (data.success) {
             // Position notification below header dynamically
@@ -669,7 +590,6 @@ function proceedWithCartAdd(payload) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showError('An error occurred while adding to cart');
     })
     .finally(() => {
@@ -738,7 +658,6 @@ function buyNow() {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showError('An error occurred while processing purchase');
     });
 }
@@ -938,7 +857,6 @@ async function loadReviews() {
             throw new Error(data.message || 'Failed to load reviews');
         }
     } catch (error) {
-        console.error('Error loading reviews:', error);
         document.getElementById('reviews-container').innerHTML = `
             <div class="text-center py-8">
                 <i class="fas fa-exclamation-triangle text-2xl text-gray-400 mb-4"></i>
