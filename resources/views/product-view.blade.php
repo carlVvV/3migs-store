@@ -608,11 +608,13 @@ function proceedWithCartAdd(payload) {
     addToCartBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Adding...';
     addToCartBtn.disabled = true;
     
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    
     fetch('/api/v1/cart/add', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'X-CSRF-TOKEN': csrfToken,
             'Accept': 'application/json'
         },
         body: JSON.stringify(payload)
@@ -681,7 +683,10 @@ function buyNow() {
     const productId = @json($product->id);
     const quantity = currentQuantity;
     const size = selectedSize;
-    const color = document.getElementById('colorSelect').value;
+    
+    // Safely get color value if element exists
+    const colorSelect = document.getElementById('colorSelect');
+    const color = colorSelect ? colorSelect.value : null;
     
     const payload = {
         product_id: Number(productId),
@@ -692,6 +697,13 @@ function buyNow() {
     
     // Check stock availability
     const selectedButton = document.querySelector(`[data-size="${size}"]`);
+    
+    // Check if selectedButton exists before getting attributes
+    if (!selectedButton) {
+        showError('Please select a size');
+        return;
+    }
+    
     const availableStock = parseInt(selectedButton.getAttribute('data-stock'));
     
     if (availableStock <= 0) {
@@ -705,11 +717,13 @@ function buyNow() {
     }
     
     // Add to cart first, then redirect to checkout
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    
     fetch('/api/v1/cart/add', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'X-CSRF-TOKEN': csrfToken,
             'Accept': 'application/json'
         },
         body: JSON.stringify(payload)

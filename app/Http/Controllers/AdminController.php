@@ -289,6 +289,7 @@ class AdminController extends Controller
             'category_id' => 'required|exists:categories,id',
             'base_price' => 'required|numeric|min:0',
             'special_price' => 'nullable|numeric|min:0',
+            'wholesale_price' => 'nullable|numeric|min:0',
             'stock' => 'nullable|integer|min:0',
             'size_stocks' => 'nullable|array',
             'size_stocks.S' => 'nullable|integer|min:0',
@@ -321,6 +322,8 @@ class AdminController extends Controller
             'base_price.min' => 'Base price cannot be negative.',
             'special_price.numeric' => 'Special price must be a valid number.',
             'special_price.min' => 'Special price cannot be negative.',
+            'wholesale_price.numeric' => 'Wholesale price must be a valid number.',
+            'wholesale_price.min' => 'Wholesale price cannot be negative.',
             'stock.integer' => 'Stock must be a whole number.',
             'stock.min' => 'Stock cannot be negative.',
             'size_stocks.S.integer' => 'Size S stock must be a whole number.',
@@ -346,7 +349,7 @@ class AdminController extends Controller
             // Use mass assignment with only fillable fields
             $productData = $request->only([
                 'name', 'description', 'category_id',
-                'sleeve_type', 'base_price', 'special_price', 'stock',
+                'sleeve_type', 'base_price', 'special_price', 'wholesale_price', 'stock',
                 'size_stocks', 'fabric', 'embroidery_style', 'colors', 'collar_type',
                 'design_details', 'video_url', 'variations'
             ]);

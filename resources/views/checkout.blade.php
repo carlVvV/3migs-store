@@ -289,6 +289,10 @@
                             <span class="text-gray-600">Subtotal:</span>
                             <span id="order-subtotal" class="font-medium">₱0.00</span>
                         </div>
+                        <div id="wholesale-savings" class="flex justify-between text-sm text-green-600 hidden">
+                            <span>Wholesale Savings:</span>
+                            <span id="wholesale-savings-amount" class="font-medium">₱0.00</span>
+                        </div>
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-600">Shipping:</span>
                             <span class="text-green-600 font-medium">Free</span>
@@ -983,6 +987,27 @@ document.addEventListener('DOMContentLoaded', function() {
         items.forEach(item => {
             const itemElement = document.createElement('div');
             itemElement.className = 'flex items-center space-x-3';
+            
+            // Determine if wholesale pricing applies
+            const isWholesale = item.is_wholesale_price || (item.price < item.current_price);
+            let priceDisplay = '';
+            
+            if (isWholesale && item.current_price) {
+                priceDisplay = `
+                    <div class="text-right">
+                        <div class="text-sm line-through text-gray-400">₱${(item.current_price * item.quantity).toFixed(2)}</div>
+                        <div class="text-sm font-medium text-green-600">₱${(item.price * item.quantity).toFixed(2)}</div>
+                        <div class="text-xs text-green-600">Wholesale</div>
+                    </div>
+                `;
+            } else {
+                priceDisplay = `
+                    <div class="text-sm font-medium text-gray-900">
+                        ₱${(item.price * item.quantity).toFixed(2)}
+                    </div>
+                `;
+            }
+            
             itemElement.innerHTML = `
                 <img src="${item.image || '/images/placeholder.jpg'}" 
                      alt="${item.name}" 
@@ -991,9 +1016,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <h4 class="text-sm font-medium text-gray-900">${item.name}</h4>
                     <p class="text-sm text-gray-500">Qty: ${item.quantity}</p>
                 </div>
-                <div class="text-sm font-medium text-gray-900">
-                    ₱${(item.price * item.quantity).toFixed(2)}
-                </div>
+                ${priceDisplay}
             `;
             container.appendChild(itemElement);
         });
@@ -1002,6 +1025,14 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateOrderTotals(data) {
         document.getElementById('order-subtotal').textContent = `₱${(data.subtotal || 0).toFixed(2)}`;
         document.getElementById('order-total').textContent = `₱${(data.total || 0).toFixed(2)}`;
+        
+        // Display wholesale savings if applicable
+        if (data.wholesale_savings && data.wholesale_savings > 0) {
+            document.getElementById('wholesale-savings').classList.remove('hidden');
+            document.getElementById('wholesale-savings-amount').textContent = `-₱${(data.wholesale_savings || 0).toFixed(2)}`;
+        } else {
+            document.getElementById('wholesale-savings').classList.add('hidden');
+        }
     }
 
     function checkForCustomBarong(items) {

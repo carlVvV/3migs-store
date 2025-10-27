@@ -100,19 +100,27 @@ class CartController extends Controller
             $total = 0;
             $totalQuantity = 0;
 
+            $totalWholesaleSavings = 0;
+
             foreach ($cartItems as $cartItem) {
                 $product = $cartItem->product;
                 $subtotal = $cartItem->price * $cartItem->quantity;
                 $total += $subtotal;
                 $totalQuantity += $cartItem->quantity;
 
+                // Calculate wholesale savings for this item
+                $regularPrice = (float) $product->current_price;
+                $wholesalePrice = $cartItem->price < $regularPrice ? (float) $cartItem->price : null;
+                $wholesaleSavings = $wholesalePrice ? ($regularPrice - $wholesalePrice) * $cartItem->quantity : 0;
+                $totalWholesaleSavings += $wholesaleSavings;
+
                 $items[] = [
                     'id' => $cartItem->id,
                     'product_id' => $product->id,
                     'name' => $product->name,
                     'slug' => $product->slug,
-                    'price' => $cartItem->price, // Price when added to cart
-                    'current_price' => $product->current_price, // Current price
+                    'price' => $cartItem->price, // Price when added to cart (may be wholesale)
+                    'current_price' => $product->current_price, // Current regular price
                     'special_price' => $product->special_price,
                     'is_on_sale' => $product->is_on_sale,
                     'discount_percentage' => $product->discount_percentage,
@@ -122,6 +130,9 @@ class CartController extends Controller
                     'images' => $product->images,
                     'stock_quantity' => $product->getTotalStock(),
                     'added_at' => $cartItem->created_at,
+                    'is_wholesale_price' => $wholesalePrice !== null,
+                    'wholesale_price' => $wholesalePrice,
+                    'wholesale_savings' => $wholesaleSavings,
                 ];
             }
 
@@ -130,6 +141,7 @@ class CartController extends Controller
                 'items' => $items,
                 'subtotal' => $total,
                 'total' => $total,
+                'wholesale_savings' => $totalWholesaleSavings,
                 'is_guest' => false
             ]);
         } catch (\Exception $e) {
@@ -447,19 +459,27 @@ class CartController extends Controller
                     }
                 }
 
+                // Calculate wholesale price based on total cart quantity
+                $totalCartQuantity = $user->cart()->where('id', '!=', $existingCartItem->id)->sum('quantity') + $newQuantity;
+                $finalPrice = $product->getPriceForQuantity($totalCartQuantity);
+                
                 $existingCartItem->update([
                     'quantity' => $newQuantity,
-                    'price' => $product->current_price // Update price to current price
+                    'price' => $finalPrice // Update price with wholesale pricing if applicable
                 ]);
 
                 $cartItem = $existingCartItem;
             } else {
+                // Calculate wholesale price based on total cart quantity
+                $totalCartQuantity = $user->cart()->sum('quantity') + $validator['quantity'];
+                $finalPrice = $product->getPriceForQuantity($totalCartQuantity);
+                
                 // Create new cart item
                 $cartItem = Cart::create([
                     'user_id' => $user->id,
                     'product_id' => $product->id,
                     'quantity' => $validator['quantity'],
-                    'price' => $product->current_price,
+                    'price' => $finalPrice,
                     'size' => $validator['size'] ?? null,
                     'color' => $validator['color'] ?? null
                 ]);
@@ -604,9 +624,13 @@ class CartController extends Controller
                 }
             }
 
+            // Calculate wholesale price based on total cart quantity
+            $totalCartQuantity = $user->cart()->where('id', '!=', $cartItem->id)->sum('quantity') + $validator['quantity'];
+            $finalPrice = $product->getPriceForQuantity($totalCartQuantity);
+            
             $cartItem->update([
                 'quantity' => $validator['quantity'],
-                'price' => $product->current_price // Update price to current price
+                'price' => $finalPrice // Update price with wholesale pricing if applicable
             ]);
 
             return response()->json([

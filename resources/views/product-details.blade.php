@@ -86,6 +86,24 @@
                         @endif
                     </div>
                     
+                    <!-- Wholesale Info -->
+                    @if($product->wholesale_price)
+                    <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div class="flex items-start space-x-3">
+                            <i class="fas fa-tags text-blue-600 text-xl mt-1"></i>
+                            <div>
+                                <h4 class="text-lg font-semibold text-blue-900 mb-1">Wholesale Pricing Available</h4>
+                                <p class="text-sm text-gray-700 mb-2">
+                                    Order 20+ of any product and pay only <strong class="text-blue-600">₱{{ number_format($product->wholesale_price, 2) }}</strong> per item
+                                </p>
+                                <p class="text-xs text-gray-600">
+                                    Save {{ number_format((($product->current_price - $product->wholesale_price) / $product->current_price) * 100, 0) }}% on bulk orders!
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+                    
                     <!-- Description -->
                     <div class="mb-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-3">Description</h3>

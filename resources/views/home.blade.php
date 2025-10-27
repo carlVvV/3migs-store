@@ -163,6 +163,9 @@
                                     @if($product->is_on_sale)
                                     <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded z-10">-{{ $product->discount_percentage }}%</div>
                                     @endif
+                                    @if($product->wholesale_price)
+                                    <div class="absolute bottom-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded z-10">Wholesale</div>
+                                    @endif
                                     
                                     <!-- Wishlist Button -->
                                     <button class="absolute top-2 right-2 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn z-10" 
@@ -261,6 +264,9 @@
                                 <a href="{{ route('product.details', $product->slug) }}" class="bg-white rounded-lg shadow-md overflow-hidden relative product-card hover:shadow-lg transition-shadow block carousel-item">
                                     @if($product->is_on_sale)
                                     <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded z-10">-{{ $product->discount_percentage }}%</div>
+                                    @endif
+                                    @if($product->wholesale_price)
+                                    <div class="absolute bottom-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded z-10">Wholesale</div>
                                     @endif
                                     
                                     <!-- New Badge -->
@@ -366,6 +372,9 @@
                                     @if($product->is_on_sale)
                                     <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded z-10">-{{ $product->discount_percentage }}%</div>
                                     @endif
+                                    @if($product->wholesale_price)
+                                    <div class="absolute bottom-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded z-10">Wholesale</div>
+                                    @endif
                                     
                                     <!-- Best Seller Badge -->
                                     <div class="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded font-bold z-10">
@@ -461,6 +470,9 @@
                         <a href="{{ route('product.details', $product->slug) }}" class="bg-white rounded-lg shadow-md overflow-hidden relative product-card hover:shadow-lg transition-shadow block">
                             @if($product->is_on_sale)
                             <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-{{ $product->discount_percentage }}%</div>
+                            @endif
+                            @if($product->wholesale_price)
+                            <div class="absolute bottom-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">Wholesale Available</div>
                             @endif
                             
                             <!-- Wishlist Button -->

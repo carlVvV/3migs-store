@@ -19,6 +19,32 @@
                 </div>
             </div>
             
+            <!-- Special Price (Optional) -->
+            <div>
+                <label for="special_price" class="block text-sm font-medium text-gray-700 mb-2">Special Price (PHP) <span class="text-gray-500">(Optional)</span></label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-gray-500">₱</span>
+                    <input type="number" id="special_price" name="special_price" 
+                           value="{{ old('special_price', $barongProduct->special_price ?? '') }}" 
+                           step="0.01" min="0" autocomplete="off"
+                           class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <p class="mt-1 text-xs text-gray-500">Sale price shown to customers</p>
+            </div>
+            
+            <!-- Wholesale Price -->
+            <div>
+                <label for="wholesale_price" class="block text-sm font-medium text-gray-700 mb-2">Wholesale Price (PHP) <span class="text-gray-500">(Optional)</span></label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-gray-500">₱</span>
+                    <input type="number" id="wholesale_price" name="wholesale_price" 
+                           value="{{ old('wholesale_price', $barongProduct->wholesale_price ?? '') }}" 
+                           step="0.01" min="0" autocomplete="off"
+                           class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <p class="mt-1 text-xs text-gray-500">Applies when customer orders 20+ items of any product</p>
+            </div>
+            
             <!-- Status and Settings -->
             <div>
                 <h3 class="text-lg font-medium text-gray-900 mb-3">Status and Settings</h3>

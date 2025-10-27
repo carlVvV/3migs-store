@@ -27,6 +27,8 @@ class BarongProduct extends Model
         'design_details',
         'base_price',
         'special_price',
+        'wholesale_price',
+        'wholesale_minimum_quantity',
         'stock',
         'size_stocks',
         'color_stocks',
@@ -54,6 +56,7 @@ class BarongProduct extends Model
         'variations' => 'array',
         'base_price' => 'decimal:2',
         'special_price' => 'decimal:2',
+        'wholesale_price' => 'decimal:2',
         'is_available' => 'boolean',
         'is_featured' => 'boolean',
         'is_new_arrival' => 'boolean',
@@ -221,6 +224,44 @@ class BarongProduct extends Model
     public function getCurrentPriceAttribute()
     {
         return $this->special_price ?? $this->base_price;
+    }
+
+    /**
+     * Get price based on quantity (wholesale pricing)
+     */
+    public function getPriceForQuantity(int $quantity): float
+    {
+        $minQuantity = $this->wholesale_minimum_quantity ?? 20;
+        
+        if ($quantity >= $minQuantity && !is_null($this->wholesale_price)) {
+            return (float) $this->wholesale_price;
+        }
+        
+        // Return current price (special or base)
+        return (float) $this->current_price;
+    }
+
+    /**
+     * Check if wholesale pricing is available
+     */
+    public function hasWholesalePricing(): bool
+    {
+        return !is_null($this->wholesale_price);
+    }
+
+    /**
+     * Get wholesale discount percentage
+     */
+    public function getWholesaleDiscountPercentage(): float
+    {
+        if (!$this->hasWholesalePricing()) {
+            return 0;
+        }
+        
+        $regularPrice = (float) $this->current_price;
+        $wholesalePrice = (float) $this->wholesale_price;
+        
+        return round((($regularPrice - $wholesalePrice) / $regularPrice) * 100, 2);
     }
 
     /**
