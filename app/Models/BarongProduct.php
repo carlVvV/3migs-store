@@ -382,16 +382,20 @@ class BarongProduct extends Model
         // Fallback to size_stocks if available
         if (!empty($this->size_stocks) && is_array($this->size_stocks)) {
             $sizes = [];
+            $sizeStocksForView = [];
+            
             foreach ($this->size_stocks as $size => $qty) {
                 if (intval($qty) > 0) {
                     $sizes[] = $size;
+                    $sizeStocksForView[$size] = intval($qty);
                 }
             }
             
             return [
                 'colors' => [],
                 'sizes' => $sizes,
-                'color_stocks' => []
+                'color_stocks' => $sizeStocksForView, // Pass size stocks in compatible format
+                'size_stocks' => $this->size_stocks // Pass original size_stocks for reference
             ];
         }
 

@@ -369,9 +369,23 @@ function selectSize(size) {
 function updateColorsForSize(size) {
     const colorContainer = document.getElementById('color-options');
     if (!colorStocksData[size]) {
-        colorContainer.innerHTML = '<p class="text-gray-500 text-sm">No colors available</p>';
+        colorContainer.innerHTML = '<p class="text-gray-500 text-sm">Size only - no color options</p>';
+        selectedColor = null; // No color selection needed
+        updateStockDisplay();
         return;
     }
+    
+    // Check if this is a numeric value (size-based stock without colors)
+    const stockValue = colorStocksData[size];
+    if (typeof stockValue === 'number') {
+        // Size-based stock only, no color selection
+        colorContainer.innerHTML = '<p class="text-green-600 text-sm"><i class="fas fa-check-circle"></i> Available</p>';
+        selectedColor = null;
+        updateStockDisplay();
+        return;
+    }
+    
+    // Color-based stock
     colorContainer.innerHTML = '';
     Object.keys(colorStocksData[size]).forEach(color => {
         const qty = colorStocksData[size][color];
@@ -390,6 +404,8 @@ function updateColorsForSize(size) {
     });
     if (colorContainer.children.length > 0 && !selectedColor) {
         selectColor(Object.keys(colorStocksData[size])[0]);
+    } else if (colorContainer.children.length === 0) {
+        colorContainer.innerHTML = '<p class="text-gray-500 text-sm">No colors available for this size</p>';
     }
 }
 
@@ -406,13 +422,38 @@ function selectColor(color) {
 
 function updateStockDisplay() {
     const stockDisplay = document.getElementById('stock-display');
-    if (selectedSize && selectedColor && colorStocksData[selectedSize] && colorStocksData[selectedSize][selectedColor]) {
-        const qty = colorStocksData[selectedSize][selectedColor];
+    const quantityInput = document.getElementById('quantity');
+    
+    if (!selectedSize) {
+        stockDisplay.innerHTML = '<i class="fas fa-info-circle text-blue-600"></i> Select size to see availability';
+        if (quantityInput) quantityInput.setAttribute('max', '1');
+        return;
+    }
+    
+    if (!colorStocksData[selectedSize]) {
+        stockDisplay.innerHTML = '<i class="fas fa-times-circle text-red-600"></i> Out of Stock';
+        if (quantityInput) quantityInput.setAttribute('max', '0');
+        return;
+    }
+    
+    const stockValue = colorStocksData[selectedSize];
+    
+    // Handle size-based stock (numeric value)
+    if (typeof stockValue === 'number') {
+        const qty = stockValue;
         stockDisplay.innerHTML = `<i class="fas fa-check-circle text-green-600"></i> In Stock (${qty} available)`;
-        const quantityInput = document.getElementById('quantity');
+        if (quantityInput) quantityInput.setAttribute('max', qty);
+        return;
+    }
+    
+    // Handle color-based stock
+    if (selectedColor && stockValue[selectedColor]) {
+        const qty = stockValue[selectedColor];
+        stockDisplay.innerHTML = `<i class="fas fa-check-circle text-green-600"></i> In Stock (${qty} available)`;
         if (quantityInput) quantityInput.setAttribute('max', qty);
     } else {
         stockDisplay.innerHTML = '<i class="fas fa-times-circle text-red-600"></i> Out of Stock';
+        if (quantityInput) quantityInput.setAttribute('max', '0');
     }
 }
 
