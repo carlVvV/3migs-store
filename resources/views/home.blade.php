@@ -180,11 +180,11 @@
                                     
                                     <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full h-[450px] object-cover">
                                     <div class="p-6 product-content">
-                                        <h3 class="font-semibold text-xl text-gray-800 product-title">{{ $product->name }}</h3>
+                                        <h3 class="font-semibold text-2xl text-gray-800 product-title">{{ $product->name }}</h3>
                                         <div class="flex items-center mt-2 price-container">
-                                            <span class="text-red-500 font-bold text-2xl">₱{{ number_format($product->current_price, 0) }}</span>
+                                            <span class="text-red-500 font-bold text-lg">₱{{ number_format($product->current_price, 0) }}</span>
                     @if($product->is_on_sale)
-                                            <span class="text-gray-500 text-base ml-2">(₱{{ number_format($product->base_price, 0) }})</span>
+                                            <span class="text-gray-500 text-sm ml-2">(₱{{ number_format($product->base_price, 0) }})</span>
                                             @endif
                                         </div>
                                         <div class="flex items-center text-base text-gray-600 mt-2 rating-container">
@@ -285,11 +285,11 @@
                     
                             <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full h-[450px] object-cover">
                             <div class="p-6 product-content">
-                                <h3 class="font-semibold text-xl text-gray-800 product-title">{{ $product->name }}</h3>
+                                <h3 class="font-semibold text-2xl text-gray-800 product-title">{{ $product->name }}</h3>
                         <div class="flex items-center mt-2 price-container">
-                            <span class="text-red-500 font-bold text-2xl">₱{{ number_format($product->current_price, 0) }}</span>
+                            <span class="text-red-500 font-bold text-lg">₱{{ number_format($product->current_price, 0) }}</span>
                             @if($product->is_on_sale)
-                            <span class="text-gray-500 text-base ml-2">(₱{{ number_format($product->base_price, 0) }})</span>
+                            <span class="text-gray-500 text-sm ml-2">(₱{{ number_format($product->base_price, 0) }})</span>
                             @endif
                         </div>
                         <div class="flex items-center text-base text-gray-600 mt-2 rating-container">
@@ -390,11 +390,11 @@
                             
                             <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full h-[450px] object-cover">
                             <div class="p-6 product-content">
-                                <h3 class="font-semibold text-xl text-gray-800 product-title">{{ $product->name }}</h3>
+                                <h3 class="font-semibold text-2xl text-gray-800 product-title">{{ $product->name }}</h3>
                                 <div class="flex items-center mt-2 price-container">
-                                    <span class="text-red-500 font-bold text-2xl">₱{{ number_format($product->current_price, 0) }}</span>
+                                    <span class="text-red-500 font-bold text-lg">₱{{ number_format($product->current_price, 0) }}</span>
                                     @if($product->is_on_sale)
-                                    <span class="text-gray-500 text-base ml-2">(₱{{ number_format($product->base_price, 0) }})</span>
+                                    <span class="text-gray-500 text-sm ml-2">(₱{{ number_format($product->base_price, 0) }})</span>
                                     @endif
                                 </div>
                                 <div class="flex items-center justify-between text-xs text-gray-600 mt-1 rating-container">
@@ -484,11 +484,11 @@
                             
                             <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full h-[450px] object-cover">
                             <div class="p-6 product-content">
-                                <h3 class="font-semibold text-xl text-gray-800 product-title">{{ $product->name }}</h3>
+                                <h3 class="font-semibold text-2xl text-gray-800 product-title">{{ $product->name }}</h3>
                                 <div class="flex items-center mt-2">
-                                    <span class="text-red-500 font-bold text-2xl">₱{{ number_format($product->current_price, 0) }}</span>
+                                    <span class="text-red-500 font-bold text-lg">₱{{ number_format($product->current_price, 0) }}</span>
                                     @if($product->is_on_sale)
-                                    <span class="text-gray-500 text-base ml-2">(₱{{ number_format($product->base_price, 0) }})</span>
+                                    <span class="text-gray-500 text-sm ml-2">(₱{{ number_format($product->base_price, 0) }})</span>
                                     @endif
                                 </div>
                                 <div class="flex items-center text-sm text-gray-600 mt-2">
