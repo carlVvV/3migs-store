@@ -178,7 +178,7 @@
                                         <i class="far fa-heart text-gray-600 text-sm"></i>
                                     </button>
                                     
-                                    <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full h-[500px] object-cover">
+                                    <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full h-[600px] object-cover">
                                     <div class="p-6 product-content">
                                         <h3 class="font-semibold text-2xl text-gray-800 product-title">{{ $product->name }}</h3>
                                         <div class="flex items-center mt-2 price-container">
@@ -283,7 +283,7 @@
                         <i class="far fa-heart text-gray-600 text-sm"></i>
                     </button>
                     
-                            <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full h-[500px] object-cover">
+                            <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full h-[600px] object-cover">
                             <div class="p-6 product-content">
                                 <h3 class="font-semibold text-2xl text-gray-800 product-title">{{ $product->name }}</h3>
                         <div class="flex items-center mt-2 price-container">
@@ -388,7 +388,7 @@
                                         <i class="far fa-heart text-gray-600 text-sm"></i>
                                     </button>
                             
-                            <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full h-[500px] object-cover">
+                            <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full h-[600px] object-cover">
                             <div class="p-6 product-content">
                                 <h3 class="font-semibold text-2xl text-gray-800 product-title">{{ $product->name }}</h3>
                                 <div class="flex items-center mt-2 price-container">
@@ -482,7 +482,7 @@
                                 <i class="far fa-heart text-gray-600 text-sm"></i>
                             </button>
                             
-                            <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full h-[500px] object-cover">
+                            <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full h-[600px] object-cover">
                             <div class="p-6 product-content">
                                 <h3 class="font-semibold text-2xl text-gray-800 product-title">{{ $product->name }}</h3>
                                 <div class="flex items-center mt-2">
@@ -769,5 +769,6 @@
     </script>
 </body>
 </html>
+
 
 
