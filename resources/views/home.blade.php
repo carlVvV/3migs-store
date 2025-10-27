@@ -210,7 +210,7 @@
                                             }
                                         @endphp
                                         @if($totalStock > 0)
-                                            <button class="mt-4 w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 block text-center add-to-cart-btn" 
+                                            <button class="mt-4 w-full bg-black text-white py-3 text-lg font-semibold rounded-md hover:bg-gray-800 block text-center add-to-cart-btn" 
                                                     data-product-id="{{ $product->id }}"
                                                     onclick="event.preventDefault(); event.stopPropagation(); addToCart({{ $product->id }});">Add To Cart</button>
                                         @else
