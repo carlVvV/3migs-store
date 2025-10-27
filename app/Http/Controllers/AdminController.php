@@ -38,7 +38,26 @@ class AdminController extends Controller
             'completed_orders' => Order::where('status', 'completed')->count(),
             'total_users' => User::count(),
             'total_reviews' => Review::count(),
-        ];
+$
+
+        // Weekly sales for last 3 months by product
+        $weeklySales = DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('barong_products', 'order_items.product_id', '=', 'barong_products.id')
+            ->select(
+                'barong_products.id as product_id',
+                'barong_products.name as product_name',
+                DB::raw("TO_CHAR(orders.created_at, 'IYYY-\"W\"IW') as week"),
+                DB::raw("DATE_TRUNC('week', orders.created_at)::date as week_start"),
+                DB::raw('SUM(order_items.quantity) as total_quantity'),
+                DB::raw('SUM(order_items.total_price) as total_sales')
+            )
+            ->whereIn('orders.status', ['completed', 'delivered', 'shipped', 'processing'])
+            ->where('orders.created_at', '>=', now()->subMonths(3))
+            ->groupBy('barong_products.id', 'barong_products.name', 'week', 'week_start')
+            ->orderBy('week', 'desc')
+            ->orderBy('total_sales', 'desc')
+            ->get();
 
         // Recent orders
         $recentOrders = Order::with(['user', 'orderItems.product'])
@@ -65,9 +84,7 @@ class AdminController extends Controller
             ->groupBy('year', 'month')
             ->orderBy('year', 'desc')
             ->orderBy('month', 'desc')
-            ->get();
-
-        return view('admin.dashboard', compact('stats', 'recentOrders', 'topProducts', 'monthlySales'));
+            ->get();`n`n        // Add weekly_sales to the report`n        $salesReport['weekly_sales'] = $weeklySales;`n`n        return view('admin.dashboard', compact('stats', 'recentOrders', 'topProducts', 'monthlySales'));
     }
 
     /**
@@ -96,9 +113,7 @@ class AdminController extends Controller
         }
 
         $barongProducts = $query->orderBy('created_at', 'desc')->paginate(20);
-        $categories = Category::active()->get();
-
-        return view('admin.products', compact('barongProducts', 'categories'));
+        $categories = Category::active()->get();`n`n        // Add weekly_sales to the report`n        $salesReport['weekly_sales'] = $weeklySales;`n`n        return view('admin.products', compact('barongProducts', 'categories'));
     }
 
     /**
@@ -106,9 +121,7 @@ class AdminController extends Controller
      */
     public function createBarongProduct()
     {
-        $categories = Category::active()->get();
-        
-        return view('admin.barong-product-form', compact('categories'));
+        $categories = Category::active()->get();`n`n        // Add weekly_sales to the report`n        $salesReport['weekly_sales'] = $weeklySales;`n`n        return view('admin.barong-product-form', compact('categories'));
     }
 
     /**
@@ -271,9 +284,7 @@ class AdminController extends Controller
     public function editBarongProduct($id)
     {
         $barongProduct = BarongProduct::with(['category'])->findOrFail($id);
-        $categories = Category::active()->get();
-        
-        return view('admin.barong-product-form', compact('barongProduct', 'categories'));
+        $categories = Category::active()->get();`n`n        // Add weekly_sales to the report`n        $salesReport['weekly_sales'] = $weeklySales;`n`n        return view('admin.barong-product-form', compact('barongProduct', 'categories'));
     }
 
     /**
@@ -1099,7 +1110,26 @@ class AdminController extends Controller
                 'month' => $monthOrders->first()->ym,
                 'orders_count' => (int) $totalOrders,
                 'revenue' => (float) $totalRevenue,
-            ];
+    $
+
+        // Weekly sales for last 3 months by product
+        $weeklySales = DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('barong_products', 'order_items.product_id', '=', 'barong_products.id')
+            ->select(
+                'barong_products.id as product_id',
+                'barong_products.name as product_name',
+                DB::raw("TO_CHAR(orders.created_at, 'IYYY-\"W\"IW') as week"),
+                DB::raw("DATE_TRUNC('week', orders.created_at)::date as week_start"),
+                DB::raw('SUM(order_items.quantity) as total_quantity'),
+                DB::raw('SUM(order_items.total_price) as total_sales')
+            )
+            ->whereIn('orders.status', ['completed', 'delivered', 'shipped', 'processing'])
+            ->where('orders.created_at', '>=', now()->subMonths(3))
+            ->groupBy('barong_products.id', 'barong_products.name', 'week', 'week_start')
+            ->orderBy('week', 'desc')
+            ->orderBy('total_sales', 'desc')
+            ->get();
         })->sortBy('month')->values();
 
         // Calculate totals including both order types
@@ -1139,7 +1169,26 @@ class AdminController extends Controller
                 ->groupBy('fabric')
                 ->orderByDesc('count')
                 ->get(),
-        ];
+$
+
+        // Weekly sales for last 3 months by product
+        $weeklySales = DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('barong_products', 'order_items.product_id', '=', 'barong_products.id')
+            ->select(
+                'barong_products.id as product_id',
+                'barong_products.name as product_name',
+                DB::raw("TO_CHAR(orders.created_at, 'IYYY-\"W\"IW') as week"),
+                DB::raw("DATE_TRUNC('week', orders.created_at)::date as week_start"),
+                DB::raw('SUM(order_items.quantity) as total_quantity'),
+                DB::raw('SUM(order_items.total_price) as total_sales')
+            )
+            ->whereIn('orders.status', ['completed', 'delivered', 'shipped', 'processing'])
+            ->where('orders.created_at', '>=', now()->subMonths(3))
+            ->groupBy('barong_products.id', 'barong_products.name', 'week', 'week_start')
+            ->orderBy('week', 'desc')
+            ->orderBy('total_sales', 'desc')
+            ->get();
 
         $salesReport = [
             'total_revenue' => $total_revenue,
@@ -1150,9 +1199,26 @@ class AdminController extends Controller
             'best_sellers' => $best_sellers,
             'custom_orders' => $custom_orders,
             'custom_orders_summary' => $custom_orders_summary,
-        ];
+$
 
-        return view('admin.reports', compact('salesReport'));
+        // Weekly sales for last 3 months by product
+        $weeklySales = DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('barong_products', 'order_items.product_id', '=', 'barong_products.id')
+            ->select(
+                'barong_products.id as product_id',
+                'barong_products.name as product_name',
+                DB::raw("TO_CHAR(orders.created_at, 'IYYY-\"W\"IW') as week"),
+                DB::raw("DATE_TRUNC('week', orders.created_at)::date as week_start"),
+                DB::raw('SUM(order_items.quantity) as total_quantity'),
+                DB::raw('SUM(order_items.total_price) as total_sales')
+            )
+            ->whereIn('orders.status', ['completed', 'delivered', 'shipped', 'processing'])
+            ->where('orders.created_at', '>=', now()->subMonths(3))
+            ->groupBy('barong_products.id', 'barong_products.name', 'week', 'week_start')
+            ->orderBy('week', 'desc')
+            ->orderBy('total_sales', 'desc')
+            ->get();`n`n        // Add weekly_sales to the report`n        $salesReport['weekly_sales'] = $weeklySales;`n`n        return view('admin.reports', compact('salesReport'));
     }
 
     /**
@@ -1179,7 +1245,26 @@ class AdminController extends Controller
                     'month' => $row->ym,
                     'orders_count' => (int) $row->orders_count,
                     'revenue' => (float) $row->revenue,
-                ];
+        $
+
+        // Weekly sales for last 3 months by product
+        $weeklySales = DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('barong_products', 'order_items.product_id', '=', 'barong_products.id')
+            ->select(
+                'barong_products.id as product_id',
+                'barong_products.name as product_name',
+                DB::raw("TO_CHAR(orders.created_at, 'IYYY-\"W\"IW') as week"),
+                DB::raw("DATE_TRUNC('week', orders.created_at)::date as week_start"),
+                DB::raw('SUM(order_items.quantity) as total_quantity'),
+                DB::raw('SUM(order_items.total_price) as total_sales')
+            )
+            ->whereIn('orders.status', ['completed', 'delivered', 'shipped', 'processing'])
+            ->where('orders.created_at', '>=', now()->subMonths(3))
+            ->groupBy('barong_products.id', 'barong_products.name', 'week', 'week_start')
+            ->orderBy('week', 'desc')
+            ->orderBy('total_sales', 'desc')
+            ->get();
             });
 
         $total_revenue = (float) Order::whereIn('status', ['completed', 'delivered'])->sum('total_amount');
@@ -1203,9 +1288,26 @@ class AdminController extends Controller
             'average_order_value' => $average_order_value,
             'top_customers' => $top_customers,
             'sales_by_month' => $sales_by_month,
-        ];
+$
 
-        return view('admin.reports-print', compact('salesReport'));
+        // Weekly sales for last 3 months by product
+        $weeklySales = DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('barong_products', 'order_items.product_id', '=', 'barong_products.id')
+            ->select(
+                'barong_products.id as product_id',
+                'barong_products.name as product_name',
+                DB::raw("TO_CHAR(orders.created_at, 'IYYY-\"W\"IW') as week"),
+                DB::raw("DATE_TRUNC('week', orders.created_at)::date as week_start"),
+                DB::raw('SUM(order_items.quantity) as total_quantity'),
+                DB::raw('SUM(order_items.total_price) as total_sales')
+            )
+            ->whereIn('orders.status', ['completed', 'delivered', 'shipped', 'processing'])
+            ->where('orders.created_at', '>=', now()->subMonths(3))
+            ->groupBy('barong_products.id', 'barong_products.name', 'week', 'week_start')
+            ->orderBy('week', 'desc')
+            ->orderBy('total_sales', 'desc')
+            ->get();`n`n        // Add weekly_sales to the report`n        $salesReport['weekly_sales'] = $weeklySales;`n`n        return view('admin.reports-print', compact('salesReport'));
     }
 
     /**
@@ -1269,7 +1371,26 @@ class AdminController extends Controller
         $names = [
             'Classic Barong', 'Modern Barong', 'Heritage Barong', 'Wedding Barong', 'Casual Barong',
             'Handwoven Barong', 'Slim Fit Barong', 'Piña Barong', 'Cocoon Barong', 'Embroidered Barong'
-        ];
+$
+
+        // Weekly sales for last 3 months by product
+        $weeklySales = DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('barong_products', 'order_items.product_id', '=', 'barong_products.id')
+            ->select(
+                'barong_products.id as product_id',
+                'barong_products.name as product_name',
+                DB::raw("TO_CHAR(orders.created_at, 'IYYY-\"W\"IW') as week"),
+                DB::raw("DATE_TRUNC('week', orders.created_at)::date as week_start"),
+                DB::raw('SUM(order_items.quantity) as total_quantity'),
+                DB::raw('SUM(order_items.total_price) as total_sales')
+            )
+            ->whereIn('orders.status', ['completed', 'delivered', 'shipped', 'processing'])
+            ->where('orders.created_at', '>=', now()->subMonths(3))
+            ->groupBy('barong_products.id', 'barong_products.name', 'week', 'week_start')
+            ->orderBy('week', 'desc')
+            ->orderBy('total_sales', 'desc')
+            ->get();
 
         $faker = \Faker\Factory::create();
         $count = 12;
@@ -1407,3 +1528,5 @@ class AdminController extends Controller
         return back()->with('success', 'Password changed successfully!');
     }
 }
+
+
