@@ -25,10 +25,10 @@
                         @foreach($salesReport['weekly_sales'] as $sale)
                         <tr class="hover:bg-gray-50">
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                                Week {{ $sale->week_number }}, {{ date('M Y', strtotime($sale->week_start ?? "2024-01-01")) }}
+                                {{ $sale->week }} @if($sale->week_start ?? false)<span class="text-gray-500 text-xs">({{ \Carbon\Carbon::parse($sale->week_start)->format('M d') }})</span>@endif
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $sale->product_name }}</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ $sale->product_sku }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ $sale->product_sku ?? 'N/A' }}</td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right">{{ $sale->total_quantity }}</td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-green-600 text-right">₱{{ number_format($sale->total_sales, 2) }}</td>
                         </tr>

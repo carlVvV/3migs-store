@@ -1156,7 +1156,7 @@ class AdminController extends Controller
             )
             ->whereIn('orders.status', ['completed', 'delivered', 'shipped', 'processing'])
             ->where('orders.created_at', '>=', now()->subMonths(3))
-            ->groupBy('barong_products.id', 'barong_products.name', 'week', 'week_start')
+            ->groupBy('barong_products.id', 'barong_products.name', 'barong_products.sku', 'week', 'week_start')
             ->orderBy('week', 'desc')
             ->orderBy('total_sales', 'desc')
             ->get();
@@ -1240,7 +1240,7 @@ class AdminController extends Controller
             )
             ->whereIn('orders.status', ['completed', 'delivered', 'shipped', 'processing'])
             ->where('orders.created_at', '>=', now()->subMonths(3))
-            ->groupBy('barong_products.id', 'barong_products.name', 'week', 'week_start')
+            ->groupBy('barong_products.id', 'barong_products.name', 'barong_products.sku', 'week', 'week_start')
             ->orderBy('week', 'desc')
             ->orderBy('total_sales', 'desc')
             ->get();
