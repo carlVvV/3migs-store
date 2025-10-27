@@ -21,21 +21,35 @@
             transform: translateY(-5px);
         }
         .product-card img {
-            height: 160px;
+            height: 120px;
             object-fit: cover;
         }
         .product-card .product-title {
+            font-size: 0.875rem;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
             line-height: 1.25;
-            min-height: 2.5rem;
+            min-height: 2.25rem;
+            margin-bottom: 0.25rem;
         }
         .product-card .product-content {
             flex: 1;
             display: flex;
             flex-direction: column;
+            padding: 0.5rem;
+        }
+        .product-card .product-content .price-container {
+            font-size: 0.875rem;
+        }
+        .product-card .product-content .rating-container {
+            font-size: 0.75rem;
+        }
+        .product-card .product-content button {
+            font-size: 0.75rem;
+            padding: 0.375rem;
+            margin-top: 0.5rem;
         }
         
         /* Carousel Styles */
@@ -151,15 +165,15 @@
                                     <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full object-cover">
                                     <div class="p-3 product-content">
                                         <h3 class="font-semibold text-gray-800 product-title">{{ $product->name }}</h3>
-                                        <div class="flex items-center mt-2">
+                                        <div class="flex items-center mt-1 price-container">
                     @if($product->is_on_sale)
                                             <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
-                                            <span class="text-gray-500 text-sm line-through ml-2">₱{{ number_format($product->base_price, 0) }}</span>
+                                            <span class="text-gray-500 text-xs line-through ml-2">₱{{ number_format($product->base_price, 0) }}</span>
                                             @else
                                             <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
                                             @endif
                                         </div>
-                                        <div class="flex items-center text-sm text-gray-600 mt-1">
+                                        <div class="flex items-center text-xs text-gray-600 mt-1 rating-container">
                                             @for($i = 0; $i < floor($product->average_rating); $i++)
                                                 <i class="fas fa-star text-yellow-400"></i>
                                             @endfor
@@ -255,15 +269,15 @@
                             <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full object-cover">
                             <div class="p-3 product-content">
                                 <h3 class="font-semibold text-gray-800 product-title">{{ $product->name }}</h3>
-                        <div class="flex items-center mt-2">
+                        <div class="flex items-center mt-1 price-container">
                             @if($product->is_on_sale)
                             <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
-                            <span class="text-gray-500 text-sm line-through ml-2">₱{{ number_format($product->base_price, 0) }}</span>
+                            <span class="text-gray-500 text-xs line-through ml-2">₱{{ number_format($product->base_price, 0) }}</span>
                             @else
                             <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
                             @endif
                         </div>
-                        <div class="flex items-center text-sm text-gray-600 mt-1">
+                        <div class="flex items-center text-xs text-gray-600 mt-1 rating-container">
                             @for($i = 0; $i < floor($product->average_rating); $i++)
                                 <i class="fas fa-star text-yellow-400"></i>
                             @endfor
@@ -359,15 +373,15 @@
                             <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full object-cover">
                             <div class="p-3 product-content">
                                 <h3 class="font-semibold text-gray-800 product-title">{{ $product->name }}</h3>
-                                <div class="flex items-center mt-2">
+                                <div class="flex items-center mt-1 price-container">
                                     @if($product->is_on_sale)
                                     <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
-                                    <span class="text-gray-500 text-sm line-through ml-2">₱{{ number_format($product->base_price, 0) }}</span>
+                                    <span class="text-gray-500 text-xs line-through ml-2">₱{{ number_format($product->base_price, 0) }}</span>
                                     @else
                                     <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
                                     @endif
                                 </div>
-                                <div class="flex items-center justify-between text-sm text-gray-600 mt-1">
+                                <div class="flex items-center justify-between text-xs text-gray-600 mt-1 rating-container">
                                     <div class="flex items-center">
                                         @for($i = 0; $i < floor($product->average_rating); $i++)
                                             <i class="fas fa-star text-yellow-400"></i>
