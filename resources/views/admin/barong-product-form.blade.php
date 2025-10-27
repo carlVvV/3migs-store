@@ -459,6 +459,90 @@ function exposeStockCalculator() {
             }
         };
     }
+    
+    // Handle stock type changes
+    if (typeof window.handleStockTypeChange !== 'function') {
+        window.handleStockTypeChange = function handleStockTypeChange() {
+            const stockType = document.querySelector('input[name="stock_type"]:checked')?.value || 'size';
+            const sizeSection = document.getElementById('size-stock-section');
+            const colorSection = document.getElementById('color-stock-section');
+            
+            // Hide all sections
+            if (sizeSection) sizeSection.classList.add('hidden');
+            if (colorSection) colorSection.classList.add('hidden');
+            
+            // Show selected section
+            if (stockType === 'size' && sizeSection) {
+                sizeSection.classList.remove('hidden');
+                calculateTotalStock(); // Calculate when switching to size view
+            } else if (stockType === 'color' && colorSection) {
+                colorSection.classList.remove('hidden');
+                calculateColorTotalStock(); // Calculate when switching to color view
+            }
+        };
+        
+        // Initialize calculation on page load
+        const currentStockType = document.querySelector('input[name="stock_type"]:checked')?.value;
+        if (currentStockType === 'size') {
+            calculateTotalStock();
+        } else if (currentStockType === 'color') {
+            calculateColorTotalStock();
+        }
+    }
+    
+    // Handle color checkbox toggle
+    if (typeof window.toggleColorSizes !== 'function') {
+        window.toggleColorSizes = function toggleColorSizes(color) {
+            const colorLower = color.toLowerCase();
+            const sizesDiv = document.getElementById(`color-${colorLower}-sizes`);
+            const checkbox = event.target;
+            
+            if (sizesDiv) {
+                if (checkbox.checked) {
+                    sizesDiv.classList.remove('hidden');
+                } else {
+                    sizesDiv.classList.add('hidden');
+                    // Clear all inputs for this color
+                    const inputs = sizesDiv.querySelectorAll('input[type="number"]');
+                    inputs.forEach(input => input.value = '0');
+                    // Recalculate total
+                    calculateColorTotalStock();
+                }
+            }
+            // Recalculate total after showing/hiding
+            calculateColorTotalStock();
+        };
+    }
+    
+    // Calculate total for color stocks
+    if (typeof window.calculateColorTotalStock !== 'function') {
+        window.calculateColorTotalStock = function calculateColorTotalStock() {
+            try {
+                const allColorInputs = document.querySelectorAll('.color-stock-input');
+                let total = 0;
+                
+                allColorInputs.forEach(input => {
+                    const value = parseInt(input.value, 10);
+                    if (!isNaN(value)) {
+                        total += value;
+                    }
+                });
+                
+                const display = document.getElementById('total-color-stock-display');
+                if (display) {
+                    display.textContent = String(total);
+                }
+                
+                // Also update the hidden stock field
+                const hiddenInput = document.getElementById('simple_stock');
+                if (hiddenInput) {
+                    hiddenInput.value = String(total);
+                }
+            } catch (err) {
+                console.error('Color stock calculation failed:', err);
+            }
+        };
+    }
 }
 
 // Functions used by existing image items in edit mode

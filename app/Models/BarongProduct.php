@@ -29,9 +29,11 @@ class BarongProduct extends Model
         'special_price',
         'stock',
         'size_stocks',
+        'color_stocks',
         'variations',
         'is_available',
         'is_featured',
+        'is_new_arrival',
         'has_variations',
         'sku',
         'sort_order',
@@ -48,11 +50,13 @@ class BarongProduct extends Model
         'collar_type' => 'array',
         'design_details' => 'array',
         'size_stocks' => 'array',
+        'color_stocks' => 'array',
         'variations' => 'array',
         'base_price' => 'decimal:2',
         'special_price' => 'decimal:2',
         'is_available' => 'boolean',
         'is_featured' => 'boolean',
+        'is_new_arrival' => 'boolean',
         'has_variations' => 'boolean',
         'last_sale_at' => 'datetime',
     ];
@@ -298,6 +302,19 @@ class BarongProduct extends Model
      */
     public function getTotalStock(): int
     {
+        // Prefer color_stocks when present (size + color specific)
+        if (!empty($this->color_stocks) && is_array($this->color_stocks)) {
+            $totalStock = 0;
+            foreach ($this->color_stocks as $size => $colors) {
+                if (is_array($colors)) {
+                    foreach ($colors as $color => $qty) {
+                        $totalStock += intval($qty);
+                    }
+                }
+            }
+            return (int) $totalStock;
+        }
+        
         // Prefer size-based stocks when present
         if (!empty($this->size_stocks) && is_array($this->size_stocks)) {
             $sizeTotal = array_sum(array_map('intval', $this->size_stocks));
@@ -313,6 +330,93 @@ class BarongProduct extends Model
 
         // Fallback to simple stock column
         return (int) ($this->stock ?? 0);
+    }
+
+    /**
+     * Get available colors and sizes from color_stocks
+     */
+    public function getAvailableColorsAndSizes(): array
+    {
+        if (empty($this->color_stocks) || !is_array($this->color_stocks)) {
+            return [
+                'colors' => [],
+                'sizes' => [],
+                'color_stocks' => []
+            ];
+        }
+
+        $sizes = [];
+        $colors = [];
+        $colorStocks = $this->color_stocks;
+
+        foreach ($colorStocks as $size => $colorData) {
+            if (!in_array($size, $sizes)) {
+                $sizes[] = $size;
+            }
+            
+            if (is_array($colorData)) {
+                foreach ($colorData as $color => $qty) {
+                    if (intval($qty) > 0 && !in_array($color, $colors)) {
+                        $colors[] = $color;
+                    }
+                }
+            }
+        }
+
+        return [
+            'colors' => $colors,
+            'sizes' => $sizes,
+            'color_stocks' => $colorStocks
+        ];
+    }
+
+    /**
+     * Get available colors for a specific size
+     */
+    public function getAvailableColorsForSize(string $size): array
+    {
+        if (empty($this->color_stocks) || !is_array($this->color_stocks)) {
+            return [];
+        }
+
+        $colors = [];
+        if (isset($this->color_stocks[$size]) && is_array($this->color_stocks[$size])) {
+            foreach ($this->color_stocks[$size] as $color => $qty) {
+                if (intval($qty) > 0) {
+                    $colors[] = $color;
+                }
+            }
+        }
+
+        return $colors;
+    }
+
+    /**
+     * Get available sizes
+     */
+    public function getAvailableSizes(): array
+    {
+        if (empty($this->color_stocks) || !is_array($this->color_stocks)) {
+            return [];
+        }
+
+        return array_keys($this->color_stocks);
+    }
+
+    /**
+     * Get stock quantity for a specific size and color
+     */
+    public function getStockForSizeAndColor(string $size, string $color): int
+    {
+        if (empty($this->color_stocks) || !is_array($this->color_stocks)) {
+            return 0;
+        }
+
+        if (isset($this->color_stocks[$size][$color])) {
+            return intval($this->color_stocks[$size][$color]);
+        }
+
+        return 0;
     }
 
     /**
@@ -452,7 +556,26 @@ class BarongProduct extends Model
      */
     public static function getOutOfStockProducts()
     {
-        return static::where('is_available', false)->get();
+        // First, get products where stock = 0 (simple stock)
+        $outOfStockProducts = static::where('stock', 0)->get();
+        
+        // Also check products with size_stocks or variations
+        $productsWithComplexStock = static::where(function($query) {
+            $query->whereNotNull('size_stocks')
+                  ->orWhere(function($q) {
+                      $q->where('has_variations', true)
+                        ->whereNotNull('variations');
+                  });
+        })->get();
+        
+        // Filter complex stock products to find those with zero total stock
+        foreach ($productsWithComplexStock as $product) {
+            if ($product->getTotalStock() == 0) {
+                $outOfStockProducts->push($product);
+            }
+        }
+        
+        return $outOfStockProducts;
     }
 
     /**

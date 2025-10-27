@@ -137,6 +137,50 @@
                         @endif
                     </div>
                     
+                    <!-- Size and Color Selection -->
+                    @php
+                        $availableData = $product->getAvailableColorsAndSizes();
+                        $availableSizes = $availableData['sizes'] ?? [];
+                        $availableColors = $availableData['colors'] ?? [];
+                        $colorStocks = $availableData['color_stocks'] ?? [];
+                    @endphp
+                    
+                    @if(!empty($availableSizes))
+                    <div class="mb-6 space-y-4">
+                        <!-- Size Selection -->
+                        @if(!empty($availableSizes))
+                        <div>
+                            <label class="text-lg font-semibold text-gray-900 mb-2 block">Size</label>
+                            <div class="flex flex-wrap gap-2" id="size-options">
+                                @foreach($availableSizes as $size)
+                                    <button type="button" 
+                                            class="size-option px-4 py-2 border-2 border-gray-300 rounded-lg transition-all hover:border-blue-500 {{ $loop->first ? 'selected border-blue-600 bg-blue-50' : '' }}"
+                                            data-size="{{ $size }}"
+                                            onclick="selectSize('{{ $size }}')">
+                                        {{ $size }}
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+                        
+                        <!-- Color Selection -->
+                        @if(!empty($availableColors))
+                        <div id="color-section">
+                            <label class="text-lg font-semibold text-gray-900 mb-2 block">Color</label>
+                            <div class="flex flex-wrap gap-2" id="color-options">
+                                <!-- Colors will be dynamically updated based on selected size -->
+                            </div>
+                        </div>
+                        @endif
+                        
+                        <!-- Stock Status -->
+                        <div id="size-color-stock-info" class="text-sm text-gray-600">
+                            <p id="stock-display">Select size and color to see availability</p>
+                        </div>
+                    </div>
+                    @endif
+                    
                     <!-- Quantity and Actions -->
                     @if($product->in_stock)
                     <div class="space-y-4">
@@ -156,7 +200,7 @@
                         
                         <!-- Action Buttons -->
                         <div class="flex space-x-4">
-                            <button onclick="addToCart({{ $product->id }})" class="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-6 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105">
+                            <button onclick="addToCartWithOptions({{ $product->id }})" class="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-6 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105">
                                 <i class="fas fa-shopping-cart mr-2"></i>
                                 Add to Cart
                             </button>
@@ -306,6 +350,80 @@
 </div>
 
 <script>
+// Size and Color Selection
+const colorStocksData = @json($colorStocks);
+let selectedSize = '';
+let selectedColor = '';
+
+function selectSize(size) {
+    selectedSize = size;
+    document.querySelectorAll('.size-option').forEach(btn => {
+        btn.classList.remove('selected', 'border-blue-600', 'bg-blue-50');
+        btn.classList.add('border-gray-300');
+    });
+    event.target.classList.add('selected', 'border-blue-600', 'bg-blue-50');
+    event.target.classList.remove('border-gray-300');
+    updateColorsForSize(size);
+}
+
+function updateColorsForSize(size) {
+    const colorContainer = document.getElementById('color-options');
+    if (!colorStocksData[size]) {
+        colorContainer.innerHTML = '<p class="text-gray-500 text-sm">No colors available</p>';
+        return;
+    }
+    colorContainer.innerHTML = '';
+    Object.keys(colorStocksData[size]).forEach(color => {
+        const qty = colorStocksData[size][color];
+        if (qty > 0) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'color-option px-4 py-2 border-2 border-gray-300 rounded-lg transition-all hover:border-blue-500';
+            btn.textContent = color;
+            btn.dataset.color = color;
+            btn.onclick = function() { selectColor(color); };
+            if (selectedColor === color) {
+                btn.classList.add('selected', 'border-blue-600', 'bg-blue-50');
+            }
+            colorContainer.appendChild(btn);
+        }
+    });
+    if (colorContainer.children.length > 0 && !selectedColor) {
+        selectColor(Object.keys(colorStocksData[size])[0]);
+    }
+}
+
+function selectColor(color) {
+    selectedColor = color;
+    document.querySelectorAll('.color-option').forEach(btn => {
+        btn.classList.remove('selected', 'border-blue-600', 'bg-blue-50');
+        btn.classList.add('border-gray-300');
+    });
+    event.target.classList.add('selected', 'border-blue-600', 'bg-blue-50');
+    event.target.classList.remove('border-gray-300');
+    updateStockDisplay();
+}
+
+function updateStockDisplay() {
+    const stockDisplay = document.getElementById('stock-display');
+    if (selectedSize && selectedColor && colorStocksData[selectedSize] && colorStocksData[selectedSize][selectedColor]) {
+        const qty = colorStocksData[selectedSize][selectedColor];
+        stockDisplay.innerHTML = `<i class="fas fa-check-circle text-green-600"></i> In Stock (${qty} available)`;
+        const quantityInput = document.getElementById('quantity');
+        if (quantityInput) quantityInput.setAttribute('max', qty);
+    } else {
+        stockDisplay.innerHTML = '<i class="fas fa-times-circle text-red-600"></i> Out of Stock';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const firstSizeBtn = document.querySelector('.size-option.selected');
+    if (firstSizeBtn) {
+        const firstSize = firstSizeBtn.dataset.size;
+        if (firstSize) updateColorsForSize(firstSize);
+    }
+});
+
 function changeMainImage(imageSrc, element) {
     // Update main image
     document.getElementById('main-image').src = imageSrc;
@@ -338,6 +456,11 @@ function decreaseQuantity() {
 
 function addToCart(productId) {
     const quantity = parseInt(document.getElementById('quantity').value);
+    const data = { product_id: productId, quantity: quantity };
+    
+    // Add size and color if selected
+    if (selectedSize) data.size = selectedSize;
+    if (selectedColor) data.color = selectedColor;
     
     fetch('/api/v1/cart/add', {
         method: 'POST',
@@ -345,10 +468,7 @@ function addToCart(productId) {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         },
-        body: JSON.stringify({
-            product_id: productId,
-            quantity: quantity
-        })
+        body: JSON.stringify(data)
     })
     .then(response => response.json())
     .then(data => {
@@ -356,7 +476,7 @@ function addToCart(productId) {
             showNotification('Product added to cart successfully!', 'success');
             updateCartCount();
         } else {
-            showNotification('Failed to add product to cart', 'error');
+            showNotification(data.message || 'Failed to add product to cart', 'error');
         }
     })
     .catch(error => {
@@ -529,6 +649,11 @@ function decreaseQuantity() {
 
 function addToCart(productId) {
     const quantity = parseInt(document.getElementById('quantity').value);
+    const data = { product_id: productId, quantity: quantity };
+    
+    // Add size and color if selected
+    if (selectedSize) data.size = selectedSize;
+    if (selectedColor) data.color = selectedColor;
     
     fetch('/api/v1/cart/add', {
         method: 'POST',
@@ -536,10 +661,7 @@ function addToCart(productId) {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         },
-        body: JSON.stringify({
-            product_id: productId,
-            quantity: quantity
-        })
+        body: JSON.stringify(data)
     })
     .then(response => response.json())
     .then(data => {
@@ -547,7 +669,7 @@ function addToCart(productId) {
             showNotification('Product added to cart successfully!', 'success');
             updateCartCount();
         } else {
-            showNotification('Failed to add product to cart', 'error');
+            showNotification(data.message || 'Failed to add product to cart', 'error');
         }
     })
     .catch(error => {

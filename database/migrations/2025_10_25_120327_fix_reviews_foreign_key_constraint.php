@@ -34,14 +34,3 @@ return new class extends Migration
         });
     }
 };
-    public function down(): void
-    {
-        Schema::table('reviews', function (Blueprint $table) {
-            // Drop the correct foreign key constraint
-            $table->dropForeign(['product_id']);
-            
-            // Add back the original foreign key constraint
-            $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
-        });
-    }
-};
