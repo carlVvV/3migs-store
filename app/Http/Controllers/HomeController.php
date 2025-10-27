@@ -13,21 +13,19 @@ class HomeController extends Controller
      */
     public function index()
     {
-        // Get all available products without accessors to avoid timeout
-        $allProducts = BarongProduct::select('id', 'name', 'slug', 'cover_image', 'base_price', 'special_price', 'is_available', 'is_featured', 'created_at', 'average_rating', 'review_count', 'monthly_sales', 'variations', 'size_stocks', 'stock')
-            ->where('is_available', true)
+        // Get all available products
+        $allProducts = BarongProduct::where('is_available', true)
             ->orderBy('created_at', 'desc')
             ->get();
 
         // Get featured barong products
-        $featuredProducts = BarongProduct::select('id', 'name', 'slug', 'cover_image', 'base_price', 'special_price', 'is_available', 'is_featured', 'created_at', 'average_rating', 'review_count', 'monthly_sales', 'variations', 'size_stocks', 'stock')
-            ->where('is_featured', true)
+        $featuredProducts = BarongProduct::where('is_featured', true)
             ->where('is_available', true)
             ->limit(8)
             ->get();
 
         // Get new arrivals
-        $newArrivals = BarongProduct::select('id', 'name', 'slug', 'cover_image', 'base_price', 'special_price', 'is_available', 'is_featured', 'created_at', 'average_rating', 'review_count', 'monthly_sales', 'variations', 'size_stocks', 'stock')
+        $newArrivals = BarongProduct::where('is_new_arrival', true)
             ->where('is_available', true)
             ->orderBy('created_at', 'desc')
             ->limit(8)

@@ -544,10 +544,11 @@ class BarongProduct extends Model
      */
     public static function getLowStockProducts($threshold = 5)
     {
+        // Get all available products and check their total stock
         return static::where('is_available', true)
             ->get()
             ->filter(function($product) use ($threshold) {
-                return $product->getTotalStock() <= $threshold;
+                return $product->getTotalStock() > 0 && $product->getTotalStock() <= $threshold;
             });
     }
 
@@ -556,26 +557,13 @@ class BarongProduct extends Model
      */
     public static function getOutOfStockProducts()
     {
-        // First, get products where stock = 0 (simple stock)
-        $outOfStockProducts = static::where('stock', 0)->get();
+        // Get all products to check their total stock (including color_stocks, size_stocks, variations)
+        $allProducts = static::all();
         
-        // Also check products with size_stocks or variations
-        $productsWithComplexStock = static::where(function($query) {
-            $query->whereNotNull('size_stocks')
-                  ->orWhere(function($q) {
-                      $q->where('has_variations', true)
-                        ->whereNotNull('variations');
-                  });
-        })->get();
-        
-        // Filter complex stock products to find those with zero total stock
-        foreach ($productsWithComplexStock as $product) {
-            if ($product->getTotalStock() == 0) {
-                $outOfStockProducts->push($product);
-            }
-        }
-        
-        return $outOfStockProducts;
+        // Filter products where total stock is zero
+        return $allProducts->filter(function($product) {
+            return $product->getTotalStock() == 0;
+        });
     }
 
     /**

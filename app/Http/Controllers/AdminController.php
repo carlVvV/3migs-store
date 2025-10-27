@@ -421,10 +421,38 @@ class AdminController extends Controller
             // Set defaults
             $productData['is_available'] = $request->boolean('is_available', true);
             $productData['is_featured'] = $request->boolean('is_featured', false);
+            $productData['is_new_arrival'] = $request->boolean('is_new_arrival', false);
             
-            // Calculate total stock from size stocks
-            if (isset($productData['size_stocks']) && is_array($productData['size_stocks'])) {
-                // Normalize to integers before summing
+            // Handle color_stocks if provided
+            if ($request->has('color_stocks') && is_array($request->input('color_stocks'))) {
+                $colorStocks = [];
+                foreach ($request->input('color_stocks') as $size => $colors) {
+                    if (is_array($colors)) {
+                        foreach ($colors as $color => $qty) {
+                            if ($qty > 0) {
+                                $colorStocks[$size][$color] = intval($qty);
+                            }
+                        }
+                    }
+                }
+                $productData['color_stocks'] = $colorStocks;
+                
+                // Calculate total stock from color_stocks
+                $totalFromColors = 0;
+                foreach ($colorStocks as $size => $colors) {
+                    if (is_array($colors)) {
+                        foreach ($colors as $color => $qty) {
+                            $totalFromColors += intval($qty);
+                        }
+                    }
+                }
+                $productData['stock'] = $totalFromColors;
+                Log::info('Total stock calculated from color stocks (update):', [
+                    'color_stocks' => $colorStocks,
+                    'total_stock' => $productData['stock']
+                ]);
+            } elseif (isset($productData['size_stocks']) && is_array($productData['size_stocks'])) {
+                // Calculate total stock from size stocks
                 $normalized = array_map('intval', $productData['size_stocks']);
                 $productData['size_stocks'] = $normalized;
                 $productData['stock'] = array_sum($normalized);
@@ -924,12 +952,21 @@ class AdminController extends Controller
 
         $products = $query->orderBy('created_at', 'desc')->paginate(20);
 
-        // Get recent low stock notifications
+        // Get recent low stock notifications and update with current stock
         $recentNotifications = \App\Models\LowStockNotification::unresolved()
             ->recent(7)
             ->with('product')
             ->orderBy('notified_at', 'desc')
-            ->get();
+            ->get()
+            ->map(function ($notification) {
+                // Update notification with current product stock if product exists
+                if ($notification->product) {
+                    $currentStock = $notification->product->getTotalStock();
+                    // Update the notification's current_stock attribute
+                    $notification->current_stock = $currentStock;
+                }
+                return $notification;
+            });
 
         return view('admin.inventory', compact(
             'lowStockProducts', 
@@ -942,20 +979,46 @@ class AdminController extends Controller
     /**
      * Mark low stock notification as resolved
      */
-    public function resolveNotification($id)
+    public function resolveNotification(Request $request, $id)
     {
         try {
-            $notification = \App\Models\LowStockNotification::findOrFail($id);
+            $notification = \App\Models\LowStockNotification::with('product')->findOrFail($id);
+            
+            // Check if force flag is set
+            $force = $request->input('force', false);
+            
+            // Get current stock from the product
+            $product = $notification->product;
+            if ($product) {
+                $currentStock = $product->getTotalStock();
+                
+                // Update notification with current stock
+                $notification->current_stock = $currentStock;
+                
+                // If stock is still low and not forcing, warn the admin
+                if ($currentStock <= 5 && !$force) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Stock is still low. Current stock: ' . $currentStock,
+                        'current_stock' => $currentStock,
+                        'needs_confirmation' => true,
+                        'product_name' => $product->name
+                    ]);
+                }
+            }
+            
+            // Mark as resolved
             $notification->markAsResolved();
             
             return response()->json([
                 'success' => true,
-                'message' => 'Notification marked as resolved'
+                'message' => 'Notification marked as resolved',
+                'current_stock' => $currentStock ?? $notification->current_stock
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to resolve notification'
+                'message' => 'Failed to resolve notification: ' . $e->getMessage()
             ], 500);
         }
     }

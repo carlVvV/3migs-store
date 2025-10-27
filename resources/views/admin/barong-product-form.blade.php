@@ -76,6 +76,91 @@
 <script>
 // Essential JavaScript functionality for product form
 
+// Define stock-related functions globally so inline handlers can access them
+window.calculateTotalStock = function() {
+    try {
+        const inputs = document.querySelectorAll('.size-stock-input');
+        let total = 0;
+        inputs.forEach(inp => {
+            const val = parseInt(inp.value, 10);
+            if (!isNaN(val)) total += val;
+        });
+        const display = document.getElementById('total-stock-display');
+        const hidden = document.getElementById('total-stock-input');
+        if (display) display.textContent = String(total);
+        if (hidden) hidden.value = String(total);
+    } catch (err) {
+        console.error('Stock calculation failed:', err);
+    }
+};
+
+window.calculateColorTotalStock = function() {
+    try {
+        const allColorInputs = document.querySelectorAll('.color-stock-input');
+        let total = 0;
+        
+        allColorInputs.forEach(input => {
+            const value = parseInt(input.value, 10);
+            if (!isNaN(value)) {
+                total += value;
+            }
+        });
+        
+        const display = document.getElementById('total-color-stock-display');
+        if (display) {
+            display.textContent = String(total);
+        }
+        
+        // Also update the hidden stock field
+        const hiddenInput = document.getElementById('simple_stock');
+        if (hiddenInput) {
+            hiddenInput.value = String(total);
+        }
+    } catch (err) {
+        console.error('Color stock calculation failed:', err);
+    }
+};
+
+window.toggleColorSizes = function(color) {
+    const colorLower = color.toLowerCase();
+    const sizesDiv = document.getElementById(`color-${colorLower}-sizes`);
+    const checkbox = event.target;
+    
+    if (sizesDiv) {
+        if (checkbox.checked) {
+            sizesDiv.classList.remove('hidden');
+        } else {
+            sizesDiv.classList.add('hidden');
+            // Clear all inputs for this color
+            const inputs = sizesDiv.querySelectorAll('input[type="number"]');
+            inputs.forEach(input => input.value = '0');
+            // Recalculate total
+            calculateColorTotalStock();
+        }
+    }
+    // Recalculate total after showing/hiding
+    calculateColorTotalStock();
+};
+
+window.handleStockTypeChange = function() {
+    const stockType = document.querySelector('input[name="stock_type"]:checked')?.value || 'size';
+    const sizeSection = document.getElementById('size-stock-section');
+    const colorSection = document.getElementById('color-stock-section');
+    
+    // Hide all sections
+    if (sizeSection) sizeSection.classList.add('hidden');
+    if (colorSection) colorSection.classList.add('hidden');
+    
+    // Show selected section
+    if (stockType === 'size' && sizeSection) {
+        sizeSection.classList.remove('hidden');
+        calculateTotalStock();
+    } else if (stockType === 'color' && colorSection) {
+        colorSection.classList.remove('hidden');
+        calculateColorTotalStock();
+    }
+};
+
 // Notification system
 function showSuccess(title, message, duration = 5000) {
     showNotification('success', title, message, duration);
@@ -249,8 +334,7 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
         initializeAttributesModal();
         initializeImageUpload();
-        // Stock calculator may be referenced via inline handlers in the stock inputs
-        exposeStockCalculator();
+        // Stock calculation functions are already defined globally at the top of the script
     } catch (e) {
         console.warn('Initialization warning:', e);
         try { showError('Initialization Warning', (e && e.message) ? e.message : 'Unknown error during setup'); } catch(_) {}
@@ -438,112 +522,15 @@ function initializeImageUpload() {
     updateCounter();
 }
 
-// =============== Stock Calculation (exposed for inline oninput) ===============
-function exposeStockCalculator() {
-    // Define and expose calculateTotalStock to window so inline events can find it
-    if (typeof window.calculateTotalStock !== 'function') {
-        window.calculateTotalStock = function calculateTotalStock() {
-            try {
-                const inputs = document.querySelectorAll('.size-stock-input');
-                let total = 0;
-                inputs.forEach(inp => {
-                    const val = parseInt(inp.value, 10);
-                    if (!isNaN(val)) total += val;
-                });
-                const display = document.getElementById('total-stock-display');
-                const hidden = document.getElementById('total-stock-input');
-                if (display) display.textContent = String(total);
-                if (hidden) hidden.value = String(total);
-            } catch (err) {
-                console.error('Stock calculation failed:', err);
-            }
-        };
+// Initialize stock calculation on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const currentStockType = document.querySelector('input[name="stock_type"]:checked')?.value;
+    if (currentStockType === 'size') {
+        calculateTotalStock();
+    } else if (currentStockType === 'color') {
+        calculateColorTotalStock();
     }
-    
-    // Handle stock type changes
-    if (typeof window.handleStockTypeChange !== 'function') {
-        window.handleStockTypeChange = function handleStockTypeChange() {
-            const stockType = document.querySelector('input[name="stock_type"]:checked')?.value || 'size';
-            const sizeSection = document.getElementById('size-stock-section');
-            const colorSection = document.getElementById('color-stock-section');
-            
-            // Hide all sections
-            if (sizeSection) sizeSection.classList.add('hidden');
-            if (colorSection) colorSection.classList.add('hidden');
-            
-            // Show selected section
-            if (stockType === 'size' && sizeSection) {
-                sizeSection.classList.remove('hidden');
-                calculateTotalStock(); // Calculate when switching to size view
-            } else if (stockType === 'color' && colorSection) {
-                colorSection.classList.remove('hidden');
-                calculateColorTotalStock(); // Calculate when switching to color view
-            }
-        };
-        
-        // Initialize calculation on page load
-        const currentStockType = document.querySelector('input[name="stock_type"]:checked')?.value;
-        if (currentStockType === 'size') {
-            calculateTotalStock();
-        } else if (currentStockType === 'color') {
-            calculateColorTotalStock();
-        }
-    }
-    
-    // Handle color checkbox toggle
-    if (typeof window.toggleColorSizes !== 'function') {
-        window.toggleColorSizes = function toggleColorSizes(color) {
-            const colorLower = color.toLowerCase();
-            const sizesDiv = document.getElementById(`color-${colorLower}-sizes`);
-            const checkbox = event.target;
-            
-            if (sizesDiv) {
-                if (checkbox.checked) {
-                    sizesDiv.classList.remove('hidden');
-                } else {
-                    sizesDiv.classList.add('hidden');
-                    // Clear all inputs for this color
-                    const inputs = sizesDiv.querySelectorAll('input[type="number"]');
-                    inputs.forEach(input => input.value = '0');
-                    // Recalculate total
-                    calculateColorTotalStock();
-                }
-            }
-            // Recalculate total after showing/hiding
-            calculateColorTotalStock();
-        };
-    }
-    
-    // Calculate total for color stocks
-    if (typeof window.calculateColorTotalStock !== 'function') {
-        window.calculateColorTotalStock = function calculateColorTotalStock() {
-            try {
-                const allColorInputs = document.querySelectorAll('.color-stock-input');
-                let total = 0;
-                
-                allColorInputs.forEach(input => {
-                    const value = parseInt(input.value, 10);
-                    if (!isNaN(value)) {
-                        total += value;
-                    }
-                });
-                
-                const display = document.getElementById('total-color-stock-display');
-                if (display) {
-                    display.textContent = String(total);
-                }
-                
-                // Also update the hidden stock field
-                const hiddenInput = document.getElementById('simple_stock');
-                if (hiddenInput) {
-                    hiddenInput.value = String(total);
-                }
-            } catch (err) {
-                console.error('Color stock calculation failed:', err);
-            }
-        };
-    }
-}
+});
 
 // Functions used by existing image items in edit mode
 function setCoverImage(targetOrIndex) {
