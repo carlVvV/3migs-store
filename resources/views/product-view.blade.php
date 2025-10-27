@@ -100,18 +100,24 @@
                 </div>
                 
                 <!-- Colors -->
+                @php
+                    $availableData = $product->getAvailableColorsAndSizes();
+                    $availableColors = $availableData['colors'] ?? [];
+                    $colorStocksData = $availableData['color_stocks'] ?? [];
+                @endphp
                 <div class="mb-6">
                     <h3 class="text-lg font-medium text-gray-900 mb-3">Colours:</h3>
                     <select id="colorSelect" class="w-48 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm">
-                        @if($product->colors && count($product->colors) > 0)
+                        @if(count($availableColors) > 0)
+                            @foreach($availableColors as $index => $color)
+                                <option value="{{ $color }}" {{ $index == 0 ? 'selected' : '' }}>{{ ucfirst($color) }}</option>
+                            @endforeach
+                        @elseif($product->colors && count($product->colors) > 0)
                             @foreach($product->colors as $index => $color)
                                 <option value="{{ $color }}" {{ $index == 0 ? 'selected' : '' }}>{{ ucfirst($color) }}</option>
                             @endforeach
                         @else
-                            <option value="black" selected>Black</option>
-                            <option value="red">Red</option>
-                            <option value="yellow">Yellow</option>
-                            <option value="gray">Gray</option>
+                            <option value="white" selected>White</option>
                         @endif
                     </select>
                 </div>
@@ -128,23 +134,39 @@
                     </div>
                     @php
                         $sizes = ['S', 'M', 'L', 'XL', 'XXL'];
-                        $rawStocks = $product->size_stocks ?? [];
                         $sizeStocks = [];
                         
-                        // Debug: Log the raw stocks
-                        \Log::info('Product size stocks debug', [
-                            'product_id' => $product->id,
-                            'raw_stocks' => $rawStocks,
-                            'is_array' => is_array($rawStocks),
-                            'count' => is_array($rawStocks) ? count($rawStocks) : 'N/A'
-                        ]);
+                        // Get available data
+                        $availableData = $product->getAvailableColorsAndSizes();
+                        $availableSizes = $availableData['sizes'] ?? [];
+                        $colorStocks = $availableData['color_stocks'] ?? [];
                         
-                        // If size stocks exist, use them; otherwise mirror simple stock across sizes so UI still renders
-                        if (is_array($rawStocks) && count($rawStocks) > 0) {
-                            foreach ($sizes as $s) { $sizeStocks[$s] = intval($rawStocks[$s] ?? 0); }
+                        // Calculate stock per size from color_stocks
+                        if (!empty($colorStocks) && is_array($colorStocks)) {
+                            foreach ($sizes as $s) {
+                                $stock = 0;
+                                if (isset($colorStocks[$s])) {
+                                    if (is_array($colorStocks[$s])) {
+                                        // Sum all color quantities for this size
+                                        foreach ($colorStocks[$s] as $color => $qty) {
+                                            $stock += intval($qty);
+                                        }
+                                    } else {
+                                        // Numeric value (size-based stock)
+                                        $stock = intval($colorStocks[$s]);
+                                    }
+                                }
+                                $sizeStocks[$s] = $stock;
+                            }
                         } else {
-                            $simple = (int) ($product->total_stock ?? $product->stock ?? 0);
-                            foreach ($sizes as $s) { $sizeStocks[$s] = $simple; }
+                            // Fallback to size_stocks or simple stock
+                            $rawStocks = $product->size_stocks ?? [];
+                            if (is_array($rawStocks) && count($rawStocks) > 0) {
+                                foreach ($sizes as $s) { $sizeStocks[$s] = intval($rawStocks[$s] ?? 0); }
+                            } else {
+                                $simple = (int) ($product->total_stock ?? $product->stock ?? 0);
+                                foreach ($sizes as $s) { $sizeStocks[$s] = $simple; }
+                            }
                         }
 
                         // Determine availability and default selection
