@@ -9,7 +9,17 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .hero-gradient {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+        }
+        /* Product Container Styling */
+        .product-container {
+            width: 100%;
+            max-width: none;
+        }
+        @media (min-width: 1024px) {
+            .product-container {
+                max-width: calc(100% - 16rem); /* 16rem = 256px (categories width) */
+            }
         }
         .product-card {
             transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -108,11 +118,11 @@
     <div class="container mx-auto px-4 py-6">
         <div class="flex flex-col lg:flex-row gap-6">
             <!-- Left Sidebar Navigation -->
-            <aside class="w-full lg:w-1/4">
+            <aside class="w-full lg:w-64">
                 @include('layouts.categories-sidebar', ['categories' => $categories])
             </aside>
 
-            <div class="flex-1">
+            <div class="flex-1 product-container">
                 <!-- Hero Section -->
                 <section class="hero-gradient rounded-lg p-8 mb-8 text-white relative overflow-hidden">
                     <div class="relative z-10">
@@ -123,7 +133,7 @@
                         </a>
                 </div>
                 <!-- Decorative pattern overlay -->
-                <div class="absolute inset-0 opacity-20" style="background-image: url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><defs><pattern id=\"grain\" width=\"100\" height=\"100\" patternUnits=\"userSpaceOnUse\"><circle cx=\"50\" cy=\"50\" r=\"2\" fill=\"black\"/></pattern></defs><rect width=\"100\" height=\"100\" fill=\"url(%23grain)\"/></svg>');"></div>
+                <div class="absolute inset-0 opacity-10" style="background-image: url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><defs><pattern id=\"grain\" width=\"100\" height=\"100\" patternUnits=\"userSpaceOnUse\"><circle cx=\"50\" cy=\"50\" r=\"2\" fill=\"white\"/></pattern></defs><rect width=\"100\" height=\"100\" fill=\"url(%23grain)\"/></svg>');"></div>
             </section>
         
                 <!-- Featured Products Section -->
