@@ -1129,8 +1129,9 @@ class AdminController extends Controller
             ->where('orders.created_at', '>=', now()->subMonths(3))
             ->groupBy('barong_products.id', 'barong_products.name', 'week', 'week_start')
             ->orderBy('week', 'desc')
-            ->->orderBy('total_sales', 'desc')
+            ->orderBy('total_sales', 'desc')
             ->get();
+        })->sortBy('month')->values();
 
         // Calculate totals including both order types
         $regular_revenue = (float) Order::whereIn('status', ['completed', 'delivered', 'processing'])->sum('total_amount');
@@ -1169,7 +1170,7 @@ class AdminController extends Controller
                 ->groupBy('fabric')
                 ->orderByDesc('count')
                 ->get(),
-        ];
+$
 
         // Weekly sales for last 3 months by product
         $weeklySales = DB::table('order_items')
@@ -1199,8 +1200,29 @@ class AdminController extends Controller
             'best_sellers' => $best_sellers,
             'custom_orders' => $custom_orders,
             'custom_orders_summary' => $custom_orders_summary,
-            'weekly_sales' => $weeklySales,
-        ];
+$
+
+        // Weekly sales for last 3 months by product
+        $weeklySales = DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('barong_products', 'order_items.product_id', '=', 'barong_products.id')
+            ->select(
+                'barong_products.id as product_id',
+                'barong_products.name as product_name',
+                DB::raw("TO_CHAR(orders.created_at, 'IYYY-\"W\"IW') as week"),
+                DB::raw("DATE_TRUNC('week', orders.created_at)::date as week_start"),
+                DB::raw('SUM(order_items.quantity) as total_quantity'),
+                DB::raw('SUM(order_items.total_price) as total_sales')
+            )
+            ->whereIn('orders.status', ['completed', 'delivered', 'shipped', 'processing'])
+            ->where('orders.created_at', '>=', now()->subMonths(3))
+            ->groupBy('barong_products.id', 'barong_products.name', 'week', 'week_start')
+            ->orderBy('week', 'desc')
+            ->orderBy('total_sales', 'desc')
+            ->get();
+
+        // Add weekly_sales to the report
+        $salesReport['weekly_sales'] = $weeklySales;
 
         return view('admin.reports', compact('salesReport'));
     }
