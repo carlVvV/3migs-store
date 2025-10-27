@@ -547,10 +547,13 @@ function addToCart() {
             const updatedPayload = {
                 product_id: Number(productId),
                 quantity: Number(quantity),
-                size: updatedSize,
-                color: color || null,
-                _token: csrfToken ? csrfToken.getAttribute('content') : ''
+                size: updatedSize
             };
+            
+            // Only add color if it has a valid value
+            if (color && color !== 'null' && color !== null && color !== '') {
+                updatedPayload.color = color;
+            }
             
             console.log('Emergency payload:', updatedPayload);
             // Continue with the request using updatedPayload instead of payload
@@ -576,11 +579,17 @@ function addToCart() {
     
     const payload = {
         product_id: Number(productId),
-        quantity: Number(quantity),
-        size: size || null,
-        color: color || null,
-        _token: csrfToken ? csrfToken.getAttribute('content') : ''
+        quantity: Number(quantity)
     };
+    
+    // Only add size and color if they have valid values
+    if (size && size !== 'null' && size !== null && size !== '') {
+        payload.size = size;
+    }
+    
+    if (color && color !== 'null' && color !== null && color !== '') {
+        payload.color = color;
+    }
     
     console.log('Final payload:', payload);
     console.log('Raw payload being sent:', JSON.stringify(payload));
