@@ -21,35 +21,35 @@
             transform: translateY(-5px);
         }
         .product-card img {
-            height: 120px;
+            height: 100px;
             object-fit: cover;
         }
         .product-card .product-title {
-            font-size: 0.875rem;
+            font-size: 0.75rem;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            line-height: 1.25;
-            min-height: 2.25rem;
-            margin-bottom: 0.25rem;
+            line-height: 1.2;
+            min-height: 1.8rem;
+            margin-bottom: 0.125rem;
         }
         .product-card .product-content {
             flex: 1;
             display: flex;
             flex-direction: column;
-            padding: 0.5rem;
+            padding: 0.375rem;
         }
         .product-card .product-content .price-container {
-            font-size: 0.875rem;
+            font-size: 0.8125rem;
         }
         .product-card .product-content .rating-container {
-            font-size: 0.75rem;
+            font-size: 0.6875rem;
         }
         .product-card .product-content button {
-            font-size: 0.75rem;
-            padding: 0.375rem;
-            margin-top: 0.5rem;
+            font-size: 0.6875rem;
+            padding: 0.25rem;
+            margin-top: 0.375rem;
         }
         
         /* Carousel Styles */
@@ -68,7 +68,7 @@
         #best-selling-carousel {
             display: flex;
             transition: transform 0.5s ease-in-out;
-            gap: 1.5rem;
+            gap: 1rem;
         }
         
         .carousel-item {
@@ -78,25 +78,25 @@
         
         @media (min-width: 640px) {
             .carousel-item {
-                width: calc(50% - 0.75rem);
+                width: calc(50% - 0.5rem);
             }
         }
         
         @media (min-width: 768px) {
             .carousel-item {
-                width: calc(33.333% - 1rem);
+                width: calc(33.333% - 0.667rem);
             }
         }
         
         @media (min-width: 1024px) {
             .carousel-item {
-                width: calc(25% - 1.125rem);
+                width: calc(25% - 0.75rem);
             }
         }
         
         @media (min-width: 1280px) {
             .carousel-item {
-                width: calc(20% - 1.2rem);
+                width: calc(19% - 0.76rem);
             }
         }
     </style>
