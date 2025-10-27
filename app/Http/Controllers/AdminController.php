@@ -67,8 +67,6 @@ class AdminController extends Controller
             ->orderBy('month', 'desc')
             ->get();
 
-        // Add weekly_sales to the report
-        $salesReport['weekly_sales'] = $weeklySales;
 
         return view('admin.dashboard', compact('stats', 'recentOrders', 'topProducts', 'monthlySales'));
     }
@@ -101,8 +99,6 @@ class AdminController extends Controller
         $barongProducts = $query->orderBy('created_at', 'desc')->paginate(20);
         $categories = Category::active()->get();
 
-        // Add weekly_sales to the report
-        $salesReport['weekly_sales'] = $weeklySales;
 
         return view('admin.products', compact('barongProducts', 'categories'));
     }
@@ -114,8 +110,6 @@ class AdminController extends Controller
     {
         $categories = Category::active()->get();
 
-        // Add weekly_sales to the report
-        $salesReport['weekly_sales'] = $weeklySales;
 
         return view('admin.barong-product-form', compact('categories'));
     }
@@ -282,8 +276,6 @@ class AdminController extends Controller
         $barongProduct = BarongProduct::with(['category'])->findOrFail($id);
         $categories = Category::active()->get();
 
-        // Add weekly_sales to the report
-        $salesReport['weekly_sales'] = $weeklySales;
 
         return view('admin.barong-product-form', compact('barongProduct', 'categories'));
     }
@@ -1111,26 +1103,8 @@ class AdminController extends Controller
                 'month' => $monthOrders->first()->ym,
                 'orders_count' => (int) $totalOrders,
                 'revenue' => (float) $totalRevenue,
-    $
-
-        // Weekly sales for last 3 months by product
-        $weeklySales = DB::table('order_items')
-            ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->join('barong_products', 'order_items.product_id', '=', 'barong_products.id')
-            ->select(
-                'barong_products.id as product_id',
-                'barong_products.name as product_name',
-                DB::raw("TO_CHAR(orders.created_at, 'IYYY-\"W\"IW') as week"),
-                DB::raw("DATE_TRUNC('week', orders.created_at)::date as week_start"),
-                DB::raw('SUM(order_items.quantity) as total_quantity'),
-                DB::raw('SUM(order_items.total_price) as total_sales')
-            )
-            ->whereIn('orders.status', ['completed', 'delivered', 'shipped', 'processing'])
-            ->where('orders.created_at', '>=', now()->subMonths(3))
-            ->groupBy('barong_products.id', 'barong_products.name', 'week', 'week_start')
-            ->orderBy('week', 'desc')
-            ->->orderBy('total_sales', 'desc')
-            ->get();
+            ];
+        })->sortBy('month')->values();
 
         // Calculate totals including both order types
         $regular_revenue = (float) Order::whereIn('status', ['completed', 'delivered', 'processing'])->sum('total_amount');
@@ -1229,26 +1203,7 @@ class AdminController extends Controller
                     'month' => $row->ym,
                     'orders_count' => (int) $row->orders_count,
                     'revenue' => (float) $row->revenue,
-        $
-
-        // Weekly sales for last 3 months by product
-        $weeklySales = DB::table('order_items')
-            ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->join('barong_products', 'order_items.product_id', '=', 'barong_products.id')
-            ->select(
-                'barong_products.id as product_id',
-                'barong_products.name as product_name',
-                DB::raw("TO_CHAR(orders.created_at, 'IYYY-\"W\"IW') as week"),
-                DB::raw("DATE_TRUNC('week', orders.created_at)::date as week_start"),
-                DB::raw('SUM(order_items.quantity) as total_quantity'),
-                DB::raw('SUM(order_items.total_price) as total_sales')
-            )
-            ->whereIn('orders.status', ['completed', 'delivered', 'shipped', 'processing'])
-            ->where('orders.created_at', '>=', now()->subMonths(3))
-            ->groupBy('barong_products.id', 'barong_products.name', 'week', 'week_start')
-            ->orderBy('week', 'desc')
-            ->orderBy('total_sales', 'desc')
-            ->get();
+                ];
             });
 
         $total_revenue = (float) Order::whereIn('status', ['completed', 'delivered'])->sum('total_amount');
@@ -1272,7 +1227,7 @@ class AdminController extends Controller
             'average_order_value' => $average_order_value,
             'top_customers' => $top_customers,
             'sales_by_month' => $sales_by_month,
-$
+        ];
 
         // Weekly sales for last 3 months by product
         $weeklySales = DB::table('order_items')
@@ -1293,8 +1248,6 @@ $
             ->orderBy('total_sales', 'desc')
             ->get();
 
-        // Add weekly_sales to the report
-        $salesReport['weekly_sales'] = $weeklySales;
 
         return view('admin.reports-print', compact('salesReport'));
     }
@@ -1321,9 +1274,9 @@ $
         $order->status = 'delivered';
         $order->payment_status = 'paid';
         $order->payment_method = 'test';
-        $order->subtotal = $product->current_price * 2;
-        $order->discount = 0;
-        $order->shipping_fee = 0;
+        $order->subtotal = (float)($product->current_price * 2);
+        $order->discount = 0.0;
+        $order->shipping_fee = 0.0;
         $order->total_amount = $order->subtotal;
         $order->currency = 'PHP';
         $order->billing_address = [];
@@ -1336,7 +1289,8 @@ $
             'order_id' => $order->id,
             'product_id' => $product->id,
             'quantity' => 2,
-            'price' => $product->current_price,
+            'unit_price' => (float)$product->current_price,
+                    'total_price' => (float)($product->current_price * 2),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -1359,8 +1313,8 @@ $
 
         $names = [
             'Classic Barong', 'Modern Barong', 'Heritage Barong', 'Wedding Barong', 'Casual Barong',
-            'Handwoven Barong', 'Slim Fit Barong', 'Pi+¦a Barong', 'Cocoon Barong', 'Embroidered Barong'
-$
+            'Handwoven Barong', 'Slim Fit Barong', 'Pi+ï¿½a Barong', 'Cocoon Barong', 'Embroidered Barong'
+        ];
 
         // Weekly sales for last 3 months by product
         $weeklySales = DB::table('order_items')
@@ -1445,8 +1399,8 @@ $
             $order->status = 'delivered';
             $order->payment_status = 'paid';
             $order->payment_method = 'test';
-            $order->discount = 0;
-            $order->shipping_fee = 0;
+            $order->discount = 0.0;
+            $order->shipping_fee = 0.0;
             $order->currency = 'PHP';
             $order->billing_address = [];
             $order->shipping_address = [];
@@ -1472,8 +1426,8 @@ $
                 ]);
             }
 
-            $order->subtotal = $subtotal;
-            $order->total_amount = $subtotal;
+            $order->subtotal = (float)$subtotal;
+            $order->total_amount = (float)$subtotal;
             $order->save();
         }
 
@@ -1517,6 +1471,7 @@ $
         return back()->with('success', 'Password changed successfully!');
     }
 }
+
 
 
 
