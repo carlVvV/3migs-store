@@ -135,7 +135,7 @@
                                     @endif
                                 </div>
                                 <div class="text-right">
-                                    <p class="font-semibold text-gray-800">₱{{ number_format($item->price * $item->quantity, 2) }}</p>
+                                    <p class="font-semibold text-gray-800">₱{{ number_format($item->total_price ?? ($item->unit_price * $item->quantity), 2) }}</p>
                                 </div>
                             </div>
                             @endforeach
