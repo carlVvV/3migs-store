@@ -14,7 +14,7 @@ class ProductController extends Controller
     public function getProductBySlug($slug)
     {
         try {
-            $product = BarongProduct::with(['brand', 'category'])
+            $product = BarongProduct::with(['category'])
                 ->where('slug', $slug)
                 ->available()
                 ->first();
@@ -41,7 +41,6 @@ class ProductController extends Controller
                     'is_featured' => $product->is_featured,
                     'images' => $product->images ?? [],
                     'cover_image_url' => $product->cover_image_url,
-                    'brand' => $product->brand,
                     'category' => $product->category,
                     'updated_at' => $product->updated_at->toISOString(),
                 ],

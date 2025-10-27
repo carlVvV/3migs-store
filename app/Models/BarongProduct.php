@@ -673,7 +673,7 @@ class BarongProduct extends Model
      */
     public static function getDeletedProducts()
     {
-        return static::onlyTrashed()->with(['category', 'brand'])->get();
+        return static::onlyTrashed()->with(['category'])->get();
     }
 
     /**

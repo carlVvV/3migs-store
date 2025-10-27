@@ -927,7 +927,7 @@ class AdminController extends Controller
         $outOfStockProducts = BarongProduct::getOutOfStockProducts();
         
         // Get all products for the table
-        $query = BarongProduct::with(['category', 'brand']);
+        $query = BarongProduct::with(['category']);
 
         // Filter by status
         if ($request->has('status') && $request->status) {
@@ -1237,10 +1237,9 @@ class AdminController extends Controller
         // Danger: wipe existing barong_products
         BarongProduct::query()->delete();
 
-        $brands = Brand::all();
         $categories = Category::all();
-        if ($brands->isEmpty() || $categories->isEmpty()) {
-            return back()->with('error', 'Please ensure at least one brand and one category exist.');
+        if ($categories->isEmpty()) {
+            return back()->with('error', 'Please ensure at least one category exists.');
         }
 
         $names = [
