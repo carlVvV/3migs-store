@@ -160,18 +160,18 @@
                             <div id="featured-carousel" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                                 @foreach($featuredProducts as $product)
                                 <a href="{{ route('product.details', $product->slug) }}" class="bg-white rounded-lg shadow-md overflow-hidden relative product-card hover:shadow-lg transition-shadow block carousel-item">
-                                    <!-- Tags Container (Left Side) -->
-                                    <div class="absolute top-2 left-2 flex flex-col gap-0.5 z-10">
+                                    <!-- Tags Container (Right Side) -->
+                                    <div class="absolute top-2 right-2 flex flex-col gap-0.5 z-10 items-end">
                                         @if($product->is_on_sale)
-                                        <div class="bg-red-500 text-white text-[1px] px-1 py-0.5 rounded">-{{ $product->discount_percentage }}%</div>
+                                        <div class="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded">-{{ $product->discount_percentage }}%</div>
                                         @endif
                                         @if($product->wholesale_price)
-                                        <div class="bg-blue-500 text-white text-[1px] px-1 py-0.5 rounded">Wholesale</div>
+                                        <div class="bg-blue-500 text-white text-[10px] px-1.5 py-0.5 rounded">Wholesale</div>
                                         @endif
                                     </div>
                                     
                                     <!-- Wishlist Button -->
-                                    <button class="absolute top-2 right-2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn z-20" 
+                                    <button class="absolute top-2 left-2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn z-20" 
                                             data-product-id="{{ $product->id }}" 
                                             title="Add to Wishlist"
                                             onclick="event.preventDefault(); event.stopPropagation(); addCardToWishlist({{ $product->id }});">
@@ -276,7 +276,7 @@
                                     <!-- New Badge (removed, shown in tags container) -->
                     
                     <!-- Wishlist Button -->
-                                    <button class="absolute top-2 left-2 w-7 h-7 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn z-10" 
+                                    <button class="absolute top-2 left-2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn z-20" 
                             data-product-id="{{ $product->id }}" 
                                             title="Add to Wishlist"
                                             onclick="event.preventDefault(); event.stopPropagation(); addCardToWishlist({{ $product->id }});">
@@ -381,7 +381,7 @@
                                     <!-- Best Seller Badge (removed, shown in tags container) -->
                                     
                                     <!-- Wishlist Button -->
-                                    <button class="absolute top-2 left-2 w-7 h-7 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn z-10" 
+                                    <button class="absolute top-2 left-2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn z-20" 
                                             data-product-id="{{ $product->id }}" 
                                             title="Add to Wishlist"
                                             onclick="event.preventDefault(); event.stopPropagation(); addCardToWishlist({{ $product->id }});">
