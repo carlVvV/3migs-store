@@ -727,7 +727,7 @@ class OrderController extends Controller
             'email' => $order->user->email ?? ($shipping['email'] ?? null),
             'expiry' => 2, // 2 hours expiry
             'notification_url' => url('/api/v1/payments/bux/webhook'),
-            'redirect_url' => url('/checkout'),
+            'redirect_url' => url('/orders'),
             'name' => $order->user->name ?? ($shipping['full_name'] ?? null),
             'contact' => $shipping['phone'] ?? $billing['phone'] ?? null,
             'param1' => $order->order_number,
