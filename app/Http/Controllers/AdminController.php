@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use App\Http\Requests\StoreBarongProductRequest;
 use App\Services\CloudinaryService;
+use Faker\Factory as FakerFactory;
 
 class AdminController extends Controller
 {
@@ -67,7 +68,6 @@ class AdminController extends Controller
             ->orderBy('month', 'desc')
             ->get();
 
-
         return view('admin.dashboard', compact('stats', 'recentOrders', 'topProducts', 'monthlySales'));
     }
 
@@ -99,7 +99,6 @@ class AdminController extends Controller
         $barongProducts = $query->orderBy('created_at', 'desc')->paginate(20);
         $categories = Category::active()->get();
 
-
         return view('admin.products', compact('barongProducts', 'categories'));
     }
 
@@ -109,7 +108,6 @@ class AdminController extends Controller
     public function createBarongProduct()
     {
         $categories = Category::active()->get();
-
 
         return view('admin.barong-product-form', compact('categories'));
     }
@@ -275,7 +273,6 @@ class AdminController extends Controller
     {
         $barongProduct = BarongProduct::with(['category'])->findOrFail($id);
         $categories = Category::active()->get();
-
 
         return view('admin.barong-product-form', compact('barongProduct', 'categories'));
     }
@@ -1248,7 +1245,6 @@ class AdminController extends Controller
             ->orderBy('total_sales', 'desc')
             ->get();
 
-
         return view('admin.reports-print', compact('salesReport'));
     }
 
@@ -1289,8 +1285,8 @@ class AdminController extends Controller
             'order_id' => $order->id,
             'product_id' => $product->id,
             'quantity' => 2,
-            'unit_price' => (float)$product->current_price,
-                    'total_price' => (float)($product->current_price * 2),
+            'unit_price' => $product->current_price,
+            'total_price' => $product->current_price * 2,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -1316,26 +1312,7 @@ class AdminController extends Controller
             'Handwoven Barong', 'Slim Fit Barong', 'Pi+�a Barong', 'Cocoon Barong', 'Embroidered Barong'
         ];
 
-        // Weekly sales for last 3 months by product
-        $weeklySales = DB::table('order_items')
-            ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->join('barong_products', 'order_items.product_id', '=', 'barong_products.id')
-            ->select(
-                'barong_products.id as product_id',
-                'barong_products.name as product_name',
-                DB::raw("TO_CHAR(orders.created_at, 'IYYY-\"W\"IW') as week"),
-                DB::raw("DATE_TRUNC('week', orders.created_at)::date as week_start"),
-                DB::raw('SUM(order_items.quantity) as total_quantity'),
-                DB::raw('SUM(order_items.total_price) as total_sales')
-            )
-            ->whereIn('orders.status', ['completed', 'delivered', 'shipped', 'processing'])
-            ->where('orders.created_at', '>=', now()->subMonths(3))
-            ->groupBy('barong_products.id', 'barong_products.name', 'week', 'week_start')
-            ->orderBy('week', 'desc')
-            ->orderBy('total_sales', 'desc')
-            ->get();
-
-        $faker = \Faker\Factory::create();
+        $faker = FakerFactory::create();
         $count = 12;
         for ($i = 0; $i < $count; $i++) {
             $sizeStocks = [];
@@ -1385,7 +1362,7 @@ class AdminController extends Controller
             return back()->with('error', 'No products available. Seed products first.');
         }
         $user = User::first() ?: User::factory()->create();
-        $faker = \Faker\Factory::create();
+        $faker = FakerFactory::create();
 
         // Create 18 orders spread across the last 9 months
         for ($i = 0; $i < 18; $i++) {
@@ -1471,10 +1448,4 @@ class AdminController extends Controller
         return back()->with('success', 'Password changed successfully!');
     }
 }
-
-
-
-
-
-
 

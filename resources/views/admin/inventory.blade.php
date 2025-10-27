@@ -112,6 +112,10 @@
                 <div class="flex items-center space-x-4" onclick="event.stopPropagation();">
                     <span class="text-sm text-red-600 font-medium">{{ $notification->current_stock }} left</span>
                     <span class="text-xs text-gray-500">{{ $notification->notified_at->diffForHumans() }}</span>
+                    <button onclick="markAsResolved({{ $notification->id }}, '{{ addslashes($notification->product_name) }}', {{ $notification->current_stock }}); event.stopPropagation();" 
+                            class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded hover:bg-green-200" title="Mark as resolved">
+                        <i class="fas fa-check-circle"></i> Mark Resolved
+                    </button>
                     <button onclick="removeNotification({{ $notification->id }}); event.stopPropagation();" 
                             class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded hover:bg-red-200" title="Remove notification">
                         <i class="fas fa-times"></i> Remove
@@ -201,6 +205,10 @@
 </div>
 
 <script>
+var currentNotificationId = null;
+var currentProductName = null;
+var currentStock = null;
+
 function removeNotification(notificationId) {
     if (!confirm('Are you sure you want to remove this notification?')) {
         return;
