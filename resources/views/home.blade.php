@@ -46,58 +46,44 @@
         .carousel-wrapper {
             position: relative;
             overflow: hidden;
+            padding-bottom: 10px; /* Space for dots */
         }
         
         #featured-carousel,
         #new-arrivals-carousel,
         #best-selling-carousel {
-            display: grid;
-            grid-template-columns: repeat(1, minmax(0, 1fr));
-            transition: none;
+            display: flex;
+            transition: transform 0.5s ease-in-out;
+            gap: 1.5rem;
+        }
+        
+        .carousel-item {
+            flex: 0 0 auto;
+            width: 100%;
         }
         
         @media (min-width: 640px) {
-            #featured-carousel,
-            #new-arrivals-carousel,
-            #best-selling-carousel {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
+            .carousel-item {
+                width: calc(50% - 0.75rem);
             }
         }
         
         @media (min-width: 768px) {
-            #featured-carousel,
-            #new-arrivals-carousel,
-            #best-selling-carousel {
-                grid-template-columns: repeat(3, minmax(0, 1fr));
+            .carousel-item {
+                width: calc(33.333% - 1rem);
             }
         }
         
         @media (min-width: 1024px) {
-            #featured-carousel,
-            #new-arrivals-carousel,
-            #best-selling-carousel {
-                grid-template-columns: repeat(4, minmax(0, 1fr));
+            .carousel-item {
+                width: calc(25% - 1.125rem);
             }
         }
         
         @media (min-width: 1280px) {
-            #featured-carousel,
-            #new-arrivals-carousel,
-            #best-selling-carousel {
-                grid-template-columns: repeat(5, minmax(0, 1fr));
+            .carousel-item {
+                width: calc(20% - 1.2rem);
             }
-        }
-        
-        .carousel-item {
-            opacity: 0;
-            max-height: 0;
-            overflow: hidden;
-            transition: opacity 0.5s ease-in-out, max-height 0.5s ease-in-out;
-        }
-        
-        .carousel-item.active {
-            opacity: 1;
-            max-height: 2000px;
         }
     </style>
 </head>
@@ -698,9 +684,7 @@
                 
                 const items = Array.from(carouselElement.children);
                 if (items.length <= 5) {
-                    // Show all items if 5 or fewer
-                    items.forEach(item => item.classList.add('active'));
-                    return;
+                    return; // No carousel needed if 5 or fewer items
                 }
                 
                 const itemsPerSlide = 5;
@@ -710,15 +694,13 @@
                 const dotsContainer = carouselElement.parentElement.parentElement.querySelector('.carousel-dots');
                 const dots = dotsContainer ? Array.from(dotsContainer.querySelectorAll('.dot')) : [];
                 
-                // Function to show/hide items based on current slide
+                // Function to update carousel transform
                 function updateCarousel() {
-                    items.forEach((item, index) => {
-                        if (index >= currentSlide * itemsPerSlide && index < (currentSlide + 1) * itemsPerSlide) {
-                            item.classList.add('active');
-                        } else {
-                            item.classList.remove('active');
-                        }
-                    });
+                    const container = carouselElement.parentElement;
+                    const itemWidth = items[0].offsetWidth;
+                    const gap = 24; // 1.5rem = 24px
+                    const translateX = -(currentSlide * (itemsPerSlide * (itemWidth + gap)));
+                    carouselElement.style.transform = `translateX(${translateX}px)`;
                     
                     // Update dot indicators
                     dots.forEach((dot, index) => {
