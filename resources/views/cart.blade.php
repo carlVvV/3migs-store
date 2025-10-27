@@ -60,15 +60,11 @@
                     </div>
                     
                     <!-- Cart Actions -->
-                    <div class="bg-gray-50 px-6 py-4 flex justify-between">
+                    <div class="bg-gray-50 px-6 py-4">
                         <a href="{{ route('home') }}" class="inline-flex items-center px-6 py-2 bg-gray-500 text-white font-medium rounded-md hover:bg-gray-600 transition-colors">
                             <i class="fas fa-arrow-left mr-2"></i>
                             Return To Shop
                         </a>
-                        <button id="update-cart-btn" class="inline-flex items-center px-6 py-2 bg-gray-500 text-white font-medium rounded-md hover:bg-gray-600 transition-colors">
-                            <i class="fas fa-sync-alt mr-2"></i>
-                            Update Cart
-                        </button>
                     </div>
                 </div>
             </div>
@@ -148,8 +144,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load cart items
     loadCartItems();
     
-    // Update cart button
-    document.getElementById('update-cart-btn').addEventListener('click', updateCart);
+    // Setup event listeners for quantity inputs
+    setupQuantityInputListeners();
     
     // Apply coupon button
     document.getElementById('apply-coupon-btn').addEventListener('click', applyCoupon);
@@ -249,9 +245,8 @@ document.addEventListener('DOMContentLoaded', function() {
                            value="${quantity}" 
                            min="1" 
                            max="10"
-                           oninput="instantUpdateSubtotal(${itemId}, this.value)"
-                           onchange="updateItemQuantity(${itemId}, this.value)"
-                           class="w-20 border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                           data-item-id="${itemId}"
+                           class="w-20 border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent cart-quantity-input">
                 </div>
                 <div class="text-gray-900 font-medium" id="subtotal-${itemId}">
                     ₱${subtotal.toFixed(2)}
@@ -336,6 +331,27 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
+        // Immediately update the subtotal for this item for instant feedback
+        const row = Array.from(document.querySelectorAll('#cart-items > div'))
+            .find(el => el.getAttribute('data-id') == String(itemId));
+        const qty = parseInt(quantity);
+        if (row && !isNaN(qty)) {
+            const price = parseFloat(row.getAttribute('data-price')) || 0;
+            const subtotal = price * qty;
+            const subtotalEl = document.getElementById(`subtotal-${itemId}`);
+            if (subtotalEl) subtotalEl.textContent = formatCurrency(subtotal);
+            
+            // Update cart totals immediately
+            const items = Array.from(document.querySelectorAll('#cart-items > div')).map(el => {
+                return {
+                    id: el.getAttribute('data-id'),
+                    price: parseFloat(el.getAttribute('data-price')) || 0,
+                    quantity: parseInt(el.querySelector('input[type="number"]').value || '0') || 0
+                };
+            });
+            updateCartTotals({ items });
+        }
+        
         fetch('/api/v1/cart/update', {
             method: 'PUT',
             headers: {
@@ -350,22 +366,44 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showNotification('Quantity updated successfully!', 'success');
-                loadCartItems(); // Reload cart to update totals
+                // Reload cart to get server-confirmed prices (wholesale pricing)
+                loadCartItems(); 
                 updateCartCount();
             } else {
+                // Revert to previous state if update failed
+                loadCartItems();
                 showNotification(data.message || 'Error updating quantity', 'error');
             }
         })
         .catch(error => {
             console.error('Error updating quantity:', error);
+            // Revert to previous state on error
+            loadCartItems();
             showNotification('Error updating quantity', 'error');
         });
     }
 
-    function updateCart() {
-        loadCartItems();
-        showNotification('Cart updated successfully!', 'success');
+    function setupQuantityInputListeners() {
+        // Use event delegation to handle dynamically created inputs
+        document.getElementById('cart-items').addEventListener('input', function(e) {
+            if (e.target.classList.contains('cart-quantity-input')) {
+                const itemId = e.target.getAttribute('data-item-id');
+                const quantity = e.target.value;
+                if (itemId && quantity) {
+                    instantUpdateSubtotal(itemId, quantity);
+                }
+            }
+        });
+        
+        document.getElementById('cart-items').addEventListener('change', function(e) {
+            if (e.target.classList.contains('cart-quantity-input')) {
+                const itemId = e.target.getAttribute('data-item-id');
+                const quantity = e.target.value;
+                if (itemId && quantity) {
+                    updateItemQuantity(itemId, quantity);
+                }
+            }
+        });
     }
 
     function showDeleteModal(itemId) {
@@ -475,7 +513,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('/api/v1/cart/count')
             .then(response => response.json())
             .then(data => {
-                const count = data.count || 0;
+                const count = (data.success && data.data) ? data.data.count : (data.count || 0);
                 const cartCountElement = document.getElementById('cart-count');
                 if (cartCountElement) {
                     cartCountElement.textContent = count;
@@ -483,6 +521,12 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => console.error('Error updating cart count:', error));
     }
+
+    // Make updateCartCount globally accessible
+    window.updateCartCount = updateCartCount;
+    
+    // Also make loadCartItems globally accessible for other pages
+    window.loadCartItems = loadCartItems;
 
     function showNotification(message, type = 'info') {
         const notification = document.createElement('div');

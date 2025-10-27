@@ -160,33 +160,34 @@
                             <div id="featured-carousel" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                                 @foreach($featuredProducts as $product)
                                 <a href="{{ route('product.details', $product->slug) }}" class="bg-white rounded-lg shadow-md overflow-hidden relative product-card hover:shadow-lg transition-shadow block carousel-item">
-                                    @if($product->is_on_sale)
-                                    <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded z-10">-{{ $product->discount_percentage }}%</div>
-                                    @endif
-                                    @if($product->wholesale_price)
-                                    <div class="absolute bottom-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded z-10">Wholesale</div>
-                                    @endif
+                                    <!-- Tags Container (Left Side) -->
+                                    <div class="absolute top-2 left-2 flex flex-col gap-0.5 z-10">
+                                        @if($product->is_on_sale)
+                                        <div class="bg-red-500 text-white text-[1px] px-1 py-0.5 rounded">-{{ $product->discount_percentage }}%</div>
+                                        @endif
+                                        @if($product->wholesale_price)
+                                        <div class="bg-blue-500 text-white text-[1px] px-1 py-0.5 rounded">Wholesale</div>
+                                        @endif
+                                    </div>
                                     
                                     <!-- Wishlist Button -->
-                                    <button class="absolute top-2 right-2 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn z-10" 
+                                    <button class="absolute top-2 right-2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn z-20" 
                                             data-product-id="{{ $product->id }}" 
                                             title="Add to Wishlist"
                                             onclick="event.preventDefault(); event.stopPropagation(); addCardToWishlist({{ $product->id }});">
                                         <i class="far fa-heart text-gray-600 text-sm"></i>
                                     </button>
                                     
-                                    <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full object-cover">
-                                    <div class="p-3 product-content">
-                                        <h3 class="font-semibold text-gray-800 product-title">{{ $product->name }}</h3>
-                                        <div class="flex items-center mt-1 price-container">
+                                    <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full h-[450px] object-cover">
+                                    <div class="p-6 product-content">
+                                        <h3 class="font-semibold text-xl text-gray-800 product-title">{{ $product->name }}</h3>
+                                        <div class="flex items-center mt-2 price-container">
+                                            <span class="text-red-500 font-bold text-2xl">₱{{ number_format($product->current_price, 0) }}</span>
                     @if($product->is_on_sale)
-                                            <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
-                                            <span class="text-gray-500 text-xs line-through ml-2">₱{{ number_format($product->base_price, 0) }}</span>
-                                            @else
-                                            <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
+                                            <span class="text-gray-500 text-base ml-2">(₱{{ number_format($product->base_price, 0) }})</span>
                                             @endif
                                         </div>
-                                        <div class="flex items-center text-xs text-gray-600 mt-1 rating-container">
+                                        <div class="flex items-center text-base text-gray-600 mt-2 rating-container">
                                             @for($i = 0; $i < floor($product->average_rating); $i++)
                                                 <i class="fas fa-star text-yellow-400"></i>
                                             @endfor
@@ -262,38 +263,36 @@
                             <div id="new-arrivals-carousel" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                                 @foreach($newArrivals as $product)
                                 <a href="{{ route('product.details', $product->slug) }}" class="bg-white rounded-lg shadow-md overflow-hidden relative product-card hover:shadow-lg transition-shadow block carousel-item">
-                                    @if($product->is_on_sale)
-                                    <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded z-10">-{{ $product->discount_percentage }}%</div>
-                                    @endif
-                                    @if($product->wholesale_price)
-                                    <div class="absolute bottom-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded z-10">Wholesale</div>
-                                    @endif
-                                    
-                                    <!-- New Badge -->
-                                    <div class="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded font-bold z-10">
-                                        <i class="fas fa-star mr-1"></i>New
+                                    <!-- Tags Container (Right Side) -->
+                                    <div class="absolute top-2 right-2 flex flex-col gap-1 z-10 items-end">
+                                        @if($product->is_on_sale)
+                                        <div class="bg-red-500 text-white text-[10px] px-1 py-0.5 rounded">-{{ $product->discount_percentage }}%</div>
+                                        @endif
+                                        @if($product->wholesale_price)
+                                        <div class="bg-blue-500 text-white text-[10px] px-1 py-0.5 rounded">Wholesale</div>
+                                        @endif
                                     </div>
+                                    
+                                    <!-- New Badge (removed, shown in tags container) -->
                     
                     <!-- Wishlist Button -->
-                                    <button class="absolute top-12 right-2 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn z-10" 
+                                    <button class="absolute top-2 left-2 w-7 h-7 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn z-10" 
                             data-product-id="{{ $product->id }}" 
                                             title="Add to Wishlist"
                                             onclick="event.preventDefault(); event.stopPropagation(); addCardToWishlist({{ $product->id }});">
                         <i class="far fa-heart text-gray-600 text-sm"></i>
                     </button>
                     
-                            <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full object-cover">
-                            <div class="p-3 product-content">
-                                <h3 class="font-semibold text-gray-800 product-title">{{ $product->name }}</h3>
-                        <div class="flex items-center mt-1 price-container">
+                            <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full h-[450px] object-cover">
+                            <div class="p-6 product-content">
+                                <h3 class="font-semibold text-xl text-gray-800 product-title">{{ $product->name }}</h3>
+                        <div class="flex items-center mt-2 price-container">
+                            <span class="text-red-500 font-bold text-2xl">₱{{ number_format($product->current_price, 0) }}</span>
                             @if($product->is_on_sale)
-                            <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
-                            <span class="text-gray-500 text-xs line-through ml-2">₱{{ number_format($product->base_price, 0) }}</span>
-                            @else
-                            <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
+                            <span class="text-gray-500 text-base ml-2">(₱{{ number_format($product->base_price, 0) }})</span>
                             @endif
                         </div>
-                        <div class="flex items-center text-xs text-gray-600 mt-1 rating-container">
+                        <div class="flex items-center text-base text-gray-600 mt-2 rating-container">
                             @for($i = 0; $i < floor($product->average_rating); $i++)
                                 <i class="fas fa-star text-yellow-400"></i>
                             @endfor
@@ -369,35 +368,33 @@
                             <div id="best-selling-carousel" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                                 @foreach($bestSellingProducts as $product)
                                 <a href="{{ route('product.details', $product->slug) }}" class="bg-white rounded-lg shadow-md overflow-hidden relative product-card hover:shadow-lg transition-shadow block carousel-item">
-                                    @if($product->is_on_sale)
-                                    <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded z-10">-{{ $product->discount_percentage }}%</div>
-                                    @endif
-                                    @if($product->wholesale_price)
-                                    <div class="absolute bottom-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded z-10">Wholesale</div>
-                                    @endif
-                                    
-                                    <!-- Best Seller Badge -->
-                                    <div class="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded font-bold z-10">
-                                        <i class="fas fa-crown mr-1"></i>Best Seller
+                                    <!-- Tags Container (Right Side) -->
+                                    <div class="absolute top-2 right-2 flex flex-col gap-1 z-10 items-end">
+                                        @if($product->is_on_sale)
+                                        <div class="bg-red-500 text-white text-[10px] px-1 py-0.5 rounded">-{{ $product->discount_percentage }}%</div>
+                                        @endif
+                                        @if($product->wholesale_price)
+                                        <div class="bg-blue-500 text-white text-[10px] px-1 py-0.5 rounded">Wholesale</div>
+                                        @endif
                                     </div>
                                     
+                                    <!-- Best Seller Badge (removed, shown in tags container) -->
+                                    
                                     <!-- Wishlist Button -->
-                                    <button class="absolute top-12 right-2 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn z-10" 
+                                    <button class="absolute top-2 left-2 w-7 h-7 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn z-10" 
                                             data-product-id="{{ $product->id }}" 
                                             title="Add to Wishlist"
                                             onclick="event.preventDefault(); event.stopPropagation(); addCardToWishlist({{ $product->id }});">
                                         <i class="far fa-heart text-gray-600 text-sm"></i>
                                     </button>
                             
-                            <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full object-cover">
-                            <div class="p-3 product-content">
-                                <h3 class="font-semibold text-gray-800 product-title">{{ $product->name }}</h3>
-                                <div class="flex items-center mt-1 price-container">
+                            <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full h-[450px] object-cover">
+                            <div class="p-6 product-content">
+                                <h3 class="font-semibold text-xl text-gray-800 product-title">{{ $product->name }}</h3>
+                                <div class="flex items-center mt-2 price-container">
+                                    <span class="text-red-500 font-bold text-2xl">₱{{ number_format($product->current_price, 0) }}</span>
                                     @if($product->is_on_sale)
-                                    <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
-                                    <span class="text-gray-500 text-xs line-through ml-2">₱{{ number_format($product->base_price, 0) }}</span>
-                                    @else
-                                    <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
+                                    <span class="text-gray-500 text-base ml-2">(₱{{ number_format($product->base_price, 0) }})</span>
                                     @endif
                                 </div>
                                 <div class="flex items-center justify-between text-xs text-gray-600 mt-1 rating-container">
@@ -468,32 +465,33 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                         @forelse($allProducts as $product)
                         <a href="{{ route('product.details', $product->slug) }}" class="bg-white rounded-lg shadow-md overflow-hidden relative product-card hover:shadow-lg transition-shadow block">
-                            @if($product->is_on_sale)
-                            <div class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-{{ $product->discount_percentage }}%</div>
-                            @endif
-                            @if($product->wholesale_price)
-                            <div class="absolute bottom-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">Wholesale Available</div>
-                            @endif
+                            <!-- Tags Container (Left Side) -->
+                            <div class="absolute top-2 left-2 flex flex-col gap-0.5 z-10">
+                                        @if($product->is_on_sale)
+                                        <div class="bg-red-500 text-white text-[1px] px-1 py-0.5 rounded">-{{ $product->discount_percentage }}%</div>
+                                        @endif
+                                        @if($product->wholesale_price)
+                                        <div class="bg-blue-500 text-white text-[1px] px-1 py-0.5 rounded">Wholesale</div>
+                                        @endif
+                            </div>
                             
                             <!-- Wishlist Button -->
-                            <button class="absolute top-2 right-2 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn" 
+                            <button class="absolute top-2 right-2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn z-20" 
                                     data-product-id="{{ $product->id }}" 
                                     title="Add to Wishlist">
                                 <i class="far fa-heart text-gray-600 text-sm"></i>
                             </button>
                             
-                            <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full object-cover">
-                            <div class="p-3 product-content">
-                                <h3 class="font-semibold text-gray-800 product-title">{{ $product->name }}</h3>
+                            <img src="{{ $product->cover_image_url }}" alt="{{ $product->name }}" class="w-full h-[450px] object-cover">
+                            <div class="p-6 product-content">
+                                <h3 class="font-semibold text-xl text-gray-800 product-title">{{ $product->name }}</h3>
                                 <div class="flex items-center mt-2">
+                                    <span class="text-red-500 font-bold text-2xl">₱{{ number_format($product->current_price, 0) }}</span>
                                     @if($product->is_on_sale)
-                                    <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
-                                    <span class="text-gray-500 text-sm line-through ml-2">₱{{ number_format($product->base_price, 0) }}</span>
-                                    @else
-                                    <span class="text-red-500 font-bold">₱{{ number_format($product->current_price, 0) }}</span>
+                                    <span class="text-gray-500 text-base ml-2">(₱{{ number_format($product->base_price, 0) }})</span>
                                     @endif
                                 </div>
-                                <div class="flex items-center text-sm text-gray-600 mt-1">
+                                <div class="flex items-center text-sm text-gray-600 mt-2">
                                     @for($i = 0; $i < floor($product->average_rating); $i++)
                                         <i class="fas fa-star text-yellow-400"></i>
                                     @endfor
