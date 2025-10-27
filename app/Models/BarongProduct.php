@@ -333,40 +333,73 @@ class BarongProduct extends Model
     }
 
     /**
+     * Check if product is in stock (accessor for views)
+     */
+    public function getInStockAttribute(): bool
+    {
+        return $this->getTotalStock() > 0;
+    }
+
+    /**
+     * Get stock quantity (accessor for views)
+     */
+    public function getStockQuantityAttribute(): int
+    {
+        return $this->getTotalStock();
+    }
+
+    /**
      * Get available colors and sizes from color_stocks
      */
     public function getAvailableColorsAndSizes(): array
     {
-        if (empty($this->color_stocks) || !is_array($this->color_stocks)) {
+        // First check color_stocks (size + color specific)
+        if (!empty($this->color_stocks) && is_array($this->color_stocks)) {
+            $sizes = [];
+            $colors = [];
+
+            foreach ($this->color_stocks as $size => $colorData) {
+                if (!in_array($size, $sizes)) {
+                    $sizes[] = $size;
+                }
+                
+                if (is_array($colorData)) {
+                    foreach ($colorData as $color => $qty) {
+                        if (intval($qty) > 0 && !in_array($color, $colors)) {
+                            $colors[] = $color;
+                        }
+                    }
+                }
+            }
+
+            return [
+                'colors' => $colors,
+                'sizes' => $sizes,
+                'color_stocks' => $this->color_stocks
+            ];
+        }
+        
+        // Fallback to size_stocks if available
+        if (!empty($this->size_stocks) && is_array($this->size_stocks)) {
+            $sizes = [];
+            foreach ($this->size_stocks as $size => $qty) {
+                if (intval($qty) > 0) {
+                    $sizes[] = $size;
+                }
+            }
+            
             return [
                 'colors' => [],
-                'sizes' => [],
+                'sizes' => $sizes,
                 'color_stocks' => []
             ];
         }
 
-        $sizes = [];
-        $colors = [];
-        $colorStocks = $this->color_stocks;
-
-        foreach ($colorStocks as $size => $colorData) {
-            if (!in_array($size, $sizes)) {
-                $sizes[] = $size;
-            }
-            
-            if (is_array($colorData)) {
-                foreach ($colorData as $color => $qty) {
-                    if (intval($qty) > 0 && !in_array($color, $colors)) {
-                        $colors[] = $color;
-                    }
-                }
-            }
-        }
-
+        // No size-based stock, return empty
         return [
-            'colors' => $colors,
-            'sizes' => $sizes,
-            'color_stocks' => $colorStocks
+            'colors' => [],
+            'sizes' => [],
+            'color_stocks' => []
         ];
     }
 
