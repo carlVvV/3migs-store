@@ -30,6 +30,10 @@ class AdminController extends Controller
      */
     public function dashboard()
     {
+        // Calculate total revenue from completed/delivered/shipped orders
+        $total_revenue = Order::whereIn('status', ['completed', 'delivered', 'shipped', 'processing'])
+            ->sum('total_amount');
+        
         $stats = [
             'total_products' => BarongProduct::count(),
             'active_products' => BarongProduct::where('is_available', true)->count(),
@@ -39,6 +43,7 @@ class AdminController extends Controller
             'completed_orders' => Order::where('status', 'completed')->count(),
             'total_users' => User::count(),
             'total_reviews' => Review::count(),
+            'total_revenue' => $total_revenue,
         ];
 
         // Recent orders
