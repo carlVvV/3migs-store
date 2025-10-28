@@ -92,8 +92,16 @@
     <!-- Sales Chart Placeholder -->
     <div class="bg-white shadow rounded-lg">
         <div class="px-4 py-5 sm:p-6">
-            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Sales & Orders (Monthly)</h3>
-            <canvas id="salesChart" height="90"></canvas>
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Sales & Orders (Monthly)</h3>
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-md bg-green-100 text-green-800 text-xs font-medium">Revenue: ₱{{ number_format($salesReport['total_revenue'], 2) }}</span>
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-md bg-blue-100 text-blue-800 text-xs font-medium">Orders: {{ number_format($salesReport['total_orders']) }}</span>
+                </div>
+            </div>
+            <div class="relative" style="height: 320px;">
+                <canvas id="salesChart"></canvas>
+            </div>
         </div>
     </div>
 
@@ -115,7 +123,7 @@
                         {
                             label: 'Revenue (₱)',
                             data: revenues,
-                            backgroundColor: 'rgba(16, 185, 129, 0.6)',
+                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
                             borderColor: 'rgba(16, 185, 129, 1)',
                             yAxisID: 'y',
                             borderWidth: 1,
@@ -123,7 +131,7 @@
                         {
                             label: 'Orders',
                             data: orders,
-                            backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                            backgroundColor: 'rgba(59, 130, 246, 0.7)',
                             borderColor: 'rgba(59, 130, 246, 1)',
                             yAxisID: 'y1',
                             borderWidth: 1,
@@ -146,7 +154,7 @@
                             type: 'linear',
                             position: 'right',
                             grid: { drawOnChartArea: false },
-                            ticks: { precision: 0 }
+                            ticks: { precision: 0, stepSize: Math.max(1, Math.round(Math.max(...orders) / 5)) }
                         },
                         x: { grid: { display: false } }
                     },
