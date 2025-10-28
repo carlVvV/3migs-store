@@ -1200,6 +1200,23 @@ class AdminController extends Controller
             ->limit(10)
             ->get();
 
+        // Top customers by total spent (with filters applied)
+        $top_customers = User::select('users.id', 'users.name', 'users.email')
+            ->selectRaw('COUNT(orders.id) as orders_count')
+            ->selectRaw('SUM(orders.total_amount) as total_spent')
+            ->join('orders', 'users.id', '=', 'orders.user_id')
+            ->whereIn('orders.status', $statusFilter)
+            ->when($dateFrom, function ($q) use ($dateFrom) {
+                $q->whereDate('orders.created_at', '>=', $dateFrom);
+            })
+            ->when($dateTo, function ($q) use ($dateTo) {
+                $q->whereDate('orders.created_at', '<=', $dateTo);
+            })
+            ->groupBy('users.id', 'users.name', 'users.email')
+            ->orderByDesc('total_spent')
+            ->limit(10)
+            ->get();
+
         // Custom design orders data
         $custom_orders = $customQuery->clone()
             ->with('user')
@@ -1256,7 +1273,7 @@ class AdminController extends Controller
             'total_revenue' => $total_revenue,
             'total_orders' => $total_orders,
             'average_order_value' => $average_order_value,
-            'top_customers' => collect(), // can be filled later
+            'top_customers' => $top_customers,
             'sales_by_month' => $sales_by_month,
             'best_sellers' => $best_sellers,
             'custom_orders' => $custom_orders,

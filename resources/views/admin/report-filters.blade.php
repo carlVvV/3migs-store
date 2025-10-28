@@ -76,22 +76,16 @@
             </div>
 
             <!-- Action Buttons -->
-            <div class="md:col-span-4 flex items-center gap-3 mt-4">
+            <div class="md:col-span-4 flex items-center gap-2 mt-3">
                 <button type="submit" 
-                        class="inline-flex items-center px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                        class="inline-flex items-center px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
                     <i class="fas fa-filter mr-2"></i>
                     Apply Filters
                 </button>
                 <a href="{{ route('admin.reports') }}" 
-                   class="inline-flex items-center px-6 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors">
+                   class="inline-flex items-center px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors">
                     <i class="fas fa-redo mr-2"></i>
                     Reset Filters
-                </a>
-                <a href="{{ route('admin.reports.export', request()->query()) }}" 
-                   target="_blank"
-                   class="inline-flex items-center px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
-                    <i class="fas fa-file-export mr-2"></i>
-                    Export CSV
                 </a>
             </div>
         </form>
