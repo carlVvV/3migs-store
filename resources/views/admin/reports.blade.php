@@ -92,10 +92,81 @@
     <!-- Sales Chart Placeholder -->
     <div class="bg-white shadow rounded-lg">
         <div class="px-4 py-5 sm:p-6">
-            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Sales Analytics</h3>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Sales & Orders (Monthly)</h3>
             <canvas id="salesChart" height="90"></canvas>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        (function(){
+            const ctx = document.getElementById('salesChart');
+            if (!ctx) return;
+            const data = @json($salesReport['sales_by_month']);
+            const labels = data.map(m => m.month);
+            const revenues = data.map(m => Number(m.revenue));
+            const orders = data.map(m => Number(m.orders_count));
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Revenue (₱)',
+                            data: revenues,
+                            backgroundColor: 'rgba(16, 185, 129, 0.6)',
+                            borderColor: 'rgba(16, 185, 129, 1)',
+                            yAxisID: 'y',
+                            borderWidth: 1,
+                        },
+                        {
+                            label: 'Orders',
+                            data: orders,
+                            backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            yAxisID: 'y1',
+                            borderWidth: 1,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            ticks: {
+                                callback: (val) => '₱' + Number(val).toLocaleString(),
+                            },
+                            grid: { drawOnChartArea: true }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            ticks: { precision: 0 }
+                        },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { display: true },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx){
+                                    if (ctx.dataset.label.includes('Revenue')) {
+                                        return ctx.dataset.label + ': ₱' + Number(ctx.raw).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+                                    }
+                                    return ctx.dataset.label + ': ' + ctx.raw.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        })();
+    </script>
 
     <!-- Top Customers -->
     <div class="bg-white shadow rounded-lg">
@@ -383,51 +454,4 @@
 </div>
 @endsection
 
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function(){
-    const ctx = document.getElementById('salesChart');
-    if (!ctx) return;
-    const labels = @json($salesReport['sales_by_month']->pluck('month'));
-    const revenue = @json($salesReport['sales_by_month']->pluck('revenue'));
-    const orders = @json($salesReport['sales_by_month']->pluck('orders_count'));
-
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    type: 'line',
-                    label: 'Revenue',
-                    data: revenue,
-                    borderColor: 'rgb(239, 68, 68)',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    yAxisID: 'y1',
-                    tension: 0.3,
-                },
-                {
-                    type: 'bar',
-                    label: 'Orders',
-                    data: orders,
-                    backgroundColor: 'rgba(37, 99, 235, 0.5)',
-                    yAxisID: 'y',
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: { beginAtZero: true, title: { display: true, text: 'Orders' } },
-                y1: { beginAtZero: true, position: 'right', title: { display: true, text: 'Revenue (₱)' }, grid: { drawOnChartArea: false } }
-            },
-            plugins: {
-                legend: { position: 'top' },
-                tooltip: { mode: 'index', intersect: false }
-            }
-        }
-    });
-});
-</script>
-@endpush
+ 
