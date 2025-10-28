@@ -1066,32 +1066,93 @@ class AdminController extends Controller
     /**
      * Display the reports page
      */
+    
     public function reports(Request $request)
     {
+        // Apply filters
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
+        $period = $request->input('period');
+        $status = $request->input('status', 'all');
+        
+        // Determine date range based on period if set
+        if ($period && !$dateFrom && !$dateTo) {
+            $today = now();
+            switch($period) {
+                case 'today':
+                    $dateFrom = $today->toDateString();
+                    $dateTo = $today->toDateString();
+                    break;
+                case 'week':
+                    $dateFrom = $today->subDays(7)->toDateString();
+                    $dateTo = now()->toDateString();
+                    break;
+                case 'month':
+                    $dateFrom = $today->startOfMonth()->toDateString();
+                    $dateTo = now()->toDateString();
+                    break;
+                case 'last_month':
+                    $dateFrom = $today->subMonth()->startOfMonth()->toDateString();
+                    $dateTo = $today->endOfMonth()->toDateString();
+                    break;
+                case '3months':
+                    $dateFrom = $today->subMonths(3)->toDateString();
+                    $dateTo = now()->toDateString();
+                    break;
+                case '6months':
+                    $dateFrom = $today->subMonths(6)->toDateString();
+                    $dateTo = now()->toDateString();
+                    break;
+                case 'year':
+                    $dateFrom = $today->subYear()->toDateString();
+                    $dateTo = now()->toDateString();
+                    break;
+            }
+        }
+        
+        // Build query with filters
+        $regularQuery = Order::query();
+        $customQuery = \App\Models\CustomDesignOrder::query();
+        
+        if ($dateFrom) {
+            $regularQuery->whereDate('created_at', '>=', $dateFrom);
+            $customQuery->whereDate('created_at', '>=', $dateFrom);
+        }
+        
+        if ($dateTo) {
+            $regularQuery->whereDate('created_at', '<=', $dateTo);
+            $customQuery->whereDate('created_at', '<=', $dateTo);
+        }
+        
+        // Status filter
+        $statusFilter = ['completed', 'delivered', 'shipped', 'processing'];
+        if ($status !== 'all') {
+            $statusFilter = [$status];
+        }
+        
+        $regularQuery->whereIn('status', $statusFilter);
+        $customQuery->whereIn('status', $statusFilter);
+        
         // Sales by month (last 12 months) - PostgreSQL compatible
         $driver = DB::getDriverName();
         $ymExpr = $driver === 'pgsql' ? 'TO_CHAR(created_at, \'YYYY-MM\')' : 'DATE_FORMAT(created_at, "%Y-%m")';
 
         // Get regular orders sales by month
-        $regular_sales_by_month = Order::select(
+        $regular_sales_by_month = $regularQuery->clone()->select(
                 DB::raw($ymExpr . ' as ym'),
                 DB::raw('COUNT(*) as orders_count'),
                 DB::raw('SUM(total_amount) as revenue')
             )
-            ->whereIn('status', ['completed', 'delivered', 'shipped', 'processing'])
-            ->where('created_at', '>=', now()->subMonths(12))
             ->groupBy('ym')
             ->orderBy('ym')
             ->get();
 
         // Get custom design orders sales by month
-        $custom_sales_by_month = \App\Models\CustomDesignOrder::select(
+        $custom_sales_by_month = $customQuery->clone()->select(
                 DB::raw($ymExpr . ' as ym'),
                 DB::raw('COUNT(*) as orders_count'),
                 DB::raw('SUM(total_amount) as revenue')
             )
-            ->whereIn('status', ['completed', 'delivered', 'shipped', 'processing'])
-            ->where('created_at', '>=', now()->subMonths(12))
             ->groupBy('ym')
             ->orderBy('ym')
             ->get();
@@ -1108,13 +1169,13 @@ class AdminController extends Controller
             ];
         })->sortBy('month')->values();
 
-        // Calculate totals including both order types
-        $regular_revenue = (float) Order::whereIn('status', ['completed', 'delivered', 'processing'])->sum('total_amount');
-        $custom_revenue = (float) \App\Models\CustomDesignOrder::whereIn('status', ['completed', 'delivered', 'processing'])->sum('total_amount');
+        // Calculate totals with filters
+        $regular_revenue = (float) $regularQuery->clone()->sum('total_amount');
+        $custom_revenue = (float) $customQuery->clone()->sum('total_amount');
         $total_revenue = $regular_revenue + $custom_revenue;
 
-        $regular_orders = (int) Order::whereIn('status', ['completed', 'delivered', 'processing'])->count();
-        $custom_orders = (int) \App\Models\CustomDesignOrder::whereIn('status', ['completed', 'delivered', 'processing'])->count();
+        $regular_orders = (int) $regularQuery->clone()->count();
+        $custom_orders = (int) $customQuery->clone()->count();
         $total_orders = $regular_orders + $custom_orders;
 
         $average_order_value = $total_orders > 0 ? $total_revenue / $total_orders : 0;
@@ -1122,45 +1183,70 @@ class AdminController extends Controller
         // Best selling products (by quantity)
         $best_sellers = DB::table('order_items')
             ->join('barong_products', 'order_items.product_id', '=', 'barong_products.id')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->select('product_id', 'barong_products.name', DB::raw('SUM(order_items.quantity) as total_qty'), DB::raw('SUM(order_items.total_price) as total_sales'))
+            ->whereIn('orders.status', $statusFilter);
+            
+        if ($dateFrom) {
+            $best_sellers->whereDate('orders.created_at', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $best_sellers->whereDate('orders.created_at', '<=', $dateTo);
+        }
+            
+        $best_sellers = $best_sellers
             ->groupBy('product_id', 'barong_products.name')
             ->orderByDesc('total_qty')
             ->limit(10)
             ->get();
 
         // Custom design orders data
-        $custom_orders = \App\Models\CustomDesignOrder::with('user')
-            ->whereIn('status', ['completed', 'delivered', 'shipped', 'processing'])
+        $custom_orders = $customQuery->clone()
+            ->with('user')
             ->orderBy('created_at', 'desc')
             ->limit(20)
             ->get();
 
         // Custom design orders summary
         $custom_orders_summary = [
-            'total_custom_orders' => \App\Models\CustomDesignOrder::whereIn('status', ['completed', 'delivered', 'shipped', 'processing'])->count(),
-            'total_custom_revenue' => \App\Models\CustomDesignOrder::whereIn('status', ['completed', 'delivered', 'shipped', 'processing'])->sum('total_amount'),
+            'total_custom_orders' => $customQuery->clone()->count(),
+            'total_custom_revenue' => $customQuery->clone()->sum('total_amount'),
             'pending_custom_orders' => \App\Models\CustomDesignOrder::where('status', 'pending')->count(),
-            'custom_orders_by_fabric' => \App\Models\CustomDesignOrder::select('fabric', DB::raw('COUNT(*) as count'), DB::raw('SUM(total_amount) as revenue'))
-                ->whereIn('status', ['completed', 'delivered', 'shipped', 'processing'])
+            'custom_orders_by_fabric' => $customQuery->clone()
+                ->select('fabric', DB::raw('COUNT(*) as count'), DB::raw('SUM(total_amount) as revenue'))
                 ->groupBy('fabric')
                 ->orderByDesc('count')
                 ->get(),
         ];
 
-        // Weekly sales for last 3 months by product
-        $weeklySales = DB::table('order_items')
+        // Weekly sales with filters
+        $weeklySalesQuery = DB::table('order_items')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->join('barong_products', 'order_items.product_id', '=', 'barong_products.id')
             ->select(
                 'barong_products.id as product_id',
                 'barong_products.name as product_name',
+                'barong_products.sku as product_sku',
                 DB::raw("TO_CHAR(orders.created_at, 'IYYY-\"W\"IW') as week"),
                 DB::raw("DATE_TRUNC('week', orders.created_at)::date as week_start"),
                 DB::raw('SUM(order_items.quantity) as total_quantity'),
                 DB::raw('SUM(order_items.total_price) as total_sales')
             )
-            ->whereIn('orders.status', ['completed', 'delivered', 'shipped', 'processing'])
-            ->where('orders.created_at', '>=', now()->subMonths(3))
+            ->whereIn('orders.status', $statusFilter);
+            
+        if ($dateFrom) {
+            $weeklySalesQuery->whereDate('orders.created_at', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $weeklySalesQuery->whereDate('orders.created_at', '<=', $dateTo);
+        }
+        
+        // If no date range specified, default to last 3 months
+        if (!$dateFrom && !$dateTo) {
+            $weeklySalesQuery->where('orders.created_at', '>=', now()->subMonths(3));
+        }
+            
+        $weeklySales = $weeklySalesQuery
             ->groupBy('barong_products.id', 'barong_products.name', 'barong_products.sku', 'week', 'week_start')
             ->orderBy('week', 'desc')
             ->orderBy('total_sales', 'desc')
