@@ -224,7 +224,7 @@ function showNotification(type, title, message, duration) {
 
 // Form submission handler
 function handleFormSubmit(event) {
-    console.log('🚀 Form submission intercepted');
+    
     event.preventDefault();
     event.stopPropagation();
     
@@ -237,9 +237,9 @@ function handleFormSubmit(event) {
     const formData = new FormData(form);
     
     // Debug: Log form data
-    console.log('📋 Form data being sent:');
+    
     for (let [key, value] of formData.entries()) {
-        console.log(key, value);
+        
     }
     
     const url = form.action;
@@ -254,7 +254,7 @@ function handleFormSubmit(event) {
         }
     })
     .then(response => {
-        console.log('📡 Response status:', response.status);
+        
         
         if (response.status === 302) {
             console.error('❌ Server redirected (302)');
@@ -270,7 +270,7 @@ function handleFormSubmit(event) {
         }
         
         const contentType = response.headers.get('content-type');
-        console.log('📄 Content-Type:', contentType);
+        
         
         if (contentType && contentType.includes('application/json')) {
             return response.json();
@@ -282,7 +282,7 @@ function handleFormSubmit(event) {
         }
     })
     .then(data => {
-        console.log('✅ Success response received:', data);
+        
         
         if (data.success) {
             // Show success notification
@@ -294,7 +294,7 @@ function handleFormSubmit(event) {
             
             // Redirect after a short delay
             setTimeout(() => {
-                console.log('🔄 Redirecting to products page...');
+                
                 window.location.href = '/admin/products';
             }, 2000);
         } else {
@@ -320,12 +320,12 @@ function handleFormSubmit(event) {
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Product Form initialized');
+    
     
     // Test if form exists
     const form = document.getElementById('barongProductForm');
     if (form) {
-        console.log('✅ Form found:', form);
+        
     } else {
         console.error('❌ Form not found!');
     }

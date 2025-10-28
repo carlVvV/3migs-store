@@ -965,18 +965,12 @@
             this.slidesPerView = this.getSlidesPerView();
             this.totalSlides = Math.ceil(this.carousel.children.length / this.slidesPerView);
             
-            console.log(`Initializing ${carouselId}:`, {
-                carousel: this.carousel,
-                dots: this.dots,
-                slidesPerView: this.slidesPerView,
-                totalSlides: this.totalSlides,
-                childrenCount: this.carousel ? this.carousel.children.length : 0
-            });
+            
             
             if (this.carousel && this.totalSlides > 1) {
                 this.init();
             } else {
-                console.log(`Skipping ${carouselId} - not enough slides or carousel not found`);
+                
             }
         }
         
@@ -993,14 +987,14 @@
             this.setupEventListeners();
             this.startAutoRotate();
             this.updateDots();
-            console.log(`Carousel initialized with ${this.totalSlides} slides`);
+            
         }
         
         setupEventListeners() {
             // Navigation dots
             this.dots.forEach((dot, index) => {
                 dot.addEventListener('click', () => {
-                    console.log(`Dot clicked: ${index}`);
+                    
                     this.goToSlide(index);
                 });
             });
@@ -1021,7 +1015,6 @@
         startAutoRotate() {
             if (this.totalSlides <= 1) return;
             
-            console.log(`Starting auto-rotate for ${this.carousel.id} with ${this.autoRotateInterval}ms interval`);
             this.intervalId = setInterval(() => {
                 this.nextSlide();
             }, this.autoRotateInterval);
@@ -1029,14 +1022,14 @@
         
         nextSlide() {
             this.currentSlide = (this.currentSlide + 1) % this.totalSlides;
-            console.log(`Next slide: ${this.currentSlide}`);
+            
             this.updateCarousel();
             this.updateDots();
         }
         
         goToSlide(slideIndex) {
             this.currentSlide = slideIndex;
-            console.log(`Go to slide: ${this.currentSlide}`);
+            
             this.updateCarousel();
             this.updateDots();
         }
@@ -1044,7 +1037,7 @@
         updateCarousel() {
             const translateX = -(this.currentSlide * 100);
             this.carousel.style.transform = `translateX(${translateX}%)`;
-            console.log(`Updated carousel transform: translateX(${translateX}%)`);
+            
         }
         
         updateDots() {
@@ -1064,7 +1057,6 @@
     
     // Initialize carousels when DOM is loaded
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('DOM loaded, initializing carousels...');
         
         // Wait a bit for all elements to be rendered
         setTimeout(() => {

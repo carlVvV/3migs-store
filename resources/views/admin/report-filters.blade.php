@@ -3,21 +3,6 @@
     <div class="px-4 py-5 sm:p-6">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg leading-6 font-medium text-gray-900">Filter Reports</h3>
-            <form method="GET" action="{{ route('admin.reports') }}" class="inline-block" id="reportFiltersForm">
-                <!-- Hidden field to preserve existing filters -->
-                @if(request('date_from'))
-                    <input type="hidden" name="date_from" value="{{ request('date_from') }}">
-                @endif
-                @if(request('date_to'))
-                    <input type="hidden" name="date_to" value="{{ request('date_to') }}">
-                @endif
-                @if(request('status'))
-                    <input type="hidden" name="status" value="{{ request('status') }}">
-                @endif
-                @if(request('period'))
-                    <input type="hidden" name="period" value="{{ request('period') }}">
-                @endif
-            </form>
         </div>
         
         <form method="GET" action="{{ route('admin.reports') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -139,21 +124,6 @@ function applyQuickPeriod(period) {
     
     if (fromDate) dateFromInput.value = fromDate;
     if (toDate) dateToInput.value = toDate;
-}
-
-function exportReport() {
-    // Get all current filter values
-    const form = document.querySelector('form[action="{{ route('admin.reports') }}"]');
-    const params = new URLSearchParams();
-    
-    form.querySelectorAll('input, select').forEach(el => {
-        if (el.name && el.value) {
-            params.append(el.name, el.value);
-        }
-    });
-    
-    // Redirect to export endpoint with filters
-    window.location.href = '{{ route('admin.reports') }}?' + params.toString();
 }
 </script>
 

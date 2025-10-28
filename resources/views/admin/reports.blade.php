@@ -114,6 +114,8 @@
             const labels = data.map(m => m.month);
             const revenues = data.map(m => Number(m.revenue));
             const orders = data.map(m => Number(m.orders_count));
+            const maxOrders = orders.length ? Math.max(...orders) : 0;
+            const step = Math.max(1, Math.round(maxOrders / 5));
 
             new Chart(ctx, {
                 type: 'bar',
@@ -154,7 +156,7 @@
                             type: 'linear',
                             position: 'right',
                             grid: { drawOnChartArea: false },
-                            ticks: { precision: 0, stepSize: Math.max(1, Math.round(Math.max(...orders) / 5)) }
+                            ticks: { precision: 0, stepSize: step }
                         },
                         x: { grid: { display: false } }
                     },

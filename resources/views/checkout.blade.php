@@ -765,24 +765,22 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('place-order-btn').addEventListener('click', placeOrder);
 
     function loadOrderSummary() {
-        console.log('Loading checkout order summary...');
+        
         
         // Check if we have a custom design order ID from session storage
         const customDesignOrderId = sessionStorage.getItem('customDesignOrderId');
         
         if (customDesignOrderId) {
-            console.log('Custom design order ID found:', customDesignOrderId);
-            console.log('Validating custom design order...');
+            
             loadCustomDesignOrder(customDesignOrderId);
         } else {
-            console.log('No custom design order ID, loading regular cart');
-            console.log('Validating regular cart items...');
+            
             loadRegularCart();
         }
     }
 
     function loadCustomDesignOrder(orderId) {
-        console.log('Loading custom design order:', orderId);
+        
         
         // Validate order ID
         if (!orderId || orderId === 'null' || orderId === 'undefined') {
@@ -793,19 +791,19 @@ document.addEventListener('DOMContentLoaded', function() {
         
         fetch(`/api/v1/custom-design-orders/${orderId}`)
             .then(response => {
-                console.log('Custom design order API response status:', response.status);
+                
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 return response.json();
             })
             .then(data => {
-                console.log('Custom design order response:', data);
+                
                 document.getElementById('checkout-loading').classList.add('hidden');
                 
                 if (data.success && data.data) {
                     const order = data.data;
-                    console.log('Custom design order validated successfully:', order);
+                    
                     
                     // Validate pricing data
                     if (!order.pricing || !order.pricing.total) {
@@ -830,7 +828,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('empty-cart-message').classList.add('hidden');
                     document.getElementById('not-logged-in-message').classList.add('hidden');
                     
-                    console.log('Custom design order checkout initialized successfully');
+                    
                 } else {
                     console.error('Failed to load custom design order - invalid data:', data);
                     showNotification('Failed to load custom design order. Please try again.', 'error');
@@ -847,12 +845,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function loadRegularCart() {
-        console.log('Loading regular cart...');
+        
         
         fetch('/api/v1/cart')
             .then(response => response.json())
             .then(data => {
-                console.log('Cart API response:', data);
+                
                 document.getElementById('checkout-loading').classList.add('hidden');
                 
                 if (data.success && data.items && data.items.length > 0) {
@@ -878,7 +876,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function displayCustomOrderItem(order) {
-        console.log('Displaying custom order item:', order);
+        
         const container = document.getElementById('order-items');
         container.innerHTML = '';
         
@@ -920,7 +918,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateCustomOrderTotals(order) {
-        console.log('Updating custom order totals:', order);
+        
         const pricing = order.pricing || {};
         
         // Show and populate custom pricing breakdown
@@ -945,7 +943,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function enableCustomBarongMode() {
-        console.log('Enabling custom barong mode');
+        
         
         // Disable COD option
         const codRadio = document.getElementById('cod');
@@ -1211,22 +1209,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function placeOrder() {
-        console.log('Placing order...');
+        
         
         // Check if we have a custom design order ID
         const customDesignOrderId = sessionStorage.getItem('customDesignOrderId');
         
         if (customDesignOrderId) {
-            console.log('Processing custom design order:', customDesignOrderId);
+            
             await processCustomDesignOrder(customDesignOrderId);
         } else {
-            console.log('Processing regular order');
+            
             await processRegularOrder();
         }
     }
 
     async function processCustomDesignOrder(orderId) {
-        console.log('Processing custom design order:', orderId);
+        
         
         // Validate billing information
         const billingData = validateBillingForm();
@@ -1236,7 +1234,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Get payment method
         const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
-        console.log('Payment method:', paymentMethod);
+        
 
         if (paymentMethod === 'ewallet') {
             // Process online payment for custom design order
@@ -1247,7 +1245,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function processCustomDesignOnlinePayment(orderId, billingData) {
-        console.log('Processing custom design online payment:', orderId, billingData);
+        
         
         try {
             // Update the custom design order with billing information
@@ -1265,7 +1263,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             const updateData = await updateResponse.json();
-            console.log('Custom design order update response:', updateData);
+            
 
             if (updateData.success) {
                 // Generate Bux checkout URL for custom design order
@@ -1285,7 +1283,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 const buxData = await buxResponse.json();
-                console.log('Bux checkout response:', buxData);
+                
 
                 if (buxData.success && buxData.checkout_url) {
                     // Clear session storage
@@ -1307,7 +1305,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function processRegularOrder() {
-        console.log('Processing regular order');
+        
         
         if (!validateForm()) {
             return;
