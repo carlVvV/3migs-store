@@ -3,90 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reports - Print</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <title>Daily Sales Report - Print</title>
     <style>
         @media print {
             .no-print { display: none; }
-            .print-container { padding: 0 !important; }
+            @page { margin: 0.5in; }
         }
+        body { font-family: Arial, sans-serif; font-size: 11px; }
+        .header { margin-bottom: 20px; }
+        .header-left { float: left; width: 50%; }
+        .header-right { float: right; width: 45%; text-align: right; }
+        .clear { clear: both; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        th { background-color: #2d3748; color: white; padding: 8px; text-align: left; font-weight: bold; border: 1px solid #4a5568; }
+        td { padding: 6px; border: 1px solid #cbd5e0; }
+        .text-right { text-align: right; }
+        .section-title { font-size: 13px; font-weight: bold; margin: 15px 0 8px 0; color: #2d3748; }
+        .stats-box { border: 1px solid #cbd5e0; padding: 10px; margin-bottom: 15px; }
+        .totals-box { border: 2px solid #2d3748; padding: 10px; margin-top: 20px; }
+        .notes-box { border: 1px solid #cbd5e0; padding: 10px; min-height: 80px; margin-top: 15px; }
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Auto-open print dialog
             window.print();
         });
     </script>
-    </head>
-<body class="bg-white print-container">
-    <div class="container mx-auto px-6 py-6">
-        <div class="flex items-center justify-between mb-6 no-print">
-            <h1 class="text-2xl font-bold text-gray-900">Reports (Print Preview)</h1>
-            <button onclick="window.print()" class="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-900">Print</button>
+</head>
+<body>
+    <div class="no-print" style="margin-bottom: 20px; padding: 10px; background: #f7fafc; border-bottom: 2px solid #cbd5e0;">
+        <button onclick="window.print()" style="padding: 8px 16px; background: #2d3748; color: white; border: none; cursor: pointer; border-radius: 4px;">Print</button>
+    </div>
+
+    <!-- Header Section -->
+    <div class="header">
+        <div class="header-left">
+            <div style="font-weight: bold; font-size: 13px;">COMPANY NAME</div>
+            <div>3MIGs E-commerce</div>
+            <div style="margin-top: 15px; font-weight: bold; font-size: 13px;">EMPLOYEE</div>
+            <div>{{ auth()->user()->name ?? 'Admin' }}</div>
+            <div style="font-weight: bold; font-size: 13px;">EMPLOYEE ID</div>
+            <div>{{ auth()->user()->id ?? 'N/A' }}</div>
         </div>
-
-        <div class="grid grid-cols-3 gap-4 mb-8">
-            <div class="border rounded p-4">
-                <div class="text-sm text-gray-500">Total Revenue</div>
-                <div class="text-xl font-bold">₱{{ number_format($salesReport['total_revenue'], 2) }}</div>
-            </div>
-            <div class="border rounded p-4">
-                <div class="text-sm text-gray-500">Total Orders</div>
-                <div class="text-xl font-bold">{{ $salesReport['total_orders'] }}</div>
-            </div>
-            <div class="border rounded p-4">
-                <div class="text-sm text-gray-500">Average Order Value</div>
-                <div class="text-xl font-bold">₱{{ number_format($salesReport['average_order_value'], 2) }}</div>
-            </div>
+        <div class="header-right">
+            <div style="font-weight: bold; font-size: 13px;">DATE SUBMITTED</div>
+            <div>{{ now()->format('m/d/Y') }}</div>
+            <div style="margin-top: 15px; font-weight: bold; font-size: 13px;">REPORT BEGINS</div>
+            <div>{{ $salesReport['report_start_date']->format('m/d/Y') }}</div>
+            <div style="font-weight: bold; font-size: 13px;">REPORT ENDS</div>
+            <div>{{ $salesReport['report_end_date']->format('m/d/Y') }}</div>
         </div>
+        <div class="clear"></div>
+    </div>
 
-        <h2 class="text-xl font-semibold mb-3">Top Customers</h2>
-        <table class="w-full text-sm border mb-8">
-            <thead>
-                <tr class="bg-gray-50">
-                    <th class="text-left p-2 border">Customer</th>
-                    <th class="text-left p-2 border">Email</th>
-                    <th class="text-left p-2 border">Orders</th>
-                    <th class="text-left p-2 border">Total Spent</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($salesReport['top_customers'] as $c)
-                    <tr>
-                        <td class="p-2 border">{{ $c->name }}</td>
-                        <td class="p-2 border">{{ $c->email }}</td>
-                        <td class="p-2 border">{{ $c->orders_count ?? 0 }}</td>
-                        <td class="p-2 border">₱{{ number_format($c->total_spent ?? 0, 2) }}</td>
-                    </tr>
-                @empty
-                    <tr><td colspan="4" class="p-4 text-center text-gray-500 border">No data</td></tr>
-                @endforelse
-            </tbody>
-        </table>
+    <!-- Daily Sales Report -->
+    <div class="section-title">DAILY SALES REPORT</div>
+    
+    <!-- Sales by Category/Product -->
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 30%;">CATEGORY</th>
+                @foreach($salesReport['daily_sales'] as $day)
+                    <th class="text-right">{{ $day['day_name'] }}<br>{{ \Carbon\Carbon::parse($day['date'])->format('m/d/y') }}</th>
+                @endforeach
+                <th class="text-right">WEEKLY TOTAL</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($salesReport['product_sales'] as $product)
+            <tr>
+                <td>{{ $product['category_name'] ?? ($product->category_name ?? 'Uncategorized') }}</td>
+                @foreach($salesReport['daily_sales'] as $idx => $day)
+                    @php
+                        $val = is_array($product) ? ($product['daily'][$idx] ?? 0) : 0;
+                    @endphp
+                    <td class="text-right">₱{{ number_format($val, 2) }}</td>
+                @endforeach
+                <td class="text-right"><strong>₱{{ number_format(is_array($product) ? ($product['total_sales'] ?? 0) : ($product->total_sales ?? 0), 2) }}</strong></td>
+            </tr>
+            @endforeach
+            
+            <!-- Daily Totals Row -->
+            <tr style="background-color: #f7fafc; font-weight: bold;">
+                <td>DAILY TOTALS</td>
+                @foreach($salesReport['daily_sales'] as $day)
+                    <td class="text-right">₱{{ number_format($day['revenue'], 2) }}</td>
+                @endforeach
+                <td class="text-right">₱{{ number_format(array_sum(array_column($salesReport['daily_sales'], 'revenue')), 2) }}</td>
+            </tr>
+        </tbody>
+    </table>
 
-        <h2 class="text-xl font-semibold mb-3">Monthly Sales</h2>
-        <table class="w-full text-sm border">
-            <thead>
-                <tr class="bg-gray-50">
-                    <th class="text-left p-2 border">Month</th>
-                    <th class="text-left p-2 border">Orders</th>
-                    <th class="text-left p-2 border">Revenue</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($salesReport['sales_by_month'] as $m)
-                    <tr>
-                        <td class="p-2 border">{{ $m->month }}</td>
-                        <td class="p-2 border">{{ $m->orders_count }}</td>
-                        <td class="p-2 border">₱{{ number_format($m->revenue ?? 0, 2) }}</td>
-                    </tr>
-                @empty
-                    <tr><td colspan="3" class="p-4 text-center text-gray-500 border">No data</td></tr>
-                @endforelse
-            </tbody>
+    <!-- Key Statistics -->
+    <div class="stats-box">
+        <div class="section-title" style="margin-top: 0;">KEY STATISTICS</div>
+        <table style="border: none;">
+            <tr>
+                <td style="border: none; width: 33%;"><strong>TOTAL ORDERS:</strong> {{ number_format($salesReport['total_orders']) }}</td>
+                <td style="border: none; width: 33%;"><strong>TOTAL PRODUCTS:</strong> {{ number_format($salesReport['total_products']) }}</td>
+                <td style="border: none;"><strong>TOTAL CUSTOMERS:</strong> {{ number_format($salesReport['total_customers']) }}</td>
+            </tr>
+            <tr>
+                <td style="border: none;"><strong>AVERAGE ORDER VALUE:</strong> ₱{{ number_format($salesReport['total_orders'] > 0 ? ($salesReport['total_revenue'] / $salesReport['total_orders']) : 0, 2) }}</td>
+                <td style="border: none;"></td>
+                <td style="border: none;"></td>
+            </tr>
         </table>
+    </div>
+
+    <!-- Notes Section -->
+    <div class="notes-box">
+        <div style="font-weight: bold; margin-bottom: 5px;">NOTES</div>
+        <div style="min-height: 60px; color: #718096;">User to enter fields manually based upon prior data.</div>
+    </div>
+
+    <!-- Totals Section -->
+    <div class="totals-box">
+        <table style="border: none;">
+            <tr>
+                <td style="border: none; width: 50%; font-weight: bold;">MONTH-TO-DATE:</td>
+                <td style="border: none; text-align: right; font-weight: bold;">₱{{ number_format($salesReport['month_to_date'], 2) }}</td>
+            </tr>
+            <tr>
+                <td style="border: none; font-weight: bold;">BUDGET AND VARIANCE:</td>
+                <td style="border: none; text-align: right; font-weight: bold;">₱{{ number_format($salesReport['previous_month'], 2) }}</td>
+            </tr>
+            <tr>
+                <td style="border: none; font-weight: bold;">YEAR-TO-DATE:</td>
+                <td style="border: none; text-align: right; font-weight: bold;">₱{{ number_format($salesReport['year_to_date'], 2) }}</td>
+            </tr>
+            <tr>
+                <td style="border: none; font-weight: bold;">PREVIOUS PERIOD:</td>
+                <td style="border: none; text-align: right; font-weight: bold;">₱{{ number_format($salesReport['previous_month'], 2) }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div style="margin-top: 20px; font-size: 9px; color: #718096; text-align: center;">
+        Report generated on {{ now()->format('m/d/Y H:i:s') }}
     </div>
 </body>
 </html>
-
-

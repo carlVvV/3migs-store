@@ -87,12 +87,12 @@
                     <i class="fas fa-redo mr-2"></i>
                     Reset Filters
                 </a>
-                <button type="button" 
-                        onclick="exportReport()"
-                        class="inline-flex items-center px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
+                <a href="{{ route('admin.reports.export', request()->query()) }}" 
+                   target="_blank"
+                   class="inline-flex items-center px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
                     <i class="fas fa-file-export mr-2"></i>
                     Export CSV
-                </button>
+                </a>
             </div>
         </form>
     </div>
