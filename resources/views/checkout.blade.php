@@ -1264,6 +1264,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const updateData = await updateResponse.json();
             
+            // Check if validation failed
+            if (updateResponse.status === 422 || !updateData.success) {
+                let errorMessage = 'Validation failed';
+                if (updateData.errors) {
+                    // Format validation errors
+                    const errorMessages = Object.values(updateData.errors).flat();
+                    errorMessage = errorMessages.join(', ');
+                } else if (updateData.message) {
+                    errorMessage = updateData.message;
+                }
+                showNotification(errorMessage, 'error');
+                return;
+            }
 
             if (updateData.success) {
                 // Generate Bux checkout URL for custom design order
@@ -1450,27 +1463,44 @@ document.addEventListener('DOMContentLoaded', function() {
     function validateBillingForm() {
         const formData = new FormData(document.getElementById('checkout-form'));
         
-        const billingData = {
-            full_name: formData.get('full_name'),
-            company_name: formData.get('company_name'),
-            street_address: formData.get('street_address'),
-            apartment: formData.get('apartment'),
-            city: formData.get('city'),
-            province: formData.get('province'),
-            region: formData.get('region'),
-            barangay: formData.get('barangay'),
-            postal_code: formData.get('postal_code'),
-            phone: formData.get('phone'),
-            email: formData.get('email'),
-            save_info: formData.get('save_info') === 'on'
-        };
+        // Extract and clean form data
+        const full_name = formData.get('full_name')?.trim();
+        const street_address = formData.get('street_address')?.trim();
+        const city = formData.get('city')?.trim();
+        const province = formData.get('province')?.trim();
+        const postal_code = formData.get('postal_code')?.trim();
+        const phone = formData.get('phone')?.trim();
+        const email = formData.get('email')?.trim();
 
-        // Basic validation
-        if (!billingData.full_name || !billingData.street_address || !billingData.city || 
-            !billingData.province || !billingData.region || !billingData.barangay || !billingData.postal_code || !billingData.phone || !billingData.email) {
-            showNotification('Please fill in all required fields including Region and Barangay', 'error');
+        // Basic validation for required fields
+        if (!full_name || !street_address || !city || !province || !postal_code || !phone || !email) {
+            showNotification('Please fill in all required fields (Full Name, Street Address, City, Province, Postal Code, Phone, Email)', 'error');
             return null;
         }
+
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            showNotification('Please enter a valid email address', 'error');
+            return null;
+        }
+
+        // Build billing data object matching backend expectations
+        const billingData = {
+            full_name: full_name,
+            street_address: street_address,
+            city: city,
+            province: province,
+            postal_code: postal_code,
+            phone: phone,
+            email: email
+        };
+
+        // Add optional fields only if they have values
+        const company_name = formData.get('company_name')?.trim();
+        const apartment = formData.get('apartment')?.trim();
+        if (company_name) billingData.company_name = company_name;
+        if (apartment) billingData.apartment = apartment;
 
         return billingData;
     }
