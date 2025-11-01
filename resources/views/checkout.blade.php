@@ -1226,10 +1226,57 @@ document.addEventListener('DOMContentLoaded', function() {
     async function processCustomDesignOrder(orderId) {
         
         
-        // Validate billing information
-        const billingData = validateBillingForm();
+        // Check if saved address is selected
+        const addressSelect = document.getElementById('address-select');
+        const savedAddressesDiv = document.getElementById('saved-addresses');
+        const selectedAddressDisplay = document.getElementById('selected-address-display');
+        let billingData = null;
+        
+        // Check if a saved address is being used (either dropdown is visible and has selection, or address display is visible)
+        const isSavedAddressSelected = (addressSelect && addressSelect.value && 
+            (!savedAddressesDiv.classList.contains('hidden') || 
+             (selectedAddressDisplay && !selectedAddressDisplay.classList.contains('hidden'))));
+        
+        if (isSavedAddressSelected) {
+            // Get saved address data from sessionStorage
+            const savedAddresses = JSON.parse(sessionStorage.getItem('savedAddresses') || '[]');
+            // Use address select value if available, otherwise use the first/default address
+            const addressId = addressSelect ? addressSelect.value : null;
+            const selectedAddress = addressId ? 
+                savedAddresses.find(addr => String(addr.id) === addressId) :
+                (savedAddresses.find(a => a.is_default) || savedAddresses[0]);
+            
+            if (selectedAddress) {
+                // Use saved address data
+                billingData = {
+                    full_name: selectedAddress.full_name || '',
+                    street_address: selectedAddress.street_address || '',
+                    city: selectedAddress.city || '',
+                    province: selectedAddress.province || '',
+                    postal_code: selectedAddress.postal_code || '',
+                    phone: selectedAddress.phone || '',
+                    email: selectedAddress.email || ''
+                };
+                
+                // Add optional fields if they exist
+                if (selectedAddress.company_name) billingData.company_name = selectedAddress.company_name;
+                if (selectedAddress.apartment) billingData.apartment = selectedAddress.apartment;
+                
+                // Validate required fields from saved address
+                if (!billingData.full_name || !billingData.street_address || !billingData.city || 
+                    !billingData.province || !billingData.postal_code || !billingData.phone || !billingData.email) {
+                    showNotification('Selected address is missing required information. Please edit or select another address.', 'error');
+                    return;
+                }
+            }
+        }
+        
+        // If no saved address or saved address not found, validate form fields
         if (!billingData) {
-            return;
+            billingData = validateBillingForm();
+            if (!billingData) {
+                return;
+            }
         }
 
         // Get payment method
