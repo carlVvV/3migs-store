@@ -439,6 +439,19 @@ function stopRealTimeUpdates() {
 
 // Initialize real-time updates when page loads
 document.addEventListener('DOMContentLoaded', function() {
+    // Check if user was redirected from homepage to select size
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('select_size') === '1') {
+        // Show notification about selecting size
+        if (typeof showWarning === 'function') {
+            showWarning('Select Size Required', 'Please select a size before adding to cart.');
+        } else if (typeof showInfo === 'function') {
+            showInfo('Select Size Required', 'Please select a size before adding to cart.');
+        }
+        // Remove query parameter from URL without page reload
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
     // Start real-time updates
     startRealTimeUpdates();
     

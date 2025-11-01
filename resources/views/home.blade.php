@@ -212,7 +212,8 @@
                                         @if($totalStock > 0)
                                             <button class="mt-4 w-full bg-black text-white py-3 text-lg font-semibold rounded-md hover:bg-gray-800 block text-center add-to-cart-btn" 
                                                     data-product-id="{{ $product->id }}"
-                                                    onclick="event.preventDefault(); event.stopPropagation(); addToCart({{ $product->id }});">Add To Cart</button>
+                                                    data-product-slug="{{ $product->slug }}"
+                                                    onclick="event.preventDefault(); event.stopPropagation(); addToCart({{ $product->id }}, '{{ $product->slug }}');">Add To Cart</button>
                                         @else
                                             <button class="mt-4 w-full bg-red-600 text-white py-3 text-lg font-semibold rounded-md hover:bg-red-700 block text-center" 
                                                     onclick="event.preventDefault(); event.stopPropagation(); addCardToWishlist({{ $product->id }});">
@@ -317,7 +318,8 @@
                         @if($totalStock > 0)
                             <button class="mt-4 w-full bg-black text-white py-3 text-lg font-semibold rounded-md hover:bg-gray-800 block text-center add-to-cart-btn" 
                                     data-product-id="{{ $product->id }}"
-                                    onclick="event.preventDefault(); event.stopPropagation(); addToCart({{ $product->id }});">Add To Cart</button>
+                                    data-product-slug="{{ $product->slug }}"
+                                    onclick="event.preventDefault(); event.stopPropagation(); addToCart({{ $product->id }}, '{{ $product->slug }}');">Add To Cart</button>
                         @else
                             <button class="mt-4 w-full bg-red-600 text-white py-3 text-lg font-semibold rounded-md hover:bg-red-700 block text-center" 
                                     onclick="event.preventDefault(); event.stopPropagation(); addCardToWishlist({{ $product->id }});">
@@ -425,7 +427,8 @@
                                 @if($totalStock > 0)
                                     <button class="mt-4 w-full bg-black text-white py-3 text-lg font-semibold rounded-md hover:bg-gray-800 block text-center add-to-cart-btn" 
                                             data-product-id="{{ $product->id }}"
-                                            onclick="event.preventDefault(); event.stopPropagation(); addToCart({{ $product->id }});">Add To Cart</button>
+                                            data-product-slug="{{ $product->slug }}"
+                                            onclick="event.preventDefault(); event.stopPropagation(); addToCart({{ $product->id }}, '{{ $product->slug }}');">Add To Cart</button>
                                 @else
                                     <button class="mt-4 w-full bg-red-600 text-white py-3 text-lg font-semibold rounded-md hover:bg-red-700 block text-center" 
                                             onclick="event.preventDefault(); event.stopPropagation(); addCardToWishlist({{ $product->id }});">
@@ -516,7 +519,8 @@
                                 @if($totalStock > 0)
                                     <button class="mt-4 w-full bg-black text-white py-3 text-lg font-semibold rounded-md hover:bg-gray-800 block text-center add-to-cart-btn" 
                                             data-product-id="{{ $product->id }}"
-                                            onclick="event.preventDefault(); event.stopPropagation(); addToCart({{ $product->id }});">Add To Cart</button>
+                                            data-product-slug="{{ $product->slug }}"
+                                            onclick="event.preventDefault(); event.stopPropagation(); addToCart({{ $product->id }}, '{{ $product->slug }}');">Add To Cart</button>
                                 @else
                                     <button class="mt-4 w-full bg-red-600 text-white py-3 text-lg font-semibold rounded-md hover:bg-red-700 block text-center" 
                                             onclick="event.preventDefault(); event.stopPropagation(); addCardToWishlist({{ $product->id }});">
@@ -545,28 +549,15 @@
     <!-- Global JavaScript Functions -->
     <script>
         // Global functions for cart and wishlist management
-        function addToCart(productId) {
-            fetch('/api/v1/cart/add', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify({ product_id: productId, quantity: 1 })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showSuccess('Product added to cart!');
-                    updateCartCount();
+        function addToCart(productId, productSlug) {
+            // Redirect to product page - notification will be shown on product page
+            if (productSlug) {
+                // Redirect immediately to product page with query parameter for notification
+                window.location.href = '/product/' + productSlug + '?select_size=1';
                 } else {
-                    showError('Failed to add to cart', data.message || 'Please try again.');
+                // Fallback if slug is not provided
+                showError('Error', 'Unable to redirect to product page. Please try again.');
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showError('Network Error', 'An error occurred while adding to cart. Please try again.');
-            });
         }
 
         function addCardToWishlist(productId) {
@@ -681,19 +672,16 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Add event listeners for add to cart buttons
             document.querySelectorAll('.add-to-cart-btn').forEach(button => {
-                button.addEventListener('click', function() {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
                     const productId = this.getAttribute('data-product-id');
-                    addToCart(productId);
+                    const productSlug = this.getAttribute('data-product-slug');
+                    addToCart(productId, productSlug);
                 });
             });
 
-            // Add event listeners for wishlist buttons
-            document.querySelectorAll('.wishlist-btn').forEach(button => {
-                button.addEventListener('click', function() {
-                    const productId = this.getAttribute('data-product-id');
-                    addCardToWishlist(productId);
-                });
-            });
+            // Wishlist buttons already have onclick handlers, no need for duplicate event listeners
 
             // Initialize wishlist status and counts
         checkWishlistStatus();
