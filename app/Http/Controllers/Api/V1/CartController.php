@@ -78,6 +78,8 @@ class CartController extends Controller
                             'images' => $product->images,
                             'stock_quantity' => $product->getTotalStock(),
                             'added_at' => $details['added_at'] ?? now(),
+                            'size' => $details['size'] ?? null,
+                            'color' => $details['color'] ?? null,
                         ];
                     }
                 }
@@ -133,6 +135,8 @@ class CartController extends Controller
                     'is_wholesale_price' => $wholesalePrice !== null,
                     'wholesale_price' => $wholesalePrice,
                     'wholesale_savings' => $wholesaleSavings,
+                    'size' => $cartItem->size ?? null,
+                    'color' => $cartItem->color ?? null,
                 ];
             }
 
@@ -519,7 +523,9 @@ class CartController extends Controller
     {
             $validator = $request->validate([
             'item_id' => 'required|integer',
-            'quantity' => 'required|integer|min:1|max:10'
+            'quantity' => 'required|integer|min:1|max:10',
+            'size' => 'nullable|string|in:S,M,L,XL,XXL',
+            'color' => 'nullable|string'
         ]);
 
         try {
@@ -570,7 +576,33 @@ class CartController extends Controller
                     }
                 }
 
+                // Update quantity
                 $cart[$productId]['quantity'] = $validator['quantity'];
+                
+                // Update size if provided
+                if (isset($validator['size'])) {
+                    $newSize = $validator['size'];
+                    $usesSizeStocks = is_array($product->size_stocks) && count($product->size_stocks) > 0;
+                    
+                    if ($usesSizeStocks && $newSize) {
+                        // Validate new size has stock
+                        $availableForSize = (int) ($product->getStockForSize($newSize) ?? 0);
+                        if ($validator['quantity'] > $availableForSize) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Insufficient stock for size ' . $newSize . '. Available: ' . $availableForSize
+                            ], 400);
+                        }
+                    }
+                    
+                    $cart[$productId]['size'] = $newSize;
+                }
+                
+                // Update color if provided
+                if (isset($validator['color'])) {
+                    $cart[$productId]['color'] = $validator['color'];
+                }
+                
                 session()->put('cart', $cart);
 
                 return response()->json([
@@ -580,6 +612,8 @@ class CartController extends Controller
                         'id' => $productId,
                         'product_id' => $productId,
                         'quantity' => $validator['quantity'],
+                        'size' => $cart[$productId]['size'] ?? null,
+                        'color' => $cart[$productId]['color'] ?? null,
                         'is_guest' => true
                     ]
                 ]);
@@ -599,20 +633,41 @@ class CartController extends Controller
 
             $product = $cartItem->product;
 
+            // Handle size update if provided
+            $sizeToUse = isset($validator['size']) ? $validator['size'] : $cartItem->size;
+            
+            // If size is being changed, check if we can allow it
+            if (isset($validator['size']) && $cartItem->size !== $validator['size']) {
+                // Check if another cart item with this product and new size exists
+                $existingWithNewSize = Cart::where('user_id', $user->id)
+                    ->where('product_id', $product->id)
+                    ->where('size', $validator['size'])
+                    ->where('id', '!=', $cartItem->id)
+                    ->first();
+                
+                if ($existingWithNewSize) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'This product is already in your cart with size ' . $validator['size'] . '. Remove it first to change size.'
+                    ], 400);
+                }
+                
+                $sizeToUse = $validator['size'];
+            }
+            
             $usesSizeStocks = is_array($product->size_stocks) && count($product->size_stocks) > 0;
             if ($usesSizeStocks) {
-                $sizeInCart = $cartItem->size;
-                if (!$sizeInCart) {
+                if (!$sizeToUse) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Please select a size for this cart item.'
                     ], 422);
                 }
-                $availableForSize = (int) ($product->getStockForSize($sizeInCart) ?? 0);
+                $availableForSize = (int) ($product->getStockForSize($sizeToUse) ?? 0);
                 if ($validator['quantity'] > $availableForSize) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Insufficient stock for size ' . $sizeInCart . '. Available: ' . $availableForSize
+                        'message' => 'Insufficient stock for size ' . $sizeToUse . '. Available: ' . $availableForSize
                     ], 400);
                 }
             } else {
@@ -628,10 +683,23 @@ class CartController extends Controller
             $totalCartQuantity = $user->cart()->where('id', '!=', $cartItem->id)->sum('quantity') + $validator['quantity'];
             $finalPrice = $product->getPriceForQuantity($totalCartQuantity);
             
-            $cartItem->update([
+            // Prepare update data
+            $updateData = [
                 'quantity' => $validator['quantity'],
                 'price' => $finalPrice // Update price with wholesale pricing if applicable
-            ]);
+            ];
+            
+            // Update size if provided
+            if (isset($validator['size'])) {
+                $updateData['size'] = $validator['size'];
+            }
+            
+            // Update color if provided
+            if (isset($validator['color'])) {
+                $updateData['color'] = $validator['color'];
+            }
+            
+            $cartItem->update($updateData);
 
             return response()->json([
                 'success' => true,
