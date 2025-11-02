@@ -171,10 +171,10 @@
                                     </div>
                                     
                                     <!-- Wishlist Button -->
-                                    <button class="absolute top-2 left-2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn z-20" 
+                                    <button class="absolute top-2 left-2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn z-30" 
                                             data-product-id="{{ $product->id }}" 
                                             title="Add to Wishlist"
-                                            onclick="event.preventDefault(); event.stopPropagation(); addCardToWishlist({{ $product->id }});">
+                                            onclick="event.preventDefault(); event.stopPropagation(); return addCardToWishlist({{ $product->id }});">
                                         <i class="far fa-heart text-gray-600 text-sm"></i>
                                     </button>
                                     
@@ -383,10 +383,10 @@
                                     <!-- Best Seller Badge (removed, shown in tags container) -->
                                     
                                     <!-- Wishlist Button -->
-                                    <button class="absolute top-2 left-2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn z-20" 
+                                    <button class="absolute top-2 left-2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn z-30" 
                                             data-product-id="{{ $product->id }}" 
                                             title="Add to Wishlist"
-                                            onclick="event.preventDefault(); event.stopPropagation(); addCardToWishlist({{ $product->id }});">
+                                            onclick="event.preventDefault(); event.stopPropagation(); return addCardToWishlist({{ $product->id }});">
                                         <i class="far fa-heart text-gray-600 text-sm"></i>
                                     </button>
                             
@@ -479,9 +479,10 @@
                             </div>
                             
                             <!-- Wishlist Button -->
-                            <button class="absolute top-2 left-2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn z-20" 
+                            <button class="absolute top-2 left-2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn z-30" 
                                     data-product-id="{{ $product->id }}" 
-                                    title="Add to Wishlist">
+                                    title="Add to Wishlist"
+                                    onclick="event.preventDefault(); event.stopPropagation(); return addCardToWishlist({{ $product->id }});">
                                 <i class="far fa-heart text-gray-600 text-sm"></i>
                             </button>
                             
@@ -686,40 +687,155 @@
         }
 
         function addCardToWishlist(productId) {
-            const isLoggedIn = {{ auth()->check() ? 'true' : 'false' }};
-            if (!isLoggedIn) {
-                showError('Please login to add items to wishlist', 'You need to be logged in to add items to your wishlist.', 3000);
+            try {
+                console.log('addCardToWishlist called with productId:', productId);
+                
+                const isLoggedIn = {{ auth()->check() ? 'true' : 'false' }};
+                if (!isLoggedIn) {
+                    console.log('User not logged in');
+                    if (typeof showError === 'function') {
+                        showError('Please login to add items to wishlist', 'You need to be logged in to add items to your wishlist.', 3000);
+                    } else {
+                        alert('Please login to add items to wishlist');
+                    }
+                    return false;
+                }
+
+            // Check current state
+            const button = document.querySelector(`.wishlist-btn[data-product-id="${productId}"]`);
+            console.log('Button found:', button);
+            const heartIcon = button ? button.querySelector('i') : null;
+            const isInWishlist = heartIcon && heartIcon.classList.contains('fas') && heartIcon.classList.contains('text-red-500');
+            console.log('Is in wishlist:', isInWishlist);
+            
+            // If already in wishlist, remove it
+            if (isInWishlist) {
+                console.log('Removing from wishlist, productId:', productId);
+                fetch('/api/v1/wishlist/remove-by-product', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ product_id: parseInt(productId) })
+                })
+                .then(response => {
+                    console.log('Remove response status:', response.status);
+                    const ct = response.headers.get('content-type') || '';
+                    if (!ct.includes('application/json')) {
+                        return response.text().then(text => {
+                            console.error('Non-JSON response:', text);
+                            return { success: false, message: 'Server returned an invalid response' };
+                        });
+                    }
+                    return response.json().then(data => {
+                        if (!response.ok) {
+                            console.error('Error response:', data);
+                            return { success: false, ...data };
+                        }
+                        return data;
+                    });
+                })
+                .then(data => {
+                    console.log('Remove response data:', data);
+                    if (data && data.success) {
+                        showSuccess('Removed from wishlist!', 'Product has been removed from your wishlist.', 2000);
+                        updateWishlistCount();
+                        
+                        // Update button visual state
+                        if (button && heartIcon) {
+                            heartIcon.classList.remove('fas', 'text-red-500');
+                            heartIcon.classList.add('far', 'text-gray-600');
+                            button.title = 'Add to Wishlist';
+                        }
+                    } else {
+                        showError('Failed to remove from wishlist', (data && data.message) || 'Please try again.');
+                    }
+                })
+            .catch(e => {
+                console.error('Error removing from wishlist:', e);
+                showError('Network Error', 'An error occurred while removing from wishlist. Please try again.', 5000);
+                });
                 return false;
             }
 
+            // Add to wishlist
+            console.log('Adding to wishlist, productId:', productId, 'type:', typeof productId);
             fetch('/api/v1/wishlist/add', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
                 },
-                body: JSON.stringify({ product_id: productId })
+                body: JSON.stringify({ product_id: parseInt(productId) })
             })
             .then(response => {
-                if (!response.ok) return Promise.resolve({ success: false });
+                console.log('Add response status:', response.status);
                 const ct = response.headers.get('content-type') || '';
-                if (!ct.includes('application/json')) return Promise.resolve({ success: false });
-                return response.json();
+                if (!ct.includes('application/json')) {
+                    return response.text().then(text => {
+                        console.error('Non-JSON response:', text);
+                        return { success: false, message: 'Server returned an invalid response' };
+                    });
+                }
+                return response.json().then(data => {
+                    if (!response.ok) {
+                        console.error('Error response:', data);
+                        return { success: false, ...data };
+                    }
+                    return data;
+                });
             })
             .then(data => {
+                console.log('Add response data:', data);
                 if (data && data.success) {
                     showSuccess('Added to wishlist!', 'Product has been added to your wishlist.', 2000);
                     updateWishlistCount();
+                    
+                    // Update button visual state
+                    if (button && heartIcon) {
+                        heartIcon.classList.remove('far', 'text-gray-600');
+                        heartIcon.classList.add('fas', 'text-red-500');
+                        button.title = 'In Wishlist';
+                    }
                     return false;
                 }
 
-                showError('Failed to add to wishlist', (data && data.message) || 'Please try again.');
+                // Handle specific error cases
+                if (data && data.message) {
+                    if (data.message === 'Product already in wishlist') {
+                        // Update button to show it's already in wishlist
+                        if (button && heartIcon) {
+                            heartIcon.classList.remove('far', 'text-gray-600');
+                            heartIcon.classList.add('fas', 'text-red-500');
+                            button.title = 'In Wishlist';
+                        }
+                        showInfo('Already in wishlist', 'This product is already in your wishlist.', 2000);
+                    } else {
+                        showError('Failed to add to wishlist', data.message || 'Please try again.');
+                    }
+                } else {
+                    showError('Failed to add to wishlist', 'Please try again.');
+                }
                 return false;
             })
             .catch(e => {
+                console.error('Error adding to wishlist:', e);
                 showError('Network Error', 'An error occurred while adding to wishlist. Please try again.', 5000);
                 return false;
             });
+            } catch (error) {
+                console.error('Error in addCardToWishlist:', error);
+                alert('An error occurred while processing your request. Please try again.');
+                return false;
+            }
+        }
+        
+        // Make function globally accessible immediately
+        if (typeof window !== 'undefined') {
+            window.addCardToWishlist = addCardToWishlist;
         }
         
         function updateCartCount() {
@@ -780,7 +896,7 @@
                 })
                 .then(data => {
                     if (data && data.success && data.data && data.data.is_in_wishlist) {
-                        const button = document.querySelector(`[data-product-id="${productId}"]`);
+                        const button = document.querySelector(`.wishlist-btn[data-product-id="${productId}"]`);
                         if (!button) return;
                         const heartIcon = button.querySelector('i');
                         if (!heartIcon) return;
@@ -806,12 +922,24 @@
                 });
             });
 
-            // Wishlist buttons already have onclick handlers, no need for duplicate event listeners
+            // Add click listeners for wishlist buttons as backup (in addition to onclick)
+            document.querySelectorAll('.wishlist-btn').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const productId = this.getAttribute('data-product-id');
+                    if (productId && typeof window.addCardToWishlist === 'function') {
+                        window.addCardToWishlist(productId);
+                    } else if (productId && typeof addCardToWishlist === 'function') {
+                        addCardToWishlist(productId);
+                    }
+                });
+            });
 
             // Initialize wishlist status and counts
-        checkWishlistStatus();
+            checkWishlistStatus();
             updateCartCount();
-        updateWishlistCount();
+            updateWishlistCount();
             
             // Initialize carousels
             initCarousels();
