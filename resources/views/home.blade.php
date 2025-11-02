@@ -557,14 +557,313 @@
                 return;
             }
             
-            // Redirect to product page - notification will be shown on product page
+            // Open quick-add modal instead of redirecting
             if (productSlug) {
-                // Redirect immediately to product page with query parameter for notification
-                window.location.href = '/product/' + productSlug + '?select_size=1';
+                openQuickAddModal(productSlug, productId);
+            } else {
+                showError('Error', 'Unable to open product selection. Please try again.');
+            }
+        }
+        
+        // Quick-add modal state
+        let quickAddModal = {
+            productId: null,
+            productSlug: null,
+            productData: null,
+            selectedSize: null,
+            quantity: 1
+        };
+        
+        async function openQuickAddModal(productSlug, productId) {
+            // Prevent multiple modals
+            if (document.getElementById('quick-add-modal-overlay')) {
+                return;
+            }
+            
+            quickAddModal.productSlug = productSlug;
+            quickAddModal.productId = productId;
+            quickAddModal.selectedSize = null;
+            quickAddModal.quantity = 1;
+            
+            // Show loading state
+            showQuickAddModal(true);
+            updateQuickAddModalContent('<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-3xl text-gray-400 mb-4"></i><p class="text-gray-600">Loading product...</p></div>');
+            
+            try {
+                // Fetch product data
+                const response = await fetch(`/api/v1/product-data/${productSlug}`);
+                const data = await response.json();
+                
+                if (data.success && data.product) {
+                    quickAddModal.productData = data.product;
+                    renderQuickAddModalContent();
                 } else {
-                // Fallback if slug is not provided
-                showError('Error', 'Unable to redirect to product page. Please try again.');
+                    showError('Error', 'Failed to load product details. Please try again.');
+                    closeQuickAddModal();
                 }
+            } catch (error) {
+                console.error('Error fetching product:', error);
+                showError('Error', 'Unable to load product. Please try again.');
+                closeQuickAddModal();
+            }
+        }
+        
+        function showQuickAddModal(isLoading = false) {
+            const overlay = document.createElement('div');
+            overlay.id = 'quick-add-modal-overlay';
+            overlay.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+            overlay.style.animation = 'fadeIn 0.3s ease-in-out';
+            
+            const modal = document.createElement('div');
+            modal.id = 'quick-add-modal';
+            modal.className = 'bg-white rounded-lg shadow-2xl max-w-lg w-full transform transition-all max-h-[90vh] overflow-y-auto';
+            modal.style.animation = 'slideUp 0.3s ease-out';
+            
+            modal.innerHTML = `
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold text-gray-900">Quick Add to Cart</h3>
+                        <button id="quick-add-close-btn" class="text-gray-400 hover:text-gray-600 transition-colors">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    <div id="quick-add-content">
+                        ${isLoading ? '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-3xl text-gray-400 mb-4"></i><p class="text-gray-600">Loading product...</p></div>' : ''}
+                    </div>
+                </div>
+            `;
+            
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+            
+            // Add CSS animations if not already present
+            if (!document.getElementById('quick-add-modal-styles')) {
+                const style = document.createElement('style');
+                style.id = 'quick-add-modal-styles';
+                style.textContent = `
+                    @keyframes fadeIn {
+                        from { opacity: 0; }
+                        to { opacity: 1; }
+                    }
+                    @keyframes slideUp {
+                        from { 
+                            opacity: 0;
+                            transform: translateY(20px);
+                        }
+                        to { 
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            // Event listeners
+            document.getElementById('quick-add-close-btn').addEventListener('click', closeQuickAddModal);
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    closeQuickAddModal();
+                }
+            });
+        }
+        
+        function updateQuickAddModalContent(html) {
+            const content = document.getElementById('quick-add-content');
+            if (content) {
+                content.innerHTML = html;
+            }
+        }
+        
+        function renderQuickAddModalContent() {
+            const product = quickAddModal.productData;
+            const sizes = ['S', 'M', 'L', 'XL', 'XXL'];
+            const sizeStocks = product.size_stocks || {};
+            
+            // Calculate available sizes
+            const availableSizes = sizes.map(size => {
+                const stock = parseInt(sizeStocks[size] || 0);
+                return { size, stock, available: stock > 0 };
+            }).filter(s => s.available);
+            
+            let sizeButtonsHtml = '';
+            sizes.forEach(size => {
+                const stock = parseInt(sizeStocks[size] || 0);
+                const isAvailable = stock > 0;
+                const isSelected = quickAddModal.selectedSize === size;
+                
+                sizeButtonsHtml += `
+                    <button 
+                        class="px-4 py-2 border rounded-lg transition-colors size-btn-modal ${isSelected ? 'bg-black text-white border-black' : 'border-gray-300 text-gray-700 hover:border-gray-400'} ${!isAvailable ? 'opacity-50 cursor-not-allowed' : ''}"
+                        data-size="${size}" 
+                        data-stock="${stock}"
+                        ${!isAvailable ? 'disabled' : ''}
+                        onclick="selectSizeInModal('${size}', this)"
+                        title="${isAvailable ? `Stock: ${stock}` : 'Out of stock'}">
+                        ${size}
+                        ${isAvailable ? `<span class="text-xs ml-1">(${stock})</span>` : '<span class="text-xs ml-1 text-red-500">(0)</span>'}
+                    </button>
+                `;
+            });
+            
+            const html = `
+                <div class="space-y-4">
+                    <!-- Product Image and Name -->
+                    <div class="flex items-start space-x-4">
+                        <img src="${product.cover_image_url || '/images/placeholder.jpg'}" alt="${product.name}" class="w-24 h-24 object-cover rounded-lg border border-gray-200">
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-900 mb-1">${product.name}</h4>
+                            <p class="text-lg font-bold text-red-500">₱${parseFloat(product.current_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Size Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Select Size <span class="text-red-500">*</span></label>
+                        <div class="flex flex-wrap gap-2">
+                            ${sizeButtonsHtml}
+                        </div>
+                        ${availableSizes.length === 0 ? '<p class="text-sm text-red-500 mt-2">All sizes are out of stock</p>' : ''}
+                    </div>
+                    
+                    <!-- Quantity Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                        <div class="flex items-center border border-gray-300 rounded-lg w-32">
+                            <button class="px-3 py-2 text-gray-600 hover:text-gray-800 transition-colors" onclick="decreaseModalQuantity()">-</button>
+                            <span class="px-4 py-2 text-gray-900 font-medium flex-1 text-center" id="modal-quantity">${quickAddModal.quantity}</span>
+                            <button class="px-3 py-2 text-gray-600 hover:text-gray-800 transition-colors" onclick="increaseModalQuantity()">+</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex gap-3 pt-4 border-t border-gray-200">
+                        <button onclick="closeQuickAddModal()" class="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button id="modal-add-to-cart-btn" onclick="addToCartFromModal()" class="flex-1 px-4 py-2.5 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed" ${quickAddModal.selectedSize ? '' : 'disabled'}>
+                            <i class="fas fa-shopping-cart mr-2"></i>Add to Cart
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            updateQuickAddModalContent(html);
+        }
+        
+        function selectSizeInModal(size, element) {
+            const stock = parseInt(element.getAttribute('data-stock'));
+            if (stock <= 0) {
+                showError('Size not available', `Size ${size} is out of stock`);
+                return;
+            }
+            
+            // Update selected size
+            quickAddModal.selectedSize = size;
+            
+            // Update button styles
+            document.querySelectorAll('.size-btn-modal').forEach(btn => {
+                btn.classList.remove('bg-black', 'text-white', 'border-black');
+                btn.classList.add('border-gray-300', 'text-gray-700');
+            });
+            
+            element.classList.remove('border-gray-300', 'text-gray-700');
+            element.classList.add('bg-black', 'text-white', 'border-black');
+            
+            // Enable add to cart button
+            const addBtn = document.getElementById('modal-add-to-cart-btn');
+            if (addBtn) {
+                addBtn.disabled = false;
+            }
+        }
+        
+        function increaseModalQuantity() {
+            const maxStock = quickAddModal.selectedSize ? 
+                parseInt(document.querySelector(`.size-btn-modal[data-size="${quickAddModal.selectedSize}"]`)?.getAttribute('data-stock') || 0) : 0;
+            
+            if (maxStock > 0 && quickAddModal.quantity < maxStock) {
+                quickAddModal.quantity++;
+                document.getElementById('modal-quantity').textContent = quickAddModal.quantity;
+            }
+        }
+        
+        function decreaseModalQuantity() {
+            if (quickAddModal.quantity > 1) {
+                quickAddModal.quantity--;
+                document.getElementById('modal-quantity').textContent = quickAddModal.quantity;
+            }
+        }
+        
+        async function addToCartFromModal() {
+            if (!quickAddModal.selectedSize) {
+                showError('Size Required', 'Please select a size before adding to cart.');
+                return;
+            }
+            
+            const addBtn = document.getElementById('modal-add-to-cart-btn');
+            const originalText = addBtn.innerHTML;
+            addBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Adding...';
+            addBtn.disabled = true;
+            
+            const payload = {
+                product_id: parseInt(quickAddModal.productId),
+                quantity: quickAddModal.quantity,
+                size: quickAddModal.selectedSize
+            };
+            
+            try {
+                const response = await fetch('/api/v1/cart/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess('Added to Cart!', `Product added successfully (Size: ${quickAddModal.selectedSize}, Qty: ${quickAddModal.quantity})`, 3000);
+                    closeQuickAddModal();
+                    updateCartCount();
+                } else {
+                    showError('Failed to Add', data.message || 'Unable to add product to cart. Please try again.');
+                    addBtn.innerHTML = originalText;
+                    addBtn.disabled = false;
+                }
+            } catch (error) {
+                console.error('Error adding to cart:', error);
+                showError('Network Error', 'An error occurred. Please try again.');
+                addBtn.innerHTML = originalText;
+                addBtn.disabled = false;
+            }
+        }
+        
+        function closeQuickAddModal() {
+            const overlay = document.getElementById('quick-add-modal-overlay');
+            if (overlay) {
+                overlay.style.animation = 'fadeOut 0.3s ease-in-out';
+                const modal = document.getElementById('quick-add-modal');
+                if (modal) {
+                    modal.style.animation = 'slideDown 0.3s ease-in-out';
+                }
+                setTimeout(() => {
+                    if (overlay.parentNode) {
+                        overlay.parentNode.removeChild(overlay);
+                    }
+                }, 300);
+            }
+            
+            // Reset modal state
+            quickAddModal = {
+                productId: null,
+                productSlug: null,
+                productData: null,
+                selectedSize: null,
+                quantity: 1
+            };
         }
         
         function showLoginPrompt() {
