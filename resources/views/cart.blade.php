@@ -24,15 +24,17 @@
             <div class="lg:col-span-2">
                 <div class="bg-white rounded-lg shadow-md overflow-hidden">
                     <!-- Cart Table Header -->
-                    <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                        <div class="flex items-center justify-between mb-3">
-                            <div class="grid grid-cols-4 gap-4 text-sm font-medium text-gray-700 flex-1">
+                    <div class="bg-gray-50 border-b border-gray-200">
+                        <div class="px-6 py-4">
+                            <div class="grid grid-cols-4 gap-4 text-sm font-medium text-gray-700">
                                 <div>Product</div>
                                 <div>Price</div>
                                 <div>Quantity</div>
                                 <div>Subtotal</div>
                             </div>
-                            <div class="flex items-center space-x-2">
+                        </div>
+                        <div class="px-6 pb-4 border-t border-gray-200">
+                            <div class="flex items-center space-x-2 justify-end">
                                 <button id="sort-by-size-btn" onclick="toggleSortBySize()" class="text-xs px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 transition-colors">
                                     <i class="fas fa-sort-amount-down mr-1"></i>Sort by Size
                                 </button>
@@ -311,7 +313,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return div;
         }
         const div = document.createElement('div');
-        div.className = 'p-6';
+        div.className = '';
         div.setAttribute('data-id', item.id);
         // Keep product_id available for removal (works for guest and auth flows)
         if (item.product_id) {
@@ -330,18 +332,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const subtotal = price * quantity;
         
         div.innerHTML = `
-            <div class="grid grid-cols-4 gap-4 items-center">
-                <div class="flex items-center space-x-3">
-                    <button onclick="showDeleteModal(${itemId})" class="text-red-500 hover:text-red-700 transition-colors">
+            <div class="grid grid-cols-4 gap-4 items-start px-6 py-4">
+                <div class="flex items-start space-x-3">
+                    <button onclick="showDeleteModal(${itemId})" class="text-red-500 hover:text-red-700 transition-colors mt-1" title="Remove item">
                         <i class="fas fa-times"></i>
                     </button>
-                    <a href="/product/${item.slug}" class="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+                    <a href="/product/${item.slug}" class="flex items-start space-x-3 hover:opacity-80 transition-opacity flex-1">
                         <img src="${itemImage}" 
                              alt="${item.name}" 
-                             class="w-16 h-16 object-cover rounded-md">
-                        <div class="flex-1">
+                             class="w-16 h-16 object-cover rounded-md flex-shrink-0">
+                        <div class="flex-1 min-w-0">
                             <h4 class="font-medium text-gray-900 hover:text-blue-600 transition-colors">${item.name}</h4>
-                            <p class="text-sm text-gray-500">${categoryName}</p>
+                            <p class="text-sm text-gray-500 mt-1">${categoryName}</p>
                             <div class="flex items-center gap-2 mt-1 flex-wrap">
                                 ${item.size ? `
                                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-black text-white" id="size-badge-${itemId}">
@@ -362,10 +364,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </a>
                 </div>
-                <div class="text-gray-900 font-medium">
-                    ₱${price.toFixed(2)}
+                <div class="text-gray-900 font-medium pt-1">
+                    ${formatCurrency(price)}
                 </div>
-                <div>
+                <div class="pt-1">
                     <input type="number" 
                            value="${quantity}" 
                            min="1" 
@@ -373,8 +375,8 @@ document.addEventListener('DOMContentLoaded', function() {
                            data-item-id="${itemId}"
                            class="w-20 border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent cart-quantity-input">
                 </div>
-                <div class="text-gray-900 font-medium" id="subtotal-${itemId}">
-                    ₱${subtotal.toFixed(2)}
+                <div class="text-gray-900 font-medium pt-1" id="subtotal-${itemId}">
+                    ${formatCurrency(subtotal)}
                 </div>
             </div>
         `;
