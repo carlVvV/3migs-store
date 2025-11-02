@@ -466,6 +466,15 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function addToCart() {
+    // Check if user is logged in
+    const isLoggedIn = {{ auth()->check() ? 'true' : 'false' }};
+    
+    if (!isLoggedIn) {
+        // Show visually pleasing login prompt
+        showLoginPrompt();
+        return;
+    }
+    
     // Get product ID from hidden input first, then fallback to PHP
     let productId = document.getElementById('productId')?.value;
     if (!productId) {
@@ -515,6 +524,122 @@ function addToCart() {
     
     // Proceed with cart addition
     proceedWithCartAdd(payload);
+}
+
+function showLoginPrompt() {
+    // Prevent multiple modals from being created
+    if (document.getElementById('login-modal-overlay')) {
+        return;
+    }
+    
+    // Create a modal overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'login-modal-overlay';
+    overlay.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+    overlay.style.animation = 'fadeIn 0.3s ease-in-out';
+    
+    // Create modal content
+    const modal = document.createElement('div');
+    modal.className = 'bg-white rounded-lg shadow-2xl max-w-md w-full transform transition-all';
+    modal.style.animation = 'slideUp 0.3s ease-out';
+    
+    modal.innerHTML = `
+        <div class="p-6">
+            <div class="flex items-center justify-center mb-4">
+                <div class="w-16 h-16 bg-gradient-to-br from-red-100 to-red-50 rounded-full flex items-center justify-center shadow-lg">
+                    <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                </div>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 text-center mb-2">Login Required</h3>
+            <p class="text-gray-600 text-center mb-6">Please log in to add items to your cart and continue shopping.</p>
+            <div class="flex gap-3">
+                <button id="login-cancel-btn" class="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+                    Cancel
+                </button>
+                <button id="login-redirect-btn" class="flex-1 px-4 py-2.5 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors">
+                    Go to Login
+                </button>
+            </div>
+        </div>
+    `;
+    
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    
+    // Add CSS animations if not already present
+    if (!document.getElementById('login-modal-styles')) {
+        const style = document.createElement('style');
+        style.id = 'login-modal-styles';
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes slideUp {
+                from { 
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to { 
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // Handle close
+    let isClosing = false;
+    const closeModal = (e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        if (isClosing) return;
+        isClosing = true;
+        
+        overlay.style.animation = 'fadeOut 0.3s ease-in-out';
+        modal.style.animation = 'slideDown 0.3s ease-in-out';
+        setTimeout(() => {
+            if (overlay.parentNode) {
+                overlay.parentNode.removeChild(overlay);
+            }
+            isClosing = false;
+        }, 300);
+    };
+    
+    // Use setTimeout to ensure modal is in DOM before adding listeners
+    setTimeout(() => {
+        const redirectBtn = overlay.querySelector('#login-redirect-btn');
+        const cancelBtn = overlay.querySelector('#login-cancel-btn');
+        
+        if (redirectBtn) {
+            redirectBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                window.location.href = '/login';
+            });
+        }
+        
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', closeModal);
+        }
+        
+        // Prevent event bubbling from modal content
+        modal.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+        
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay && !isClosing) {
+                closeModal(e);
+            }
+        });
+    }, 10);
 }
 
 function proceedWithCartAdd(payload) {
