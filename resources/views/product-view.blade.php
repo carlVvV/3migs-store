@@ -130,28 +130,9 @@
                             }
                         }
 
-                        // Determine availability and default selection
+                        // Determine availability - no preselected size
                         $hasAnyStock = false; foreach ($sizes as $s) { if (($sizeStocks[$s] ?? 0) > 0) { $hasAnyStock = true; break; } }
-                        $defaultSize = 'M';
-                        $selectedSize = null;
-                        
-                        // First try to select the default size if it has stock
-                        if (($sizeStocks[$defaultSize] ?? 0) > 0) {
-                            $selectedSize = $defaultSize;
-                        } else {
-                            // Otherwise, select the first available size
-                            foreach ($sizes as $s) {
-                                if (($sizeStocks[$s] ?? 0) > 0) {
-                                    $selectedSize = $s;
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        // If no sizes have stock, don't set a default (let user select manually)
-                        if ($selectedSize === null) { 
-                            $selectedSize = null; // Don't auto-select if no stock
-                        }
+                        $selectedSize = null; // Always start with no size selected
                         
                         // Debug: Log the final selected size
                         \Log::info('Product selected size debug', [
@@ -254,27 +235,11 @@
 
 <script>
 let currentQuantity = 2;
-let selectedSize = @json($selectedSize); // Use JSON to properly handle null values
+let selectedSize = null; // Always start with no size selected
 let lastUpdateTime = '{{ $product->updated_at->toISOString() }}';
 let updateInterval;
 
-// Auto-select first available size if none is selected
-if (!selectedSize || selectedSize === null || selectedSize === 'null') {
-    const availableSizes = document.querySelectorAll('.size-btn:not(.opacity-50)');
-    
-    if (availableSizes.length > 0) {
-        const firstAvailable = availableSizes[0];
-        const size = firstAvailable.getAttribute('data-size');
-        selectSize(size, firstAvailable);
-    }
-} else {
-    // Ensure the selected size button is visually selected
-    const selectedButton = document.querySelector(`[data-size="${selectedSize}"]`);
-    if (selectedButton) {
-        selectedButton.classList.add('bg-black', 'text-white');
-        selectedButton.classList.remove('border-gray-300', 'text-gray-700');
-    }
-}
+// No auto-selection - user must select a size manually
 
 function changeMainImage(imageSrc, element) {
     // Remove active class from all thumbnails
