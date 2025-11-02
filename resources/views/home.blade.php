@@ -173,8 +173,7 @@
                                     <!-- Wishlist Button -->
                                     <button class="absolute top-2 left-2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn z-30" 
                                             data-product-id="{{ $product->id }}" 
-                                            title="Add to Wishlist"
-                                            onclick="event.preventDefault(); event.stopPropagation(); return addCardToWishlist({{ $product->id }});">
+                                            title="Add to Wishlist">
                                         <i class="far fa-heart text-gray-600 text-sm"></i>
                                     </button>
                                     
@@ -215,8 +214,8 @@
                                                     data-product-slug="{{ $product->slug }}"
                                                     onclick="event.preventDefault(); event.stopPropagation(); addToCart({{ $product->id }}, '{{ $product->slug }}');">Add To Cart</button>
                                         @else
-                                            <button class="mt-4 w-full bg-red-600 text-white py-3 text-lg font-semibold rounded-md hover:bg-red-700 block text-center" 
-                                                    onclick="event.preventDefault(); event.stopPropagation(); addCardToWishlist({{ $product->id }});">
+                                            <button class="mt-4 w-full bg-red-600 text-white py-3 text-lg font-semibold rounded-md hover:bg-red-700 block text-center add-to-wishlist-out-of-stock" 
+                                                    data-product-id="{{ $product->id }}">
                                                 <i class="fas fa-heart mr-2"></i> Add to Wishlist
                                             </button>
                                         @endif
@@ -321,8 +320,8 @@
                                     data-product-slug="{{ $product->slug }}"
                                     onclick="event.preventDefault(); event.stopPropagation(); addToCart({{ $product->id }}, '{{ $product->slug }}');">Add To Cart</button>
                         @else
-                            <button class="mt-4 w-full bg-red-600 text-white py-3 text-lg font-semibold rounded-md hover:bg-red-700 block text-center" 
-                                    onclick="event.preventDefault(); event.stopPropagation(); addCardToWishlist({{ $product->id }});">
+                            <button class="mt-4 w-full bg-red-600 text-white py-3 text-lg font-semibold rounded-md hover:bg-red-700 block text-center add-to-wishlist-out-of-stock" 
+                                    data-product-id="{{ $product->id }}">
                                 <i class="fas fa-heart mr-2"></i> Add to Wishlist
                             </button>
                         @endif
@@ -385,8 +384,7 @@
                                     <!-- Wishlist Button -->
                                     <button class="absolute top-2 left-2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn z-30" 
                                             data-product-id="{{ $product->id }}" 
-                                            title="Add to Wishlist"
-                                            onclick="event.preventDefault(); event.stopPropagation(); return addCardToWishlist({{ $product->id }});">
+                                            title="Add to Wishlist">
                                         <i class="far fa-heart text-gray-600 text-sm"></i>
                                     </button>
                             
@@ -481,8 +479,7 @@
                             <!-- Wishlist Button -->
                             <button class="absolute top-2 left-2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors wishlist-btn z-30" 
                                     data-product-id="{{ $product->id }}" 
-                                    title="Add to Wishlist"
-                                    onclick="event.preventDefault(); event.stopPropagation(); return addCardToWishlist({{ $product->id }});">
+                                    title="Add to Wishlist">
                                 <i class="far fa-heart text-gray-600 text-sm"></i>
                             </button>
                             
@@ -686,12 +683,23 @@
             }, 10);
         }
 
+        // Prevent multiple simultaneous calls
+        let isWishlistProcessing = false;
+        
         function addCardToWishlist(productId) {
             try {
+                // Prevent multiple simultaneous calls
+                if (isWishlistProcessing) {
+                    console.log('Wishlist operation already in progress, ignoring duplicate call');
+                    return false;
+                }
+                
+                isWishlistProcessing = true;
                 console.log('addCardToWishlist called with productId:', productId);
                 
                 const isLoggedIn = {{ auth()->check() ? 'true' : 'false' }};
                 if (!isLoggedIn) {
+                    isWishlistProcessing = false;
                     console.log('User not logged in');
                     if (typeof showError === 'function') {
                         showError('Please login to add items to wishlist', 'You need to be logged in to add items to your wishlist.', 3000);
@@ -753,9 +761,12 @@
                         showError('Failed to remove from wishlist', (data && data.message) || 'Please try again.');
                     }
                 })
-            .catch(e => {
-                console.error('Error removing from wishlist:', e);
-                showError('Network Error', 'An error occurred while removing from wishlist. Please try again.', 5000);
+                .catch(e => {
+                    console.error('Error removing from wishlist:', e);
+                    showError('Network Error', 'An error occurred while removing from wishlist. Please try again.', 5000);
+                })
+                .finally(() => {
+                    isWishlistProcessing = false;
                 });
                 return false;
             }
@@ -825,9 +836,13 @@
                 console.error('Error adding to wishlist:', e);
                 showError('Network Error', 'An error occurred while adding to wishlist. Please try again.', 5000);
                 return false;
+            })
+            .finally(() => {
+                isWishlistProcessing = false;
             });
             } catch (error) {
                 console.error('Error in addCardToWishlist:', error);
+                isWishlistProcessing = false;
                 alert('An error occurred while processing your request. Please try again.');
                 return false;
             }
@@ -922,8 +937,14 @@
                 });
             });
 
-            // Add click listeners for wishlist buttons as backup (in addition to onclick)
-            document.querySelectorAll('.wishlist-btn').forEach(button => {
+            // Remove onclick handlers and use only event listeners to prevent duplicates
+            document.querySelectorAll('.wishlist-btn, .add-to-wishlist-out-of-stock').forEach(button => {
+                // Remove existing onclick handler
+                button.onclick = null;
+                // Remove onclick attribute
+                button.removeAttribute('onclick');
+                
+                // Add single event listener
                 button.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -933,7 +954,7 @@
                     } else if (productId && typeof addCardToWishlist === 'function') {
                         addCardToWishlist(productId);
                     }
-                });
+                }, { once: false });
             });
 
             // Initialize wishlist status and counts
