@@ -182,7 +182,7 @@
                     <div class="flex items-center space-x-4 mb-6">
                         <div class="flex items-center border border-gray-300 rounded-lg">
                             <button class="px-4 py-3 text-gray-600 hover:text-gray-800 transition-colors" onclick="decreaseQuantity()">-</button>
-                            <span class="px-4 py-3 text-gray-900 font-medium" id="quantity">2</span>
+                            <span class="px-4 py-3 text-gray-900 font-medium" id="quantity">1</span>
                             <button class="px-4 py-3 text-gray-600 hover:text-gray-800 transition-colors" onclick="increaseQuantity()">+</button>
                         </div>
                     </div>
@@ -234,7 +234,7 @@
 </div>
 
 <script>
-let currentQuantity = 2;
+let currentQuantity = 1;
 let selectedSize = null; // Always start with no size selected
 let lastUpdateTime = '{{ $product->updated_at->toISOString() }}';
 let updateInterval;
