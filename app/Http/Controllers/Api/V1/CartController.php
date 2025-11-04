@@ -306,15 +306,24 @@ class CartController extends Controller
             if ($usesSizeStocks) {
                 $selectedSize = $validator['size'] ?? null;
                 if (!$selectedSize) {
-                    \Log::warning('No size selected for size-managed product', [
-                        'product_id' => $product->id,
-                        'size_stocks' => $product->size_stocks,
-                        'available_sizes' => array_keys(array_filter($product->size_stocks ?? [])),
-                    ]);
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Please select a size before adding to cart.'
-                    ], 422);
+                    // Auto-select when exactly one size is available
+                    $availableSizes = [];
+                    foreach (($product->size_stocks ?? []) as $sizeKey => $qty) {
+                        if ((int) $qty > 0) { $availableSizes[] = (string) $sizeKey; }
+                    }
+                    if (count($availableSizes) === 1) {
+                        $selectedSize = $availableSizes[0];
+                    } else {
+                        \Log::warning('No size selected for size-managed product', [
+                            'product_id' => $product->id,
+                            'size_stocks' => $product->size_stocks,
+                            'available_sizes' => $availableSizes,
+                        ]);
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Please select a size before adding to cart.'
+                        ], 422);
+                    }
                 }
 
                 $availableForSize = (int) ($product->getStockForSize($selectedSize) ?? 0);
