@@ -27,21 +27,33 @@ class WishlistController extends Controller
                 ->latest()
                 ->get();
 
-            $items = $wishlist->map(function ($item) {
+            $items = $wishlist->filter(function ($item) {
+                return !is_null($item->product);
+            })->map(function ($item) {
+                $product = $item->product;
+                $imageUrl = '/images/placeholder.jpg';
+                if ($product) {
+                    // Prefer cover image URL accessor
+                    $imageUrl = $product->cover_image_url ?? $imageUrl;
+                    // Fallback to first image if available
+                    if ($imageUrl === '/images/placeholder.jpg' && !empty($product->images) && is_array($product->images)) {
+                        $imageUrl = $product->images[0] ?: $imageUrl;
+                    }
+                }
                 return [
-                    'id' => $item->id, // wishlist item id
-                    'product_id' => $item->product->id,
-                    'name' => $item->product->name,
-                    'slug' => $item->product->slug,
-                    'image' => !empty($item->product->images) ? $item->product->images[0] : '/images/placeholder.jpg',
-                    'current_price' => $item->product->current_price,
-                    'original_price' => $item->product->is_on_sale ? $item->product->base_price : null,
-                    'category' => $item->product->category->name ?? 'Barong',
-                    'is_available' => $item->product->is_available,
-                    'total_stock' => $item->product->getTotalStock(),
+                    'id' => $item->id,
+                    'product_id' => $product->id,
+                    'name' => $product->name,
+                    'slug' => $product->slug,
+                    'image' => $imageUrl,
+                    'current_price' => $product->current_price,
+                    'original_price' => $product->is_on_sale ? $product->base_price : null,
+                    'category' => optional($product->category)->name ?? 'Barong',
+                    'is_available' => (bool) $product->is_available,
+                    'total_stock' => $product->getTotalStock(),
                     'created_at' => $item->created_at
                 ];
-            });
+            })->values();
 
             return response()->json([
                 'success' => true,
@@ -230,7 +242,7 @@ class WishlistController extends Controller
             ], 401);
         }
         $request->validate([
-            'product_id' => 'required|exists:products,id',
+            'product_id' => 'required|exists:barong_products,id',
         ]);
 
         try {
