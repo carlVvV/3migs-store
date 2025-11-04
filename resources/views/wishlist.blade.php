@@ -164,7 +164,7 @@ function createWishlistItemElement(item) {
                 }
             </div>
             <div class="flex space-x-2">
-                <button onclick="event.stopPropagation(); addToCart(${item.product_id})" 
+                <button onclick="event.stopPropagation(); ${isAvailable ? `openQuickAddModal('${item.slug}', ${item.product_id})` : ''}" 
                         class="flex-1 bg-black text-white ${isAvailable ? 'hover:bg-gray-900' : 'bg-gray-300 text-gray-500 cursor-not-allowed'} py-2 px-4 rounded-md transition-colors text-sm"
                         ${!isAvailable ? 'disabled' : ''}>
                     <i class="fas fa-shopping-cart mr-1"></i> ${isAvailable ? 'Add to Cart' : 'Out of Stock'}
@@ -299,6 +299,103 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
+</script>
+<!-- Quick Add Modal -->
+<div id="quick-add-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+    <div id="quick-add-modal" class="bg-white rounded-lg shadow-2xl w-full max-w-lg transform transition-all"></div>
+  </div>
+<script>
+// Lightweight quick-add copied from home page
+const quickAddModal = { open: false, productId: null, productSlug: null, selectedSize: null, quantity: 1, product: null };
+
+function openQuickAddModal(slug, productId) {
+    if (!slug || !productId) return;
+    quickAddModal.open = true; quickAddModal.productSlug = slug; quickAddModal.productId = productId; quickAddModal.selectedSize = null; quickAddModal.quantity = 1; quickAddModal.product = null;
+    const overlay = document.getElementById('quick-add-overlay');
+    const modal = document.getElementById('quick-add-modal');
+    overlay.classList.remove('hidden'); overlay.classList.add('flex');
+    modal.innerHTML = `<div class="p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold">Add to Cart</h3>
+            <button class="text-gray-500 hover:text-gray-700" onclick="closeQuickAddModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="flex items-center gap-3 text-gray-600"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+    </div>`;
+    fetch(`/api/v1/product-data/${encodeURIComponent(slug)}`)
+      .then(r => r.json()).then(data => {
+        if (!data || !data.success || !data.product) { modal.innerHTML = `<div class='p-6'>Failed to load product.</div>`; return; }
+        quickAddModal.product = data.product; renderQuickAddModalContent();
+      }).catch(() => { modal.innerHTML = `<div class='p-6'>Failed to load product.</div>`; });
+}
+
+function renderQuickAddModalContent() {
+    const p = quickAddModal.product; if (!p) return;
+    const sizeStocks = p.size_stocks || {}; const sizes = Object.keys(sizeStocks);
+    const sizeButtonsHtml = sizes.map(s => {
+        const stock = parseInt(sizeStocks[s] || 0);
+        const disabled = stock <= 0 ? 'opacity-50 cursor-not-allowed' : '';
+        const active = quickAddModal.selectedSize === s ? 'bg-black text-white border-black' : 'border-gray-300 text-gray-700';
+        return `<button class="px-3 py-2 border rounded-lg size-btn-modal ${active} ${disabled}" data-size="${s}" data-stock="${stock}" onclick="selectSizeInModal('${s}', this)" ${stock<=0?'disabled':''}>${s} <span class="text-xs ml-1">(${stock})</span></button>`;
+    }).join('');
+    const html = `
+      <div class="p-6">
+        <div class="flex gap-4">
+          <img src="${p.cover_image_url || (p.images && p.images[0]) || '/images/placeholder.jpg'}" class="w-28 h-28 object-cover rounded" alt="${p.name}">
+          <div class="flex-1">
+            <div class="font-semibold text-gray-900">${p.name}</div>
+            <div class="text-red-600 font-bold">₱${p.current_price}</div>
+          </div>
+        </div>
+        <div class="mt-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Select Size <span class="text-red-500">*</span></label>
+          <div class="flex flex-wrap gap-2">${sizeButtonsHtml}</div>
+        </div>
+        <div class="mt-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+          <div class="flex items-center border border-gray-300 rounded-lg w-32">
+            <button class="px-3 py-2 text-gray-600 hover:text-gray-800" onclick="decreaseModalQuantity()">-</button>
+            <span id="modal-quantity" class="px-4 py-2 font-medium flex-1 text-center">${quickAddModal.quantity}</span>
+            <button class="px-3 py-2 text-gray-600 hover:text-gray-800" onclick="increaseModalQuantity()">+</button>
+          </div>
+        </div>
+        <div class="flex gap-3 pt-4 border-t border-gray-200 mt-4">
+          <button class="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg" onclick="closeQuickAddModal()">Cancel</button>
+          <button id="wishlist-modal-add-btn" class="flex-1 px-4 py-2.5 bg-black text-white rounded-lg disabled:bg-gray-400" onclick="addToCartFromModal()" ${quickAddModal.selectedSize ? '' : 'disabled'}>
+            <i class="fas fa-shopping-cart mr-2"></i>Add to Cart
+          </button>
+        </div>
+      </div>`;
+    document.getElementById('quick-add-modal').innerHTML = html;
+}
+
+function selectSizeInModal(size, el) {
+    const stock = parseInt(el.getAttribute('data-stock')||'0'); if (stock<=0) return;
+    quickAddModal.selectedSize = size;
+    document.querySelectorAll('.size-btn-modal').forEach(b=>{ b.classList.remove('bg-black','text-white','border-black'); b.classList.add('border-gray-300','text-gray-700'); });
+    el.classList.remove('border-gray-300','text-gray-700'); el.classList.add('bg-black','text-white','border-black');
+    const addBtn = document.getElementById('wishlist-modal-add-btn'); if (addBtn) addBtn.disabled = false;
+}
+function increaseModalQuantity() {
+    const max = quickAddModal.selectedSize ? parseInt(document.querySelector(`.size-btn-modal[data-size="${quickAddModal.selectedSize}"]`)?.getAttribute('data-stock')||'0') : 0;
+    if (max>0 && quickAddModal.quantity<max) { quickAddModal.quantity++; document.getElementById('modal-quantity').textContent = quickAddModal.quantity; }
+}
+function decreaseModalQuantity() { if (quickAddModal.quantity>1) { quickAddModal.quantity--; document.getElementById('modal-quantity').textContent = quickAddModal.quantity; } }
+
+async function addToCartFromModal() {
+    if (!quickAddModal.selectedSize) { showNotification('Please select a size', 'error'); return; }
+    const addBtn = document.getElementById('wishlist-modal-add-btn'); const original = addBtn.innerHTML; addBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Adding...'; addBtn.disabled = true;
+    const payload = { product_id: parseInt(quickAddModal.productId), quantity: quickAddModal.quantity, size: quickAddModal.selectedSize };
+    try {
+        const res = await fetch('/api/v1/cart/add', { method:'POST', headers:{ 'Content-Type':'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), 'Accept':'application/json' }, body: JSON.stringify(payload) });
+        if (res.status===419){ showNotification('Session expired. Refresh and try again.','error'); return; }
+        if (res.status===422){ const d=await res.json().catch(()=>null); showNotification(d?.message||'Validation failed','error'); addBtn.innerHTML=original; addBtn.disabled=false; return; }
+        const data = await res.json();
+        if (data && data.success) { showNotification('Added to cart!','success'); updateCartCount(); closeQuickAddModal(); }
+        else { showNotification(data?.message||'Failed to add to cart','error'); addBtn.innerHTML=original; addBtn.disabled=false; }
+    } catch (e) { showNotification('Network error. Please try again.','error'); addBtn.innerHTML=original; addBtn.disabled=false; }
+}
+
+function closeQuickAddModal(){ const overlay = document.getElementById('quick-add-overlay'); overlay.classList.add('hidden'); overlay.classList.remove('flex'); quickAddModal.open=false; }
 </script>
 <!-- Delete Confirmation Modal -->
 <div id="delete-confirmation-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
