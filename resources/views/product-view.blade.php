@@ -447,7 +447,7 @@ function addToCart() {
     }
     
     const quantity = currentQuantity;
-    const size = selectedSize;
+    let size = selectedSize;
     
     // Check if size is properly selected; if exactly one size available, auto-select it
     if (!size || size === 'null' || size === '' || size === null) {
@@ -471,6 +471,15 @@ function addToCart() {
         return;
     }
     
+    // If size variable didn't update, infer from UI selection
+    if (!size || size === 'null' || size === '' || size === null) {
+        const selectedBtn = document.querySelector('.size-btn.bg-black');
+        const uiSize = selectedBtn ? selectedBtn.getAttribute('data-size') : null;
+        if (uiSize) {
+            size = uiSize;
+        }
+    }
+
     // Validate product ID
     if (!productId || productId === null) {
         showError('Product information is missing. Please refresh the page and try again.');
