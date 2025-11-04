@@ -451,24 +451,8 @@ function addToCart() {
     
     // Check if size is properly selected
     if (!size || size === 'null' || size === '' || size === null) {
-        const availableSizes = document.querySelectorAll('.size-btn:not(.opacity-50)');
-        if (availableSizes.length > 0) {
-            const firstAvailable = availableSizes[0];
-            const emergencySize = firstAvailable.getAttribute('data-size');
-            selectSize(emergencySize, firstAvailable);
-            
-            const updatedPayload = {
-                product_id: Number(productId),
-                quantity: Number(quantity),
-                size: emergencySize
-            };
-            
-            proceedWithCartAdd(updatedPayload);
-            return;
-        } else {
-            showError('Please select a size before adding to cart.');
-            return;
-        }
+        showSizeRequiredNotice();
+        return;
     }
     
     // Validate product ID
@@ -765,23 +749,48 @@ function buyNow() {
     });
 }
 
-function showError(message) {
+function showError(title, message) {
+    // Prefer global notification system if available
+    if (typeof window.showError === 'function' && window.showError.length >= 2) {
+        window.showError(title || 'Error', message || '');
+        return;
+    }
+    // Fallback pretty toast
     const notification = document.createElement('div');
-    notification.className = 'fixed right-4 z-50 px-6 py-3 rounded-md shadow-lg text-white bg-red-500';
-    notification.textContent = message;
-    
-    // Position notification below header
+    notification.className = 'fixed right-4 z-50 px-5 py-4 rounded-lg shadow-2xl bg-white border-l-4 border-red-500 max-w-sm';
+    notification.innerHTML = `
+        <div class="flex items-start">
+            <div class="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center mr-3">
+                <svg class="w-5 h-5 text-red-600" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-9a1 1 0 112 0v3a1 1 0 11-2 0V9zm1 6a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5z" clip-rule="evenodd"/></svg>
+            </div>
+            <div class="flex-1">
+                <div class="text-sm font-semibold text-gray-900">${title || 'Error'}</div>
+                ${message ? `<div class=\"text-sm text-gray-600 mt-0.5\">${message}</div>` : ''}
+            </div>
+        </div>
+    `;
     if (typeof positionNotificationBelowHeader === 'function') {
         positionNotificationBelowHeader(notification, 16);
     } else {
         notification.style.top = '80px';
     }
-    
     document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.remove();
-    }, 5000);
+    setTimeout(() => notification.remove(), 4000);
+}
+
+function showSizeRequiredNotice() {
+    // Smooth scroll to sizes and pulse buttons
+    const sizesContainer = document.getElementById('sizes') || document.querySelector('[data-sizes-container]');
+    if (sizesContainer && typeof sizesContainer.scrollIntoView === 'function') {
+        sizesContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    document.querySelectorAll('.size-btn:not(.opacity-50)')
+        .forEach(btn => {
+            btn.classList.add('ring-2','ring-red-500');
+            setTimeout(() => btn.classList.remove('ring-2','ring-red-500'), 800);
+        });
+
+    showError('Size required', 'Please select a size before adding to cart.');
 }
 
 async function addToWishlist() {
