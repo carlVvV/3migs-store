@@ -633,20 +633,27 @@ function proceedWithCartAdd(payload) {
         },
         body: JSON.stringify(payload)
     })
-    .then(response => {
+    .then(async (response) => {
         if (response.status === 419) {
             showError('Session expired. Please refresh the page and try again.');
             // Optionally refresh the page after a delay
             setTimeout(() => {
                 window.location.reload();
             }, 2000);
-            return;
+            return null;
         }
-        
+        if (response.status === 422) {
+            // Validation failed; surface backend message/errors
+            let data;
+            try { data = await response.json(); } catch (_) { data = null; }
+            const backendMsg = data && (data.message || (data.errors && Object.values(data.errors).flat().join('\n')));
+            showError('Validation failed', backendMsg || 'Please check your selection and try again.');
+            return null;
+        }
         return response.json();
     })
     .then(data => {
-        if (!data) return; // Handle 419 case
+        if (!data) return; // 419/422 handled above
         
         if (data.success) {
             // Position notification below header dynamically

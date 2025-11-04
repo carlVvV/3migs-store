@@ -822,6 +822,22 @@
                     body: JSON.stringify(payload)
                 });
                 
+                if (response.status === 419) {
+                    showError('Session Expired', 'Please refresh the page and try again.');
+                    addBtn.innerHTML = originalText;
+                    addBtn.disabled = false;
+                    return;
+                }
+                if (response.status === 422) {
+                    let data;
+                    try { data = await response.json(); } catch (_) { data = null; }
+                    const backendMsg = data && (data.message || (data.errors && Object.values(data.errors).flat().join('\n')));
+                    showError('Validation failed', backendMsg || 'Please check your selection and try again.');
+                    addBtn.innerHTML = originalText;
+                    addBtn.disabled = false;
+                    return;
+                }
+
                 const data = await response.json();
                 
                 if (data.success) {
