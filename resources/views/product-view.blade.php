@@ -7,6 +7,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Hidden input for product ID -->
         <input type="hidden" id="productId" value="{{ $product->id }}">
+        <input type="hidden" id="selectedSizeInput" value="">
         
         <!-- Breadcrumb -->
         <nav class="mb-8">
@@ -146,7 +147,7 @@
                     
 
                     <div class="flex space-x-3">
-                        <div class="flex space-x-3">
+                        <div class="flex space-x-3" id="sizes" data-sizes-container>
                             @foreach($sizes as $size)
                                 @php
                                     $stock = $sizeStocks[$size] ?? 0;
@@ -278,14 +279,18 @@ function selectSize(size, element) {
     document.querySelectorAll('.size-btn').forEach(btn => {
         btn.classList.remove('bg-black', 'text-white');
         btn.classList.add('border', 'border-gray-300', 'text-gray-700');
+        btn.removeAttribute('data-selected');
     });
     
     // Add active class to selected button
     element.classList.remove('border', 'border-gray-300', 'text-gray-700');
     element.classList.add('bg-black', 'text-white');
+    element.setAttribute('data-selected', 'true');
     
     // Update selected size
     selectedSize = size;
+    const hiddenSelected = document.getElementById('selectedSizeInput');
+    if (hiddenSelected) hiddenSelected.value = size;
 }
 
 // Real-time update functions
@@ -475,8 +480,10 @@ function addToCart() {
     if (!size || size === 'null' || size === '' || size === null) {
         const selectedBtn = document.querySelector('.size-btn.bg-black');
         const uiSize = selectedBtn ? selectedBtn.getAttribute('data-size') : null;
-        if (uiSize) {
-            size = uiSize;
+        if (uiSize) { size = uiSize; }
+        if (!size) {
+            const hiddenSelected = document.getElementById('selectedSizeInput');
+            if (hiddenSelected && hiddenSelected.value) size = hiddenSelected.value;
         }
     }
 
