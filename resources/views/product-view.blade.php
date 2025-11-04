@@ -191,7 +191,7 @@
                     <!-- Action Buttons -->
                     <div class="space-y-3 mb-8">
                         <!-- Add to Cart Button -->
-                        <button class="w-full bg-black hover:bg-gray-800 text-white py-3 rounded-lg font-medium transition-colors" onclick="addToCart()">
+                        <button class="w-full bg-black hover:bg-gray-800 text-white py-3 rounded-lg font-medium transition-colors" onclick="addToCartProductView()">
                             <i class="fas fa-shopping-cart mr-2"></i>
                             Add to Cart
                         </button>
@@ -291,6 +291,21 @@ function selectSize(size, element) {
     selectedSize = size;
     const hiddenSelected = document.getElementById('selectedSizeInput');
     if (hiddenSelected) hiddenSelected.value = size;
+    try { console.debug('Size selected:', { size, hiddenInput: hiddenSelected ? hiddenSelected.value : null }); } catch (_) {}
+}
+
+function getSelectedSize() {
+    // 1) Hidden input
+    const hiddenSelected = document.getElementById('selectedSizeInput');
+    if (hiddenSelected && hiddenSelected.value) return hiddenSelected.value;
+    // 2) Explicit data-selected attr
+    const selectedAttrBtn = document.querySelector('.size-btn[data-selected="true"]');
+    if (selectedAttrBtn) return selectedAttrBtn.getAttribute('data-size');
+    // 3) Visual class marker
+    const selectedClassBtn = document.querySelector('.size-btn.bg-black');
+    if (selectedClassBtn) return selectedClassBtn.getAttribute('data-size');
+    // 4) Fallback to JS variable
+    return selectedSize;
 }
 
 // Real-time update functions
@@ -435,7 +450,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-function addToCart() {
+function addToCartProductView() {
     // Check if user is logged in
     const isLoggedIn = {{ auth()->check() ? 'true' : 'false' }};
     
@@ -452,7 +467,8 @@ function addToCart() {
     }
     
     const quantity = currentQuantity;
-    let size = selectedSize;
+    let size = getSelectedSize();
+    try { console.debug('AddToCart preflight selected size:', size); } catch (_) {}
     
     // Check if size is properly selected; if exactly one size available, auto-select it
     if (!size || size === 'null' || size === '' || size === null) {
@@ -478,13 +494,7 @@ function addToCart() {
     
     // If size variable didn't update, infer from UI selection
     if (!size || size === 'null' || size === '' || size === null) {
-        const selectedBtn = document.querySelector('.size-btn.bg-black');
-        const uiSize = selectedBtn ? selectedBtn.getAttribute('data-size') : null;
-        if (uiSize) { size = uiSize; }
-        if (!size) {
-            const hiddenSelected = document.getElementById('selectedSizeInput');
-            if (hiddenSelected && hiddenSelected.value) size = hiddenSelected.value;
-        }
+        size = getSelectedSize();
     }
 
     // Validate product ID
@@ -502,6 +512,7 @@ function addToCart() {
     if (size && size !== 'null' && size !== null && size !== '') {
         payload.size = size;
     }
+    try { console.debug('Cart add payload (final):', payload); } catch (_) {}
     
     // Proceed with cart addition
     proceedWithCartAdd(payload);
@@ -631,8 +642,7 @@ function proceedWithCartAdd(payload) {
     }
     // Infer size from UI if missing
     if (!payload.size) {
-        const selectedBtn = document.querySelector('.size-btn.bg-black');
-        const uiSize = selectedBtn ? selectedBtn.getAttribute('data-size') : null;
+        const uiSize = getSelectedSize();
         if (uiSize) payload.size = uiSize;
     }
 
@@ -665,13 +675,15 @@ function proceedWithCartAdd(payload) {
     }
     
     // Show loading state
-    const addToCartBtn = document.querySelector('button[onclick="addToCart()"]');
+    const addToCartBtn = document.querySelector('button[onclick="addToCartProductView()"]');
     const originalText = addToCartBtn.innerHTML;
     addToCartBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Adding...';
     addToCartBtn.disabled = true;
     
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     
+    // Debug: log outgoing payload
+    try { console.debug('Cart add payload', JSON.parse(JSON.stringify(payload))); } catch (_) {}
     fetch('/api/v1/cart/add', {
         method: 'POST',
         headers: {

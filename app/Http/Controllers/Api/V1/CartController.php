@@ -303,6 +303,16 @@ class CartController extends Controller
                 'requested_quantity' => $validator['quantity'],
             ]);
             
+            // Debug: log request context and product stock state
+            \Log::info('Cart add context', [
+                'user_id' => $user ? $user->id : 'guest',
+                'input_data' => $request->all(),
+                'product_id' => $product->id,
+                'uses_size_stocks' => $usesSizeStocks,
+                'size_stocks_keys' => array_keys((array) ($product->size_stocks ?? [])),
+                'total_stock' => $product->getTotalStock(),
+            ]);
+
             if ($usesSizeStocks) {
                 $selectedSize = $validator['size'] ?? null;
                 if (!$selectedSize) {
@@ -318,10 +328,16 @@ class CartController extends Controller
                             'product_id' => $product->id,
                             'size_stocks' => $product->size_stocks,
                             'available_sizes' => $availableSizes,
+                            'received_input' => $request->all(),
                         ]);
                         return response()->json([
                             'success' => false,
-                            'message' => 'Please select a size before adding to cart.'
+                            'message' => 'Please select a size before adding to cart.',
+                            'debug_info' => [
+                                'available_sizes' => $availableSizes,
+                                'size_stocks' => $product->size_stocks,
+                                'received_input' => $request->all(),
+                            ],
                         ], 422);
                     }
                 }
@@ -453,7 +469,13 @@ class CartController extends Controller
                     if (!$sizeToUse) {
                         return response()->json([
                             'success' => false,
-                            'message' => 'Please select a size before adding to cart.'
+                            'message' => 'Please select a size before adding to cart.',
+                            'debug_info' => [
+                                'existing_size' => $existingSize,
+                                'incoming_size' => $incomingSize,
+                                'size_stocks' => $product->size_stocks,
+                                'received_input' => $request->all(),
+                            ]
                         ], 422);
                     }
 
