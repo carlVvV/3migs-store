@@ -237,7 +237,8 @@ class CartController extends Controller
             $validatorInstance = \Validator::make($request->all(), [
                 'product_id' => 'required|exists:barong_products,id',
                 'quantity' => 'required|integer|min:1|max:10',
-                'size' => 'nullable|string|in:S,M,L,XL,XXL',
+                // Allow flexible size labels; stock checks later ensure validity
+                'size' => 'nullable|string|max:20',
                 'color' => 'nullable|string|max:255',
             ]);
 
