@@ -449,8 +449,24 @@ function addToCart() {
     const quantity = currentQuantity;
     const size = selectedSize;
     
-    // Check if size is properly selected
+    // Check if size is properly selected; if exactly one size available, auto-select it
     if (!size || size === 'null' || size === '' || size === null) {
+        const availableSizeButtons = Array.from(document.querySelectorAll('.size-btn'))
+            .filter(btn => !btn.classList.contains('opacity-50') && !btn.hasAttribute('disabled'));
+        if (availableSizeButtons.length === 1) {
+            const onlyBtn = availableSizeButtons[0];
+            const autoSize = onlyBtn.getAttribute('data-size');
+            if (autoSize) {
+                selectSize(autoSize, onlyBtn);
+                const updatedPayload = {
+                    product_id: Number(productId),
+                    quantity: Number(quantity),
+                    size: autoSize
+                };
+                proceedWithCartAdd(updatedPayload);
+                return;
+            }
+        }
         showSizeRequiredNotice();
         return;
     }
