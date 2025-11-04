@@ -1206,45 +1206,73 @@
             document.getElementById('products').scrollIntoView({ behavior: 'smooth' });
         }
         
+        function markWishlistButtons(wishlistIdSet) {
+            document.querySelectorAll('.wishlist-btn').forEach(button => {
+                const productId = button.getAttribute('data-product-id');
+                const heartIcon = button.querySelector('i');
+                if (!heartIcon || !productId) return;
+                if (wishlistIdSet.has(String(productId))) {
+                    heartIcon.classList.remove('far', 'text-gray-600');
+                    heartIcon.classList.add('fas', 'text-red-500');
+                    button.classList.remove('bg-white', 'hover:bg-gray-50');
+                    button.classList.add('bg-red-50');
+                    button.title = 'In Wishlist';
+                } else {
+                    heartIcon.classList.remove('fas', 'text-red-500');
+                    heartIcon.classList.add('far', 'text-gray-600');
+                    button.classList.remove('bg-red-50');
+                    if (!button.classList.contains('bg-white')) button.classList.add('bg-white');
+                    button.title = 'Add to Wishlist';
+                }
+            });
+        }
+
         function checkWishlistStatus() {
             const isLoggedIn = {{ auth()->check() ? 'true' : 'false' }};
             if (!isLoggedIn) return;
-            
-            const productIds = Array.from(document.querySelectorAll('.wishlist-btn')).map(btn => btn.getAttribute('data-product-id'));
-            
-            if (productIds.length === 0) return;
-            
-            // Check each product's wishlist status
-            productIds.forEach(productId => {
-                fetch('/api/v1/wishlist/check', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify({ product_id: productId })
-                })
-                .then(response => {
-                    if (!response.ok) return Promise.resolve({ success: false });
-                    const ct = response.headers.get('content-type') || '';
-                    if (!ct.includes('application/json')) return Promise.resolve({ success: false });
-                    return response.json();
+
+            const buttons = document.querySelectorAll('.wishlist-btn');
+            if (!buttons.length) return;
+
+            // Prefer a single fetch to get all wishlist items
+            fetch('/api/v1/wishlist', { cache: 'no-store' })
+                .then(res => {
+                    if (!res.ok) throw new Error('wishlist fetch failed');
+                    const ct = res.headers.get('content-type') || '';
+                    if (!ct.includes('application/json')) throw new Error('non-JSON');
+                    return res.json();
                 })
                 .then(data => {
-                    if (data && data.success && data.data && data.data.is_in_wishlist) {
-                        const button = document.querySelector(`.wishlist-btn[data-product-id="${productId}"]`);
-                        if (!button) return;
-                        const heartIcon = button.querySelector('i');
-                        if (!heartIcon) return;
-                        heartIcon.classList.remove('far', 'text-gray-600');
-                        heartIcon.classList.add('fas', 'text-red-500');
-                        button.classList.remove('bg-white', 'hover:bg-gray-50');
-                        button.classList.add('bg-red-50');
-                        button.title = 'In Wishlist';
-                    }
+                    const items = (data && (data.items || data.data || [])) || [];
+                    const idSet = new Set(items.map(it => String(it.product_id || it.id)).filter(Boolean));
+                    markWishlistButtons(idSet);
                 })
-                .catch(() => {/* ignore for unauthenticated or non-JSON */});
-            });
+                .catch(() => {
+                    // Fallback per-product check if list endpoint unavailable
+                    const productIds = Array.from(buttons).map(btn => btn.getAttribute('data-product-id')).filter(Boolean);
+                    productIds.forEach(productId => {
+                        fetch('/api/v1/wishlist/check', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({ product_id: productId })
+                        })
+                        .then(response => {
+                            if (!response.ok) return Promise.resolve({ success: false });
+                            const ct = response.headers.get('content-type') || '';
+                            if (!ct.includes('application/json')) return Promise.resolve({ success: false });
+                            return response.json();
+                        })
+                        .then(data => {
+                            const idSet = new Set();
+                            if (data && data.success && data.data && data.data.is_in_wishlist) idSet.add(String(productId));
+                            markWishlistButtons(idSet);
+                        })
+                        .catch(() => {});
+                    });
+                });
         }
         
         // Initialize on page load
