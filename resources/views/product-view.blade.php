@@ -617,8 +617,24 @@ function showLoginPrompt() {
 }
 
 function proceedWithCartAdd(payload) {
+    // Ensure product_id is present
+    if (!payload.product_id) {
+        const hiddenId = document.getElementById('productId')?.value;
+        if (hiddenId) payload.product_id = Number(hiddenId);
+    }
+    // Infer size from UI if missing
+    if (!payload.size) {
+        const selectedBtn = document.querySelector('.size-btn.bg-black');
+        const uiSize = selectedBtn ? selectedBtn.getAttribute('data-size') : null;
+        if (uiSize) payload.size = uiSize;
+    }
+
     const size = payload.size;
     const quantity = payload.quantity;
+    if (!payload.product_id) {
+        showError('Missing product information', 'Please refresh the page and try again.');
+        return;
+    }
     
     // Check stock availability only if size is provided
     if (size) {
