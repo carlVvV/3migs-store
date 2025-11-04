@@ -1070,6 +1070,8 @@
                         if (button && heartIcon) {
                             heartIcon.classList.remove('fas', 'text-red-500');
                             heartIcon.classList.add('far', 'text-gray-600');
+                            button.classList.remove('bg-red-50');
+                            if (!button.classList.contains('bg-white')) button.classList.add('bg-white');
                             button.title = 'Add to Wishlist';
                         }
                     } else {
@@ -1124,6 +1126,8 @@
                     if (button && heartIcon) {
                         heartIcon.classList.remove('far', 'text-gray-600');
                         heartIcon.classList.add('fas', 'text-red-500');
+                        button.classList.remove('bg-white', 'hover:bg-gray-50');
+                        button.classList.add('bg-red-50');
                         button.title = 'In Wishlist';
                     }
                     return false;
@@ -1136,6 +1140,8 @@
                         if (button && heartIcon) {
                             heartIcon.classList.remove('far', 'text-gray-600');
                             heartIcon.classList.add('fas', 'text-red-500');
+                            button.classList.remove('bg-white', 'hover:bg-gray-50');
+                            button.classList.add('bg-red-50');
                             button.title = 'In Wishlist';
                         }
                         showInfo('Already in wishlist', 'This product is already in your wishlist.', 2000);
@@ -1232,6 +1238,8 @@
                         if (!heartIcon) return;
                         heartIcon.classList.remove('far', 'text-gray-600');
                         heartIcon.classList.add('fas', 'text-red-500');
+                        button.classList.remove('bg-white', 'hover:bg-gray-50');
+                        button.classList.add('bg-red-50');
                         button.title = 'In Wishlist';
                     }
                 })
