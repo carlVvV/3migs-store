@@ -52,17 +52,23 @@ class OrderController extends Controller
     {
         try {
             // Use session-based auth instead of Auth::user() for public routes
-            $userId = auth()->id();
-            if (!$userId) {
+            $user = auth()->user();
+            if (!$user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Authentication required',
                 ], 401);
             }
 
-            $order = Order::where('user_id', $userId)
-                ->with(['user', 'orderItems.product'])
-                ->findOrFail($id);
+            // Build query - admins can view any order, users can only view their own
+            $query = Order::with(['user', 'orderItems.product']);
+            
+            // If user is not admin, restrict to their own orders
+            if (!$user->isAdmin()) {
+                $query->where('user_id', $user->id);
+            }
+
+            $order = $query->findOrFail($id);
 
             return response()->json([
                 'success' => true,
