@@ -1409,71 +1409,71 @@
             modal.innerHTML = `
                 <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeSizeChartModal()"></div>
                 <div class="absolute inset-0 flex items-center justify-center p-4">
-                    <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-                        <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-                            <h2 class="text-2xl font-bold text-gray-900">Size Guide</h2>
+                    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[85vh] overflow-y-auto">
+                        <div class="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+                            <h2 class="text-lg font-bold text-gray-900">Size Guide</h2>
                             <button onclick="closeSizeChartModal()" class="text-gray-500 hover:text-gray-700">
-                                <i class="fas fa-times text-xl"></i>
+                                <i class="fas fa-times"></i>
                             </button>
                         </div>
                         
-                        <div class="p-6 space-y-6">
+                        <div class="p-4 space-y-4">
                             <!-- Barong Size Chart -->
                             <div>
-                                <h3 class="text-xl font-semibold text-gray-900 mb-4">Barong Sizing Guide</h3>
+                                <h3 class="text-base font-semibold text-gray-900 mb-2">Barong Sizing Guide</h3>
                                 <div class="overflow-x-auto">
                                     <table class="min-w-full border-collapse border border-gray-300">
                                         <thead>
                                             <tr class="bg-gray-100">
-                                                <th class="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900">Size</th>
-                                                <th class="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-900">Chest (inches)</th>
-                                                <th class="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-900">Shoulder Width (inches)</th>
-                                                <th class="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-900">Sleeve Length (inches)</th>
-                                                <th class="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-900">Length (inches)</th>
+                                        <th class="border border-gray-300 px-2 py-1.5 text-left text-xs font-semibold text-gray-900">Size</th>
+                                        <th class="border border-gray-300 px-2 py-1.5 text-center text-xs font-semibold text-gray-900">Chest</th>
+                                        <th class="border border-gray-300 px-2 py-1.5 text-center text-xs font-semibold text-gray-900">Shoulder</th>
+                                        <th class="border border-gray-300 px-2 py-1.5 text-center text-xs font-semibold text-gray-900">Sleeve</th>
+                                        <th class="border border-gray-300 px-2 py-1.5 text-center text-xs font-semibold text-gray-900">Length</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <td class="border border-gray-300 px-4 py-3 font-medium text-gray-900">S</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">36-38</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">17-18</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">24-25</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">28-29</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 font-medium text-xs text-gray-900">S</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">36-38</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">17-18</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">24-25</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">28-29</td>
                                             </tr>
                                             <tr class="bg-gray-50">
-                                                <td class="border border-gray-300 px-4 py-3 font-medium text-gray-900">M</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">38-40</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">18-19</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">25-26</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">29-30</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 font-medium text-xs text-gray-900">M</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">38-40</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">18-19</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">25-26</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">29-30</td>
                                             </tr>
                                             <tr>
-                                                <td class="border border-gray-300 px-4 py-3 font-medium text-gray-900">L</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">40-42</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">19-20</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">26-27</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">30-31</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 font-medium text-xs text-gray-900">L</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">40-42</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">19-20</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">26-27</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">30-31</td>
                                             </tr>
                                             <tr class="bg-gray-50">
-                                                <td class="border border-gray-300 px-4 py-3 font-medium text-gray-900">XL</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">42-44</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">20-21</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">27-28</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">31-32</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 font-medium text-xs text-gray-900">XL</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">42-44</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">20-21</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">27-28</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">31-32</td>
                                             </tr>
                                             <tr>
-                                                <td class="border border-gray-300 px-4 py-3 font-medium text-gray-900">XXL</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">44-46</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">21-22</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">28-29</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">32-33</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 font-medium text-xs text-gray-900">XXL</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">44-46</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">21-22</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">28-29</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">32-33</td>
                                             </tr>
                                         </tbody>
                                     </table>
                                 </div>
-                                <div class="mt-4 p-4 bg-blue-50 rounded-lg">
-                                    <h4 class="font-semibold text-gray-900 mb-2"><i class="fas fa-info-circle mr-2 text-blue-600"></i>Measuring Tips for Barong:</h4>
-                                    <ul class="list-disc list-inside text-sm text-gray-700 space-y-1">
+                                <div class="mt-2 p-2 bg-blue-50 rounded-lg">
+                                    <h4 class="text-xs font-semibold text-gray-900 mb-1"><i class="fas fa-info-circle mr-1 text-blue-600"></i>Measuring Tips:</h4>
+                                    <ul class="list-disc list-inside text-xs text-gray-700 space-y-0.5">
                                         <li><strong>Chest:</strong> Measure the fullest part of your chest over a well-fitted shirt</li>
                                         <li><strong>Shoulder Width:</strong> Measure from shoulder to shoulder across the back</li>
                                         <li><strong>Sleeve Length:</strong> Measure from shoulder to wrist</li>
@@ -1484,60 +1484,60 @@
 
                             <!-- Filipiniana Size Chart -->
                             <div>
-                                <h3 class="text-xl font-semibold text-gray-900 mb-4">Filipiniana Sizing Guide</h3>
+                                <h3 class="text-base font-semibold text-gray-900 mb-2">Filipiniana Sizing Guide</h3>
                                 <div class="overflow-x-auto">
                                     <table class="min-w-full border-collapse border border-gray-300">
                                         <thead>
                                             <tr class="bg-gray-100">
-                                                <th class="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900">Size</th>
-                                                <th class="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-900">Bust (inches)</th>
-                                                <th class="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-900">Waist (inches)</th>
-                                                <th class="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-900">Hips (inches)</th>
-                                                <th class="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-900">Length (inches)</th>
+                                        <th class="border border-gray-300 px-2 py-1.5 text-left text-xs font-semibold text-gray-900">Size</th>
+                                        <th class="border border-gray-300 px-2 py-1.5 text-center text-xs font-semibold text-gray-900">Bust</th>
+                                        <th class="border border-gray-300 px-2 py-1.5 text-center text-xs font-semibold text-gray-900">Waist</th>
+                                        <th class="border border-gray-300 px-2 py-1.5 text-center text-xs font-semibold text-gray-900">Hips</th>
+                                        <th class="border border-gray-300 px-2 py-1.5 text-center text-xs font-semibold text-gray-900">Length</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <td class="border border-gray-300 px-4 py-3 font-medium text-gray-900">S</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">32-34</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">26-28</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">34-36</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">38-40</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 font-medium text-xs text-gray-900">S</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">32-34</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">26-28</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">34-36</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">38-40</td>
                                             </tr>
                                             <tr class="bg-gray-50">
-                                                <td class="border border-gray-300 px-4 py-3 font-medium text-gray-900">M</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">34-36</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">28-30</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">36-38</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">40-42</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 font-medium text-xs text-gray-900">M</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">34-36</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">28-30</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">36-38</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">40-42</td>
                                             </tr>
                                             <tr>
-                                                <td class="border border-gray-300 px-4 py-3 font-medium text-gray-900">L</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">36-38</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">30-32</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">38-40</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">42-44</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 font-medium text-xs text-gray-900">L</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">36-38</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">30-32</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">38-40</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">42-44</td>
                                             </tr>
                                             <tr class="bg-gray-50">
-                                                <td class="border border-gray-300 px-4 py-3 font-medium text-gray-900">XL</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">38-40</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">32-34</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">40-42</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">44-46</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 font-medium text-xs text-gray-900">XL</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">38-40</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">32-34</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">40-42</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">44-46</td>
                                             </tr>
                                             <tr>
-                                                <td class="border border-gray-300 px-4 py-3 font-medium text-gray-900">XXL</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">40-42</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">34-36</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">42-44</td>
-                                                <td class="border border-gray-300 px-4 py-3 text-center text-gray-700">46-48</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 font-medium text-xs text-gray-900">XXL</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">40-42</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">34-36</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">42-44</td>
+                                                <td class="border border-gray-300 px-2 py-1.5 text-center text-xs text-gray-700">46-48</td>
                                             </tr>
                                         </tbody>
                                     </table>
                                 </div>
-                                <div class="mt-4 p-4 bg-pink-50 rounded-lg">
-                                    <h4 class="font-semibold text-gray-900 mb-2"><i class="fas fa-info-circle mr-2 text-pink-600"></i>Measuring Tips for Filipiniana:</h4>
-                                    <ul class="list-disc list-inside text-sm text-gray-700 space-y-1">
+                                <div class="mt-2 p-2 bg-pink-50 rounded-lg">
+                                    <h4 class="text-xs font-semibold text-gray-900 mb-1"><i class="fas fa-info-circle mr-1 text-pink-600"></i>Measuring Tips:</h4>
+                                    <ul class="list-disc list-inside text-xs text-gray-700 space-y-0.5">
                                         <li><strong>Bust:</strong> Measure the fullest part of your bust over undergarments</li>
                                         <li><strong>Waist:</strong> Measure your natural waistline (usually the narrowest part)</li>
                                         <li><strong>Hips:</strong> Measure the fullest part of your hips</li>
@@ -1547,31 +1547,23 @@
                             </div>
 
                             <!-- General Tips -->
-                            <div class="border-t border-gray-200 pt-4">
-                                <h3 class="text-lg font-semibold text-gray-900 mb-3">General Sizing Tips</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div class="p-4 bg-yellow-50 rounded-lg">
-                                        <h4 class="font-semibold text-gray-900 mb-2"><i class="fas fa-ruler-combined mr-2 text-yellow-600"></i>How to Measure</h4>
-                                        <p class="text-sm text-gray-700">Always measure over the clothing you'll wear underneath. Use a flexible measuring tape and keep it parallel to the floor for horizontal measurements.</p>
+                            <div class="border-t border-gray-200 pt-2">
+                                <h3 class="text-sm font-semibold text-gray-900 mb-2">General Sizing Tips</h3>
+                                <div class="grid grid-cols-1 gap-2">
+                                    <div class="p-2 bg-yellow-50 rounded-lg">
+                                        <h4 class="text-xs font-semibold text-gray-900 mb-1"><i class="fas fa-ruler-combined mr-1 text-yellow-600"></i>How to Measure</h4>
+                                        <p class="text-xs text-gray-700">Measure over clothing you'll wear underneath. Use a flexible measuring tape.</p>
                                     </div>
-                                    <div class="p-4 bg-green-50 rounded-lg">
-                                        <h4 class="font-semibold text-gray-900 mb-2"><i class="fas fa-tshirt mr-2 text-green-600"></i>Fit Preference</h4>
-                                        <p class="text-sm text-gray-700">If you're between sizes, we recommend sizing up for a more comfortable fit. Barongs and Filipinianas are traditionally worn with a relaxed, elegant drape.</p>
-                                    </div>
-                                    <div class="p-4 bg-purple-50 rounded-lg">
-                                        <h4 class="font-semibold text-gray-900 mb-2"><i class="fas fa-edit mr-2 text-purple-600"></i>Custom Alterations</h4>
-                                        <p class="text-sm text-gray-700">We offer free alterations within 30 days of purchase. Visit our store in Pandi, Bulacan for professional fitting and adjustments.</p>
-                                    </div>
-                                    <div class="p-4 bg-indigo-50 rounded-lg">
-                                        <h4 class="font-semibold text-gray-900 mb-2"><i class="fas fa-question-circle mr-2 text-indigo-600"></i>Need Help?</h4>
-                                        <p class="text-sm text-gray-700">Still unsure about your size? Contact us for personalized sizing assistance or visit our store for a professional fitting consultation.</p>
+                                    <div class="p-2 bg-green-50 rounded-lg">
+                                        <h4 class="text-xs font-semibold text-gray-900 mb-1"><i class="fas fa-tshirt mr-1 text-green-600"></i>Fit Preference</h4>
+                                        <p class="text-xs text-gray-700">If between sizes, we recommend sizing up for a more comfortable fit.</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end">
-                            <button onclick="closeSizeChartModal()" class="px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors">
+                        <div class="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-4 py-2 flex justify-end">
+                            <button onclick="closeSizeChartModal()" class="px-4 py-1.5 text-sm bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors">
                                 Close
                             </button>
                         </div>
