@@ -559,22 +559,22 @@ function createOrGetSizeChartModal() {
 
     modal = document.createElement('div');
     modal.id = 'size-chart-modal';
-    modal.className = 'fixed inset-0 z-[60] hidden';
+    modal.className = 'fixed inset-0 z-[100] hidden';
     modal.innerHTML = `
         <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeSizeChartModal()"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4">
-            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[85vh] overflow-y-auto">
-                <div class="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-                    <h2 class="text-lg font-bold text-gray-900">Size Guide</h2>
+            <div class="bg-white rounded-lg shadow-xl max-w-xl w-full max-h-[70vh] overflow-y-auto">
+                <div class="sticky top-0 bg-white border-b border-gray-200 px-3 py-2 flex items-center justify-between">
+                    <h2 class="text-base font-bold text-gray-900">Size Guide</h2>
                     <button onclick="closeSizeChartModal()" class="text-gray-500 hover:text-gray-700">
-                        <i class="fas fa-times"></i>
+                        <i class="fas fa-times text-sm"></i>
                     </button>
                 </div>
                 
-                <div class="p-4 space-y-4">
+                <div class="p-3 space-y-3">
                     <!-- Barong Size Chart -->
                     <div>
-                        <h3 class="text-base font-semibold text-gray-900 mb-2">Barong Sizing Guide</h3>
+                        <h3 class="text-sm font-semibold text-gray-900 mb-1.5">Barong Sizing Guide</h3>
                         <div class="overflow-x-auto">
                             <table class="min-w-full border-collapse border border-gray-300">
                                 <thead>
@@ -625,9 +625,9 @@ function createOrGetSizeChartModal() {
                                 </tbody>
                             </table>
                         </div>
-                            <div class="mt-2 p-2 bg-blue-50 rounded-lg">
-                                <h4 class="text-xs font-semibold text-gray-900 mb-1"><i class="fas fa-info-circle mr-1 text-blue-600"></i>Measuring Tips:</h4>
-                                <ul class="list-disc list-inside text-xs text-gray-700 space-y-0.5">
+                            <div class="mt-1.5 p-1.5 bg-blue-50 rounded text-xs">
+                                <h4 class="font-semibold text-gray-900 mb-0.5"><i class="fas fa-info-circle mr-1 text-blue-600"></i>Measuring Tips:</h4>
+                                <ul class="list-disc list-inside text-xs text-gray-700 space-y-0">
                                 <li><strong>Chest:</strong> Measure the fullest part of your chest over a well-fitted shirt</li>
                                 <li><strong>Shoulder Width:</strong> Measure from shoulder to shoulder across the back</li>
                                 <li><strong>Sleeve Length:</strong> Measure from shoulder to wrist</li>
@@ -638,7 +638,7 @@ function createOrGetSizeChartModal() {
 
                     <!-- Filipiniana Size Chart -->
                     <div>
-                        <h3 class="text-base font-semibold text-gray-900 mb-2">Filipiniana Sizing Guide</h3>
+                        <h3 class="text-sm font-semibold text-gray-900 mb-1.5">Filipiniana Sizing Guide</h3>
                         <div class="overflow-x-auto">
                             <table class="min-w-full border-collapse border border-gray-300">
                                 <thead>
@@ -689,9 +689,9 @@ function createOrGetSizeChartModal() {
                                 </tbody>
                             </table>
                         </div>
-                            <div class="mt-2 p-2 bg-pink-50 rounded-lg">
-                                <h4 class="text-xs font-semibold text-gray-900 mb-1"><i class="fas fa-info-circle mr-1 text-pink-600"></i>Measuring Tips:</h4>
-                                <ul class="list-disc list-inside text-xs text-gray-700 space-y-0.5">
+                            <div class="mt-1.5 p-1.5 bg-pink-50 rounded text-xs">
+                                <h4 class="font-semibold text-gray-900 mb-0.5"><i class="fas fa-info-circle mr-1 text-pink-600"></i>Measuring Tips:</h4>
+                                <ul class="list-disc list-inside text-xs text-gray-700 space-y-0">
                                 <li><strong>Bust:</strong> Measure the fullest part of your bust over undergarments</li>
                                 <li><strong>Waist:</strong> Measure your natural waistline (usually the narrowest part)</li>
                                 <li><strong>Hips:</strong> Measure the fullest part of your hips</li>
@@ -701,23 +701,23 @@ function createOrGetSizeChartModal() {
                     </div>
 
                     <!-- General Tips -->
-                    <div class="border-t border-gray-200 pt-2">
-                        <h3 class="text-sm font-semibold text-gray-900 mb-2">General Sizing Tips</h3>
-                        <div class="grid grid-cols-1 gap-2">
-                            <div class="p-2 bg-yellow-50 rounded-lg">
-                                <h4 class="text-xs font-semibold text-gray-900 mb-1"><i class="fas fa-ruler-combined mr-1 text-yellow-600"></i>How to Measure</h4>
-                                <p class="text-xs text-gray-700">Measure over clothing you'll wear underneath. Use a flexible measuring tape.</p>
+                    <div class="border-t border-gray-200 pt-1.5">
+                        <h3 class="text-xs font-semibold text-gray-900 mb-1">General Sizing Tips</h3>
+                        <div class="grid grid-cols-1 gap-1">
+                            <div class="p-1.5 bg-yellow-50 rounded text-xs">
+                                <h4 class="font-semibold text-gray-900 mb-0.5"><i class="fas fa-ruler-combined mr-1 text-yellow-600"></i>How to Measure</h4>
+                                <p class="text-gray-700">Measure over clothing you'll wear underneath. Use a flexible measuring tape.</p>
                             </div>
-                            <div class="p-2 bg-green-50 rounded-lg">
-                                <h4 class="text-xs font-semibold text-gray-900 mb-1"><i class="fas fa-tshirt mr-1 text-green-600"></i>Fit Preference</h4>
-                                <p class="text-xs text-gray-700">If between sizes, we recommend sizing up for a more comfortable fit.</p>
+                            <div class="p-1.5 bg-green-50 rounded text-xs">
+                                <h4 class="font-semibold text-gray-900 mb-0.5"><i class="fas fa-tshirt mr-1 text-green-600"></i>Fit Preference</h4>
+                                <p class="text-gray-700">If between sizes, we recommend sizing up for a more comfortable fit.</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-4 py-2 flex justify-end">
-                    <button onclick="closeSizeChartModal()" class="px-4 py-1.5 text-sm bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors">
+                <div class="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-3 py-1.5 flex justify-end">
+                    <button onclick="closeSizeChartModal()" class="px-3 py-1 text-xs bg-gray-800 text-white rounded hover:bg-gray-900 transition-colors">
                         Close
                     </button>
                 </div>
