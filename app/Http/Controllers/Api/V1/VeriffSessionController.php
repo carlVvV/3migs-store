@@ -37,9 +37,6 @@ class VeriffSessionController extends Controller
                     'firstName' => $names['first_name'],
                     'lastName' => $names['last_name'],
                 ],
-                'document' => [
-                    'type' => 'idcard',
-                ],
                 'vendorData' => (string) $user->id,
                 'timestamp' => now()->toIso8601String(),
             ],
