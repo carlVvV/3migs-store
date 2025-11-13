@@ -1871,5 +1871,37 @@ class AdminController extends Controller
 
         return back()->with('success', 'Password changed successfully!');
     }
+
+    /**
+     * Update Veriff document status (temporary utility)
+     */
+    public function updateVeriffStatus(Request $request)
+    {
+        $request->validate([
+            'session_id' => 'required|string',
+            'status' => 'required|in:approved,pending,rejected',
+        ]);
+
+        $document = \App\Models\IdDocument::where('veriff_session_id', $request->session_id)->first();
+
+        if (!$document) {
+            return response()->json(['error' => 'Document not found'], 404);
+        }
+
+        $oldStatus = $document->status;
+        $document->status = $request->status;
+        $document->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Status updated from '{$oldStatus}' to '{$request->status}'",
+            'document' => [
+                'id' => $document->id,
+                'user_id' => $document->user_id,
+                'session_id' => $document->veriff_session_id,
+                'status' => $document->status,
+            ]
+        ]);
+    }
 }
 
