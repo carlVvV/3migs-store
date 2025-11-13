@@ -1903,5 +1903,99 @@ class AdminController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Sync Veriff status from Veriff API
+     */
+    public function syncVeriffStatus(Request $request)
+    {
+        $request->validate([
+            'session_id' => 'required|string',
+        ]);
+
+        $document = \App\Models\IdDocument::where('veriff_session_id', $request->session_id)->first();
+
+        if (!$document) {
+            return response()->json(['error' => 'Document not found'], 404);
+        }
+
+        $apiKey = \Illuminate\Support\Facades\Config::get('services.veriff.api_key');
+
+        if (!$apiKey) {
+            return response()->json(['error' => 'Veriff API key not configured'], 500);
+        }
+
+        try {
+            // Fetch verification status from Veriff API
+            $response = \Illuminate\Support\Facades\Http::withHeaders([
+                'X-AUTH-CLIENT' => $apiKey,
+            ])->get("https://api.veriff.me/v1/sessions/{$request->session_id}");
+
+            if (!$response->successful()) {
+                return response()->json([
+                    'error' => 'Failed to fetch status from Veriff',
+                    'details' => $response->json(),
+                ], $response->status());
+            }
+
+            $veriffData = $response->json('verification');
+            
+            if (!$veriffData || !isset($veriffData['status'])) {
+                return response()->json(['error' => 'Invalid response from Veriff API'], 400);
+            }
+
+            $veriffStatus = $veriffData['status'];
+            $oldStatus = $document->status;
+
+            // Map Veriff status to our status
+            $newStatus = $this->mapVeriffStatus($veriffStatus);
+            
+            $document->status = $newStatus;
+            $document->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Status synced from Veriff. Changed from '{$oldStatus}' to '{$newStatus}'",
+                'veriff_status' => $veriffStatus,
+                'document' => [
+                    'id' => $document->id,
+                    'user_id' => $document->user_id,
+                    'session_id' => $document->veriff_session_id,
+                    'status' => $document->status,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to sync status',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Map Veriff status to our internal status
+     */
+    private function mapVeriffStatus(string $veriffStatus): string
+    {
+        $status = strtolower(trim($veriffStatus));
+
+        switch ($status) {
+            case 'approved':
+                return 'approved';
+            
+            case 'declined':
+            case 'rejected':
+                return 'rejected';
+            
+            case 'resubmission_requested':
+            case 'expired':
+            case 'abandoned':
+            case 'pending':
+            case 'created':
+            case 'submitted':
+            default:
+                return 'pending';
+        }
+    }
 }
 

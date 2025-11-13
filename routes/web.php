@@ -121,6 +121,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/users', [AdminController::class, 'users'])->name('users');
     Route::get('/users/{user}', [AdminController::class, 'userDetails'])->name('users.show');
     Route::post('/veriff/update-status', [AdminController::class, 'updateVeriffStatus'])->name('veriff.update-status');
+    Route::post('/veriff/sync-status', [AdminController::class, 'syncVeriffStatus'])->name('veriff.sync-status');
     Route::get('/reviews', [AdminController::class, 'reviews'])->name('reviews');
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
     Route::post('/settings/change-password', [AdminController::class, 'changePassword'])->name('settings.change-password');
