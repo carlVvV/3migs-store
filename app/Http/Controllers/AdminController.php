@@ -15,6 +15,7 @@ use Illuminate\Support\Str;
 use App\Http\Requests\StoreBarongProductRequest;
 use App\Services\CloudinaryService;
 use Faker\Factory as FakerFactory;
+use Spatie\Permission\Models\Role;
 
 class AdminController extends Controller
 {
@@ -736,9 +737,21 @@ class AdminController extends Controller
     {
         $query = User::with(['roles', 'latestIdDocument', 'approvedIdDocument']);
 
-        // Filter by role
-        if ($request->has('role') && $request->role) {
-            $query->role($request->role);
+        // Filter by role with graceful fallback when role does not exist in Spatie tables
+        if ($request->filled('role')) {
+            $roleFilter = $request->input('role');
+
+            if ($roleFilter === 'admin') {
+                $query->where('role', 'admin');
+            } elseif ($roleFilter === 'user') {
+                $query->where(function ($inner) {
+                    $inner->whereNull('role')
+                        ->orWhere('role', 'user')
+                        ->orWhere('role', 'customer');
+                });
+            } elseif (Role::where('name', $roleFilter)->exists()) {
+                $query->role($roleFilter);
+            }
         }
 
         // Search
