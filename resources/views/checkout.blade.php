@@ -244,6 +244,37 @@
                             </label>
                         </div>
                     </form>
+
+                    <!-- ID Verification -->
+                    <div id="id-verification-section" class="mt-6 border-t border-gray-200 pt-6 hidden">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">ID Verification</h3>
+                        <div class="space-y-3">
+                            <div id="id-status-wrapper" class="flex flex-col sm:flex-row sm:items-center sm:gap-3">
+                                <span id="id-status-badge" class="inline-flex items-center gap-2 px-3 py-1 text-sm font-semibold rounded-full bg-gray-100 text-gray-700">
+                                    <i class="fas fa-id-card"></i>
+                                    Checking status...
+                                </span>
+                                <span id="id-status-message" class="text-sm text-gray-600 mt-2 sm:mt-0">
+                                    Checking your ID verification status...
+                                </span>
+                            </div>
+                            <div id="id-upload-instructions" class="text-sm text-gray-500">
+                                Upload a clear photo or scan of a valid government-issued ID. Accepted formats: JPG, PNG, PDF (max 5MB).
+                            </div>
+                            <div id="id-upload-container" class="flex items-center gap-3 hidden">
+                                <input type="file" id="id-file-input" accept=".jpg,.jpeg,.png,.pdf" class="hidden">
+                                <button id="id-upload-button" type="button" class="inline-flex items-center px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-md hover:bg-gray-900 transition-colors">
+                                    <i class="fas fa-upload mr-2"></i>
+                                    Upload ID
+                                </button>
+                                <span class="text-xs text-gray-500">Maximum size 5MB.</span>
+                            </div>
+                            <div id="id-upload-progress" class="flex items-center gap-2 text-sm text-gray-600 hidden">
+                                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500"></div>
+                                Uploading your ID...
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -381,6 +412,31 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Check authentication status immediately
     const isLoggedIn = {{ auth()->check() ? 'true' : 'false' }};
+
+    const ID_DOCUMENT_STORAGE_KEY = 'checkoutIdDocumentId';
+    let idVerificationState = {
+        status: isLoggedIn ? 'loading' : 'hidden',
+        documentId: null,
+        document: null,
+    };
+
+    const idVerificationSection = document.getElementById('id-verification-section');
+    const idStatusBadge = document.getElementById('id-status-badge');
+    const idStatusMessage = document.getElementById('id-status-message');
+    const idUploadInstructions = document.getElementById('id-upload-instructions');
+    const idUploadContainer = document.getElementById('id-upload-container');
+    const idUploadButton = document.getElementById('id-upload-button');
+    const idFileInput = document.getElementById('id-file-input');
+    const idUploadProgress = document.getElementById('id-upload-progress');
+
+    if (idUploadButton && idFileInput) {
+        idUploadButton.addEventListener('click', function(event) {
+            event.preventDefault();
+            idFileInput.click();
+        });
+
+        idFileInput.addEventListener('change', handleIdFileSelection);
+    }
     
     if (isLoggedIn) {
         // User is logged in - show checkout content immediately
@@ -390,11 +446,15 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Load cart data
         loadOrderSummary();
+        initializeIdVerification();
     } else {
         // User is not logged in - show login message immediately
         document.getElementById('not-logged-in-message').style.display = 'flex';
         document.getElementById('checkout-content').style.display = 'none';
         document.getElementById('empty-cart-message').style.display = 'none';
+        if (idVerificationSection) {
+            idVerificationSection.classList.add('hidden');
+        }
     }
     
     // Load saved addresses and setup form
@@ -422,6 +482,268 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Form validation
     setupFormValidation();
+
+    async function initializeIdVerification() {
+        if (!idVerificationSection) {
+            return;
+        }
+
+        idVerificationState.status = 'loading';
+        updateIdVerificationUI();
+
+        try {
+            const documents = await fetchUserIdDocuments();
+            updateIdVerificationStateFromDocuments(documents);
+        } catch (error) {
+            console.error('Failed to load ID documents', error);
+            idVerificationState = {
+                status: 'error',
+                documentId: null,
+                document: null,
+            };
+            persistIdDocumentState();
+            updateIdVerificationUI();
+        }
+    }
+
+    async function fetchUserIdDocuments() {
+        const response = await fetch('/api/v1/id-documents', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+            },
+            credentials: 'same-origin',
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to load ID documents');
+        }
+
+        const data = await response.json();
+        return Array.isArray(data.data) ? data.data : [];
+    }
+
+    function updateIdVerificationStateFromDocuments(documents) {
+        const docs = Array.isArray(documents) ? documents : [];
+        const approved = docs.find(doc => doc.status === 'approved');
+        const pending = docs.find(doc => doc.status === 'pending');
+        const rejected = docs.find(doc => doc.status === 'rejected');
+
+        if (approved) {
+            idVerificationState = {
+                status: 'approved',
+                documentId: approved.id,
+                document: approved,
+            };
+        } else if (pending) {
+            idVerificationState = {
+                status: 'pending',
+                documentId: pending.id,
+                document: pending,
+            };
+        } else if (rejected) {
+            idVerificationState = {
+                status: 'rejected',
+                documentId: null,
+                document: rejected,
+            };
+        } else {
+            idVerificationState = {
+                status: 'none',
+                documentId: null,
+                document: null,
+            };
+        }
+
+        persistIdDocumentState();
+        updateIdVerificationUI();
+    }
+
+    function persistIdDocumentState() {
+        if (idVerificationState.documentId && (idVerificationState.status === 'approved' || idVerificationState.status === 'pending')) {
+            sessionStorage.setItem(ID_DOCUMENT_STORAGE_KEY, String(idVerificationState.documentId));
+        } else {
+            sessionStorage.removeItem(ID_DOCUMENT_STORAGE_KEY);
+        }
+    }
+
+    function updateIdVerificationUI() {
+        if (!idVerificationSection) {
+            return;
+        }
+
+        if (idVerificationState.status === 'hidden') {
+            idVerificationSection.classList.add('hidden');
+            return;
+        }
+
+        idVerificationSection.classList.remove('hidden');
+
+        const statusConfig = {
+            loading: {
+                label: 'Checking ID status',
+                icon: 'fas fa-spinner fa-spin',
+                badgeClasses: 'bg-gray-100 text-gray-700',
+                message: 'Checking your ID verification status...',
+                showUpload: false,
+                showInstructions: false,
+            },
+            approved: {
+                label: 'ID Verified',
+                icon: 'fas fa-check-circle',
+                badgeClasses: 'bg-green-100 text-green-800',
+                message: 'Your ID has been verified. You are all set for checkout.',
+                showUpload: false,
+                showInstructions: false,
+            },
+            pending: {
+                label: 'Pending Review',
+                icon: 'fas fa-hourglass-half',
+                badgeClasses: 'bg-yellow-100 text-yellow-800',
+                message: 'Your ID is currently under review. We will notify you once it is verified.',
+                showUpload: false,
+                showInstructions: false,
+            },
+            rejected: {
+                label: 'ID Rejected',
+                icon: 'fas fa-times-circle',
+                badgeClasses: 'bg-red-100 text-red-800',
+                message: 'Your last ID upload was rejected. Please upload a new ID.',
+                showUpload: true,
+                showInstructions: true,
+            },
+            none: {
+                label: 'ID Required',
+                icon: 'fas fa-id-card',
+                badgeClasses: 'bg-gray-100 text-gray-700',
+                message: 'Upload a valid government ID to complete checkout and use all payment options.',
+                showUpload: true,
+                showInstructions: true,
+            },
+            error: {
+                label: 'Status Unavailable',
+                icon: 'fas fa-exclamation-circle',
+                badgeClasses: 'bg-red-100 text-red-800',
+                message: 'Unable to load your ID status. You can try uploading an ID again.',
+                showUpload: true,
+                showInstructions: true,
+            },
+        };
+
+        const stateKey = statusConfig[idVerificationState.status] ? idVerificationState.status : 'none';
+        const config = statusConfig[stateKey];
+
+        if (idStatusBadge) {
+            idStatusBadge.className = `inline-flex items-center gap-2 px-3 py-1 text-sm font-semibold rounded-full ${config.badgeClasses}`;
+            idStatusBadge.innerHTML = `<i class="${config.icon}"></i>${config.label}`;
+        }
+
+        if (idStatusMessage) {
+            idStatusMessage.textContent = config.message;
+        }
+
+        if (idUploadInstructions) {
+            if (config.showInstructions) {
+                idUploadInstructions.classList.remove('hidden');
+            } else {
+                idUploadInstructions.classList.add('hidden');
+            }
+        }
+
+        if (idUploadContainer) {
+            if (config.showUpload) {
+                idUploadContainer.classList.remove('hidden');
+            } else {
+                idUploadContainer.classList.add('hidden');
+            }
+        }
+
+        if (idUploadProgress) {
+            idUploadProgress.classList.add('hidden');
+        }
+    }
+
+    function handleIdFileSelection(event) {
+        const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
+
+        if (!file) {
+            return;
+        }
+
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (file.size > maxSize) {
+            showNotification('File is too large. Maximum size is 5MB.', 'error');
+            event.target.value = '';
+            return;
+        }
+
+        const allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
+        const extension = file.name.split('.').pop().toLowerCase();
+        if (!allowedExtensions.includes(extension)) {
+            showNotification('Invalid file type. Please upload a JPG, PNG, or PDF file.', 'error');
+            event.target.value = '';
+            return;
+        }
+
+        uploadIdDocument(file);
+    }
+
+    async function uploadIdDocument(file) {
+        if (!idUploadProgress) {
+            return;
+        }
+
+        idUploadProgress.classList.remove('hidden');
+
+        const formData = new FormData();
+        formData.append('id_file', file);
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const headers = csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {};
+
+        try {
+            const response = await fetch('/api/v1/id-documents', {
+                method: 'POST',
+                headers,
+                body: formData,
+                credentials: 'same-origin',
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || 'Failed to upload ID document.');
+            }
+
+            showNotification('ID uploaded successfully. We will review it shortly.', 'success');
+            await initializeIdVerification();
+        } catch (error) {
+            console.error('ID upload failed', error);
+            showNotification(error.message || 'Failed to upload ID document. Please try again.', 'error');
+        } finally {
+            if (idUploadProgress) {
+                idUploadProgress.classList.add('hidden');
+            }
+
+            if (idFileInput) {
+                idFileInput.value = '';
+            }
+        }
+    }
+
+    function getCurrentIdDocumentId() {
+        if (idVerificationState.documentId && (idVerificationState.status === 'approved' || idVerificationState.status === 'pending')) {
+            return idVerificationState.documentId;
+        }
+
+        const storedId = sessionStorage.getItem(ID_DOCUMENT_STORAGE_KEY);
+        if (!storedId) {
+            return null;
+        }
+
+        const parsed = parseInt(storedId, 10);
+        return Number.isNaN(parsed) ? null : parsed;
+    }
     async function loadSavedAddresses() {
         try {
             const res = await fetch('/api/v1/addresses', { headers: { 'Accept': 'application/json' } });
@@ -1454,6 +1776,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 save_info: formData.get('save_info') === 'on',
                 payment_method: paymentMethod
             };
+        }
+
+        const currentIdDocumentId = getCurrentIdDocumentId();
+        if (currentIdDocumentId) {
+            orderData.id_document_id = currentIdDocumentId;
+        }
+
+        if (paymentMethod === 'cod') {
+            if (idVerificationState.status === 'loading') {
+                showNotification('We are still checking your ID verification status. Please wait a moment and try again.', 'info');
+                return;
+            }
+
+            if (idVerificationState.status !== 'approved') {
+                showNotification('Cash on delivery requires a verified ID. Please upload a valid ID and wait for approval, or choose Online Payment.', 'error');
+                return;
+            }
         }
 
         // Fast-path: if Online Payment selected, create the order and open Bux.ph directly
