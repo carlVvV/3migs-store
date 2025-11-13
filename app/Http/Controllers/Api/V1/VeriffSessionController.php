@@ -32,7 +32,7 @@ class VeriffSessionController extends Controller
 
         $payload = [
             'verification' => [
-                'callback' => url('/veriff-webhook'),
+                'callback' => url('/api/veriff-webhook'),
                 'person' => [
                     'firstName' => $names['first_name'],
                     'lastName' => $names['last_name'],

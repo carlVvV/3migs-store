@@ -268,6 +268,12 @@
                                 </button>
                                 <span class="text-xs text-gray-500">A secure window will open to complete the process.</span>
                             </div>
+                            <div id="id-refresh-container" class="flex items-center gap-3 hidden">
+                                <button id="id-refresh-status" type="button" class="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-200 transition-colors">
+                                    <i class="fas fa-sync-alt mr-2"></i>
+                                    Refresh Status
+                                </button>
+                            </div>
                             <div id="id-veriff-loading" class="flex items-center gap-2 text-sm text-gray-600 hidden">
                                 <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500"></div>
                                 Starting verification...
@@ -425,10 +431,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const idInstructions = document.getElementById('id-instructions');
     const idActionContainer = document.getElementById('id-action-container');
     const idStartButton = document.getElementById('id-start-veriff');
+    const idRefreshContainer = document.getElementById('id-refresh-container');
+    const idRefreshButton = document.getElementById('id-refresh-status');
     const idVeriffLoading = document.getElementById('id-veriff-loading');
+
+    let statusPollInterval = null;
 
     if (idStartButton) {
         idStartButton.addEventListener('click', startVeriff);
+    }
+
+    if (idRefreshButton) {
+        idRefreshButton.addEventListener('click', refreshIdVerificationStatus);
     }
     
     if (isLoggedIn) {
@@ -657,6 +671,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        // Show refresh button for pending status
+        if (idRefreshContainer) {
+            if (idVerificationState.status === 'pending') {
+                idRefreshContainer.classList.remove('hidden');
+            } else {
+                idRefreshContainer.classList.add('hidden');
+            }
+        }
+
         if (idStartButton) {
             idStartButton.disabled = !config.showAction;
             idStartButton.classList.toggle('opacity-50', !config.showAction);
@@ -665,6 +688,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (idVeriffLoading) {
             idVeriffLoading.classList.add('hidden');
+        }
+
+        // Start/stop automatic polling for pending status
+        if (idVerificationState.status === 'pending') {
+            startStatusPolling();
+        } else {
+            stopStatusPolling();
         }
     }
 
@@ -683,6 +713,65 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'submitted':
             default:
                 return 'pending';
+        }
+    }
+
+    async function refreshIdVerificationStatus() {
+        if (idVerificationState.status === 'loading') {
+            return;
+        }
+
+        if (idRefreshButton) {
+            idRefreshButton.disabled = true;
+            const icon = idRefreshButton.querySelector('i');
+            if (icon) {
+                icon.classList.add('fa-spin');
+            }
+        }
+
+        try {
+            const documents = await fetchUserIdDocuments();
+            updateIdVerificationStateFromDocuments(documents);
+            showNotification('Status refreshed.', 'success');
+        } catch (error) {
+            console.error('Failed to refresh ID documents', error);
+            showNotification('Failed to refresh status. Please try again.', 'error');
+        } finally {
+            if (idRefreshButton) {
+                idRefreshButton.disabled = false;
+                const icon = idRefreshButton.querySelector('i');
+                if (icon) {
+                    icon.classList.remove('fa-spin');
+                }
+            }
+        }
+    }
+
+    function startStatusPolling() {
+        // Clear any existing interval
+        stopStatusPolling();
+
+        // Poll every 30 seconds when status is pending
+        statusPollInterval = setInterval(async () => {
+            if (idVerificationState.status !== 'pending') {
+                stopStatusPolling();
+                return;
+            }
+
+            try {
+                const documents = await fetchUserIdDocuments();
+                updateIdVerificationStateFromDocuments(documents);
+            } catch (error) {
+                console.error('Status polling error:', error);
+                // Don't show error notification for polling failures
+            }
+        }, 30000); // 30 seconds
+    }
+
+    function stopStatusPolling() {
+        if (statusPollInterval) {
+            clearInterval(statusPollInterval);
+            statusPollInterval = null;
         }
     }
 
@@ -2266,6 +2355,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize the PSGC address form
     initializePSGCAddressForm();
+
+    // Cleanup polling on page unload
+    window.addEventListener('beforeunload', () => {
+        stopStatusPolling();
+    });
 });
 </script>
 @endsection
