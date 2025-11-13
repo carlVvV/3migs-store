@@ -258,6 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const idDocsEl = document.getElementById('user-modal-id-documents');
     const ordersEl = document.getElementById('user-modal-orders');
     const orderSummaryEl = document.getElementById('user-modal-order-summary');
+    let currentUserId = null;
 
     document.querySelectorAll('.view-user-btn').forEach((button) => {
         button.addEventListener('click', () => {
@@ -266,6 +267,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const fallbackEmail = button.dataset.userEmail || '';
             openModal(userId, fallbackName, fallbackEmail);
         });
+    });
+
+    // Event delegation for sync Veriff status buttons (dynamically created)
+    modal.addEventListener('click', (event) => {
+        if (event.target.closest('.sync-veriff-btn')) {
+            const button = event.target.closest('.sync-veriff-btn');
+            const sessionId = button.dataset.sessionId;
+            if (sessionId) {
+                syncVeriffStatus(sessionId, button);
+            }
+        }
     });
 
     if (overlay) {
@@ -286,6 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!userId) {
             return;
         }
+        currentUserId = userId;
 
         showModal();
         setLoadingState();
@@ -450,15 +463,26 @@ document.addEventListener('DOMContentLoaded', () => {
             return `
                 <div class="border border-gray-200 rounded-md p-4">
                     <div class="flex items-start justify-between gap-3">
-                        <div>
+                        <div class="flex-1">
                             <p class="font-semibold text-gray-900">${escapeHtml(doc.type) || 'ID Document'}</p>
-                            <p class="text-xs text-gray-500">Uploaded ${formatDate(doc.uploaded_at)}</p>
-                            <div class="mt-2 text-xs text-gray-500">Veriff Session: ${escapeHtml(doc.veriff_session_id) || 'N/A'}</div>
+                            <p class="text-xs text-gray-500">Uploaded ${formatDate(doc.created_at || doc.uploaded_at)}</p>
+                            <div class="mt-2 text-xs text-gray-500 font-mono">Veriff Session: ${escapeHtml(doc.veriff_session_id) || 'N/A'}</div>
                         </div>
-                        <span class="inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold rounded-full ${status.classes}">
-                            <i class="${status.icon}"></i>
-                            ${status.label}
-                        </span>
+                        <div class="flex flex-col items-end gap-2">
+                            <span class="inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold rounded-full ${status.classes}">
+                                <i class="${status.icon}"></i>
+                                ${status.label}
+                            </span>
+                            ${doc.veriff_session_id ? `
+                                <button 
+                                    type="button"
+                                    class="sync-veriff-btn text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                                    data-session-id="${escapeHtml(doc.veriff_session_id)}"
+                                    title="Sync status from Veriff API">
+                                    <i class="fas fa-sync-alt mr-1"></i> Sync from Veriff
+                                </button>
+                            ` : ''}
+                        </div>
                     </div>
                 </div>
             `;
@@ -564,6 +588,56 @@ document.addEventListener('DOMContentLoaded', () => {
             style: 'currency',
             currency: 'PHP',
         }).format(number);
+    }
+
+    async function syncVeriffStatus(sessionId, button) {
+        if (!sessionId) {
+            alert('Session ID is missing');
+            return;
+        }
+
+        // Disable button and show loading state
+        const originalHTML = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Syncing...';
+        button.classList.add('opacity-50', 'cursor-not-allowed');
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            const response = await fetch('/admin/veriff/sync-status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify({ session_id: sessionId }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Show success message
+                alert(`Status synced successfully!\n\nVeriff Status: ${data.veriff_status}\nDatabase Status: ${data.document.status}\n\n${data.message}`);
+                
+                // Reload the user details to show updated status
+                if (currentUserId) {
+                    const fallbackName = nameEl?.textContent || 'User Details';
+                    const fallbackEmail = emailEl?.textContent || '';
+                    openModal(currentUserId, fallbackName, fallbackEmail);
+                }
+            } else {
+                alert(`Failed to sync status: ${data.error || data.message || 'Unknown error'}`);
+                button.innerHTML = originalHTML;
+                button.disabled = false;
+                button.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        } catch (error) {
+            console.error('Error syncing Veriff status:', error);
+            alert('Failed to sync status. Please check the console for details.');
+            button.innerHTML = originalHTML;
+            button.disabled = false;
+            button.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
     }
 
     function escapeHtml(value) {
