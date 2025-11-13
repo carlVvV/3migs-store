@@ -625,8 +625,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             if (data.success) {
-                // Show success message
-                alert(`Status synced successfully!\n\nVeriff Status: ${data.veriff_status}\nDatabase Status: ${data.document.status}\n\n${data.message}`);
+                // Show success toast notification
+                window.notify(`Status synced successfully! Veriff: ${data.veriff_status}, Database: ${data.document.status}`, 'success');
                 
                 // Reload the user details to show updated status
                 if (currentUserId) {
@@ -635,14 +635,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     openModal(currentUserId, fallbackName, fallbackEmail);
                 }
             } else {
-                alert(`Failed to sync status: ${data.error || data.message || 'Unknown error'}`);
+                // Show error toast notification
+                const errorMessage = data.error || data.message || data.details?.message || 'Unknown error';
+                window.notify(`Failed to sync status: ${errorMessage}`, 'error');
                 button.innerHTML = originalHTML;
                 button.disabled = false;
                 button.classList.remove('opacity-50', 'cursor-not-allowed');
             }
         } catch (error) {
             console.error('Error syncing Veriff status:', error);
-            alert('Failed to sync status. Please check the console for details.');
+            // Show error toast notification
+            const errorMessage = error.message || 'Failed to sync status. Please check the console for details.';
+            window.notify(errorMessage, 'error');
             button.innerHTML = originalHTML;
             button.disabled = false;
             button.classList.remove('opacity-50', 'cursor-not-allowed');
