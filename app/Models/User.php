@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
@@ -93,6 +94,22 @@ class User extends Authenticatable
     public function idDocuments(): HasMany
     {
         return $this->hasMany(IdDocument::class);
+    }
+
+    /**
+     * Get the most recent ID document uploaded by the user.
+     */
+    public function latestIdDocument(): HasOne
+    {
+        return $this->hasOne(IdDocument::class)->latestOfMany();
+    }
+
+    /**
+     * Get the most recent approved ID document for the user.
+     */
+    public function approvedIdDocument(): HasOne
+    {
+        return $this->hasOne(IdDocument::class)->where('status', 'approved')->latestOfMany();
     }
 
     /**

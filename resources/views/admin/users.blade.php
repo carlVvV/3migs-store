@@ -100,6 +100,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Status</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
@@ -128,6 +129,35 @@
                                         @else bg-blue-100 text-blue-800
                                         @endif">
                                         {{ ucfirst($user->role ?? 'user') }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    @php
+                                        $latestDoc = $user->latestIdDocument;
+                                        $approvedDoc = $user->approvedIdDocument;
+                                        $statusLabel = 'No ID Submitted';
+                                        $statusClasses = 'bg-gray-100 text-gray-700';
+                                        $statusIcon = 'fas fa-id-card';
+
+                                        if ($approvedDoc) {
+                                            $statusLabel = 'Verified';
+                                            $statusClasses = 'bg-green-100 text-green-800';
+                                            $statusIcon = 'fas fa-check-circle';
+                                        } elseif ($latestDoc) {
+                                            if ($latestDoc->status === 'pending') {
+                                                $statusLabel = 'Pending Review';
+                                                $statusClasses = 'bg-yellow-100 text-yellow-800';
+                                                $statusIcon = 'fas fa-hourglass-half';
+                                            } elseif ($latestDoc->status === 'rejected') {
+                                                $statusLabel = 'Rejected';
+                                                $statusClasses = 'bg-red-100 text-red-800';
+                                                $statusIcon = 'fas fa-times-circle';
+                                            }
+                                        }
+                                    @endphp
+                                    <span class="px-2 inline-flex items-center gap-1 text-xs font-semibold rounded-full {{ $statusClasses }}">
+                                        <i class="{{ $statusIcon }}"></i>
+                                        {{ $statusLabel }}
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

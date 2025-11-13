@@ -734,7 +734,7 @@ class AdminController extends Controller
      */
     public function users(Request $request)
     {
-        $query = User::with('roles');
+        $query = User::with(['roles', 'latestIdDocument', 'approvedIdDocument']);
 
         // Filter by role
         if ($request->has('role') && $request->role) {
