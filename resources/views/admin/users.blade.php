@@ -164,8 +164,13 @@
                                     {{ $user->created_at->format('M d, Y') }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
-                                    <button class="text-green-600 hover:text-green-900 mr-3">Edit</button>
+                                    <button type="button"
+                                            class="text-blue-600 hover:text-blue-900 view-user-btn"
+                                            data-user-id="{{ $user->id }}"
+                                            data-user-name="{{ $user->name }}"
+                                            data-user-email="{{ $user->email }}">
+                                        View
+                                    </button>
                                 </td>
                             </tr>
                             @endforeach
@@ -187,4 +192,398 @@
         </div>
     </div>
 </div>
+
+<!-- User Details Modal -->
+<div id="user-detail-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black bg-opacity-40 transition-opacity" data-modal-overlay></div>
+    <div class="relative mx-auto my-10 w-11/12 max-w-5xl bg-white rounded-lg shadow-2xl overflow-hidden flex flex-col">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+            <div>
+                <h3 id="user-modal-name" class="text-xl font-semibold text-gray-900">User Details</h3>
+                <p id="user-modal-email" class="text-sm text-gray-500"></p>
+            </div>
+            <button type="button" class="text-gray-400 hover:text-gray-600 transition-colors" data-modal-close>
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+        <div class="px-6 py-5 max-h-[70vh] overflow-y-auto">
+            <div id="user-modal-loading" class="flex items-center gap-2 text-gray-600">
+                <i class="fas fa-circle-notch fa-spin"></i>
+                <span>Loading user information...</span>
+            </div>
+            <div id="user-modal-error" class="hidden text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-4 py-3 mt-3"></div>
+            <div id="user-modal-content" class="space-y-6 hidden">
+                <section>
+                    <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">General Information</h4>
+                    <div id="user-modal-info" class="mt-3"></div>
+                </section>
+                <section>
+                    <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Saved Addresses</h4>
+                    <div id="user-modal-addresses" class="mt-3 space-y-3"></div>
+                </section>
+                <section>
+                    <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">ID Documents</h4>
+                    <div id="user-modal-id-documents" class="mt-3 space-y-3"></div>
+                </section>
+                <section>
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Recent Orders</h4>
+                        <span id="user-modal-order-summary" class="text-xs text-gray-500"></span>
+                    </div>
+                    <div id="user-modal-orders" class="mt-3 space-y-3"></div>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('user-detail-modal');
+    if (!modal) {
+        return;
+    }
+
+    const overlay = modal.querySelector('[data-modal-overlay]');
+    const closeButtons = modal.querySelectorAll('[data-modal-close]');
+    const loadingEl = document.getElementById('user-modal-loading');
+    const contentEl = document.getElementById('user-modal-content');
+    const errorEl = document.getElementById('user-modal-error');
+    const nameEl = document.getElementById('user-modal-name');
+    const emailEl = document.getElementById('user-modal-email');
+    const infoEl = document.getElementById('user-modal-info');
+    const addressesEl = document.getElementById('user-modal-addresses');
+    const idDocsEl = document.getElementById('user-modal-id-documents');
+    const ordersEl = document.getElementById('user-modal-orders');
+    const orderSummaryEl = document.getElementById('user-modal-order-summary');
+
+    document.querySelectorAll('.view-user-btn').forEach((button) => {
+        button.addEventListener('click', () => {
+            const userId = button.dataset.userId;
+            const fallbackName = button.dataset.userName || 'User Details';
+            const fallbackEmail = button.dataset.userEmail || '';
+            openModal(userId, fallbackName, fallbackEmail);
+        });
+    });
+
+    if (overlay) {
+        overlay.addEventListener('click', closeModal);
+    }
+
+    closeButtons.forEach((button) => {
+        button.addEventListener('click', closeModal);
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
+            closeModal();
+        }
+    });
+
+    function openModal(userId, fallbackName, fallbackEmail) {
+        if (!userId) {
+            return;
+        }
+
+        showModal();
+        setLoadingState();
+
+        nameEl.textContent = fallbackName;
+        emailEl.textContent = fallbackEmail;
+
+        fetch(`/admin/users/${userId}`, {
+            headers: {
+                'Accept': 'application/json',
+            },
+        })
+            .then(handleFetchResponse)
+            .then((payload) => {
+                if (!payload.success || !payload.data) {
+                    throw new Error(payload.message || 'Unable to load user details.');
+                }
+                renderModal(payload.data);
+            })
+            .catch((error) => {
+                showError(error.message || 'Failed to load user information.');
+                console.error(error);
+            });
+    }
+
+    function showModal() {
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeModal() {
+        modal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    function setLoadingState() {
+        loadingEl.classList.remove('hidden');
+        contentEl.classList.add('hidden');
+        errorEl.classList.add('hidden');
+        infoEl.innerHTML = '';
+        addressesEl.innerHTML = '';
+        idDocsEl.innerHTML = '';
+        ordersEl.innerHTML = '';
+        orderSummaryEl.textContent = '';
+    }
+
+    function showError(message) {
+        loadingEl.classList.add('hidden');
+        contentEl.classList.add('hidden');
+        errorEl.classList.remove('hidden');
+        errorEl.textContent = message;
+    }
+
+    function renderModal(data) {
+        loadingEl.classList.add('hidden');
+        errorEl.classList.add('hidden');
+        contentEl.classList.remove('hidden');
+
+        const user = data.user || {};
+        const addresses = Array.isArray(data.addresses) ? data.addresses : [];
+        const idDocuments = Array.isArray(data.id_documents) ? data.id_documents : [];
+        const orders = Array.isArray(data.orders) ? data.orders : [];
+        const orderSummary = data.order_summary || {};
+
+        nameEl.textContent = user.name || 'User Details';
+        emailEl.textContent = user.email || '';
+
+        infoEl.innerHTML = renderGeneralInfo(user, idDocuments, orderSummary);
+        addressesEl.innerHTML = renderAddresses(addresses);
+        idDocsEl.innerHTML = renderIdDocuments(idDocuments);
+        ordersEl.innerHTML = renderOrders(orders);
+        orderSummaryEl.textContent = renderOrderSummary(orderSummary);
+    }
+
+    function handleFetchResponse(response) {
+        if (!response.ok) {
+            throw new Error('Request failed with status ' + response.status);
+        }
+        return response.json();
+    }
+
+    function renderGeneralInfo(user, idDocuments, orderSummary) {
+        const idStatus = getIdStatus(idDocuments);
+        return `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+                <div>
+                    <p class="text-xs uppercase text-gray-500">Name</p>
+                    <p class="font-medium">${escapeHtml(user.name) || 'N/A'}</p>
+                </div>
+                <div>
+                    <p class="text-xs uppercase text-gray-500">Email</p>
+                    <p class="font-medium">${escapeHtml(user.email) || 'N/A'}</p>
+                </div>
+                <div>
+                    <p class="text-xs uppercase text-gray-500">Phone</p>
+                    <p class="font-medium">${escapeHtml(user.phone) || 'Not set'}</p>
+                </div>
+                <div>
+                    <p class="text-xs uppercase text-gray-500">Role</p>
+                    <p class="font-medium capitalize">${escapeHtml(user.role) || 'customer'}</p>
+                </div>
+                <div>
+                    <p class="text-xs uppercase text-gray-500">Joined</p>
+                    <p class="font-medium">${formatDate(user.created_at)}</p>
+                </div>
+                <div>
+                    <p class="text-xs uppercase text-gray-500">Email Verified</p>
+                    <p class="font-medium">${user.email_verified_at ? formatDate(user.email_verified_at) : 'Not verified'}</p>
+                </div>
+                <div>
+                    <p class="text-xs uppercase text-gray-500">Total Orders</p>
+                    <p class="font-medium">${orderSummary.total_orders ?? 0}</p>
+                </div>
+                <div>
+                    <p class="text-xs uppercase text-gray-500">Total Spent</p>
+                    <p class="font-medium">${formatCurrency(orderSummary.total_spent ?? 0)}</p>
+                </div>
+                <div class="md:col-span-2">
+                    <p class="text-xs uppercase text-gray-500">ID Status</p>
+                    <span class="inline-flex items-center gap-2 px-3 py-1 mt-1 text-xs font-semibold rounded-full ${idStatus.classes}">
+                        <i class="${idStatus.icon}"></i>
+                        ${idStatus.label}
+                    </span>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderAddresses(addresses) {
+        if (!addresses.length) {
+            return '<p class="text-sm text-gray-500">No saved addresses.</p>';
+        }
+
+        return addresses.map((address) => `
+            <div class="border border-gray-200 rounded-md p-4 ${address.is_default ? 'bg-gray-50' : ''}">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="font-semibold text-gray-900">${escapeHtml(address.full_name) || 'Unnamed Address'}</p>
+                        <p class="text-sm text-gray-600">${escapeHtml(address.street_address)}</p>
+                        ${address.apartment ? `<p class="text-sm text-gray-600">${escapeHtml(address.apartment)}</p>` : ''}
+                        <p class="text-sm text-gray-600">${[address.barangay, address.city, address.province].filter(Boolean).map(escapeHtml).join(', ')}</p>
+                        <p class="text-sm text-gray-600">${escapeHtml(address.postal_code) || ''}</p>
+                        <p class="text-sm text-gray-600 mt-2">
+                            <span class="font-medium">Contact:</span> ${escapeHtml(address.phone) || 'N/A'}
+                            ${address.email ? ` • ${escapeHtml(address.email)}` : ''}
+                        </p>
+                    </div>
+                    ${address.is_default ? '<span class="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full">Default</span>' : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderIdDocuments(documents) {
+        if (!documents.length) {
+            return '<p class="text-sm text-gray-500">No ID documents uploaded yet.</p>';
+        }
+
+        return documents.map((doc) => {
+            const status = getIdStatus([doc]);
+            const link = doc.file_path
+                ? `<a href="${escapeAttribute(doc.file_path)}" target="_blank" rel="noopener" class="text-sm text-blue-600 hover:text-blue-800">View document</a>`
+                : '<span class="text-sm text-gray-500">No file URL</span>';
+
+            return `
+                <div class="border border-gray-200 rounded-md p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="font-semibold text-gray-900">${escapeHtml(doc.type) || 'ID Document'}</p>
+                            <p class="text-xs text-gray-500">Uploaded ${formatDate(doc.uploaded_at)}</p>
+                            <div class="mt-2">${link}</div>
+                        </div>
+                        <span class="inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold rounded-full ${status.classes}">
+                            <i class="${status.icon}"></i>
+                            ${status.label}
+                        </span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderOrders(orders) {
+        if (!orders.length) {
+            return '<p class="text-sm text-gray-500">No recent orders found.</p>';
+        }
+
+        return orders.map((order) => `
+            <div class="border border-gray-200 rounded-md p-4">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    <div>
+                        <p class="font-semibold text-gray-900">Order #${escapeHtml(order.order_number) || order.id}</p>
+                        <p class="text-xs text-gray-500">Placed ${formatDate(order.created_at)}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-700 capitalize">${escapeHtml(order.status) || 'pending'}</span>
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-700 capitalize">${escapeHtml(order.payment_status) || 'pending'}</span>
+                    </div>
+                </div>
+                <div class="mt-3 text-sm text-gray-700">
+                    <p class="font-medium">Total: ${formatCurrency(order.total_amount ?? 0)}</p>
+                    <p class="text-xs text-gray-500 uppercase mt-1">Payment Method: ${escapeHtml(order.payment_method) || 'N/A'}</p>
+                </div>
+                <div class="mt-3">
+                    <h5 class="text-xs font-semibold text-gray-500 uppercase">Items</h5>
+                    <ul class="mt-2 space-y-1 text-sm text-gray-700">
+                        ${(Array.isArray(order.items) ? order.items : []).map((item) => `
+                            <li class="flex justify-between">
+                                <span>${escapeHtml(item.product_name) || 'Product'} × ${item.quantity}</span>
+                                <span>${formatCurrency(item.total_price ?? ((item.unit_price ?? 0) * (item.quantity ?? 0)))}</span>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderOrderSummary(summary) {
+        const totalOrders = summary.total_orders ?? 0;
+        const totalSpent = formatCurrency(summary.total_spent ?? 0);
+        return `Showing recent orders • Total Orders: ${totalOrders} • Total Spent: ${totalSpent}`;
+    }
+
+    function getIdStatus(documents) {
+        if (!documents || !documents.length) {
+            return {
+                label: 'No ID on file',
+                classes: 'bg-gray-100 text-gray-700',
+                icon: 'fas fa-id-card',
+            };
+        }
+
+        const priority = ['approved', 'pending', 'rejected'];
+        let status = documents[0].status || 'pending';
+
+        for (const state of priority) {
+            const doc = documents.find((item) => item.status === state);
+            if (doc) {
+                status = doc.status;
+                break;
+            }
+        }
+
+        switch (status) {
+            case 'approved':
+                return { label: 'Verified', classes: 'bg-green-100 text-green-800', icon: 'fas fa-check-circle' };
+            case 'pending':
+                return { label: 'Pending Review', classes: 'bg-yellow-100 text-yellow-800', icon: 'fas fa-hourglass-half' };
+            case 'rejected':
+                return { label: 'Rejected', classes: 'bg-red-100 text-red-800', icon: 'fas fa-times-circle' };
+            default:
+                return { label: 'Unknown', classes: 'bg-gray-100 text-gray-700', icon: 'fas fa-question-circle' };
+        }
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) {
+            return 'Not available';
+        }
+
+        const date = new Date(dateString);
+        if (Number.isNaN(date.getTime())) {
+            return dateString;
+        }
+
+        return new Intl.DateTimeFormat('en-PH', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        }).format(date);
+    }
+
+    function formatCurrency(value) {
+        const number = Number(value) || 0;
+        return new Intl.NumberFormat('en-PH', {
+            style: 'currency',
+            currency: 'PHP',
+        }).format(number);
+    }
+
+    function escapeHtml(value) {
+        if (value === null || value === undefined) {
+            return '';
+        }
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function escapeAttribute(value) {
+        return escapeHtml(value).replace(/"/g, '&quot;');
+    }
+});
+</script>
+@endpush

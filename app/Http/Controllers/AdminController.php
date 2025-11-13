@@ -769,6 +769,98 @@ class AdminController extends Controller
     }
 
     /**
+     * Fetch detailed information for a specific user (AJAX endpoint).
+     */
+    public function userDetails(User $user)
+    {
+        $user->load([
+            'addresses' => fn ($query) => $query->orderByDesc('is_default')->orderByDesc('created_at'),
+            'idDocuments' => fn ($query) => $query->latest(),
+            'orders' => fn ($query) => $query->with(['orderItems.product'])->latest()->take(10),
+        ]);
+
+        $orderSummary = [
+            'total_orders' => Order::where('user_id', $user->id)->count(),
+            'total_spent' => (float) Order::where('user_id', $user->id)
+                ->whereIn('status', ['completed', 'delivered'])
+                ->sum('total_amount'),
+        ];
+
+        $userData = [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'role' => $user->role,
+            'is_admin' => $user->isAdmin(),
+            'created_at' => optional($user->created_at)->toDateTimeString(),
+            'email_verified_at' => optional($user->email_verified_at)->toDateTimeString(),
+        ];
+
+        $addresses = $user->addresses->map(function ($address) {
+            return [
+                'id' => $address->id,
+                'label' => $address->label,
+                'full_name' => $address->full_name,
+                'street_address' => $address->street_address,
+                'apartment' => $address->apartment,
+                'city' => $address->city,
+                'province' => $address->province,
+                'region' => $address->region,
+                'barangay' => $address->barangay,
+                'postal_code' => $address->postal_code,
+                'phone' => $address->phone,
+                'email' => $address->email,
+                'is_default' => (bool) $address->is_default,
+                'created_at' => optional($address->created_at)->toDateTimeString(),
+            ];
+        });
+
+        $idDocuments = $user->idDocuments->map(function ($document) {
+            return [
+                'id' => $document->id,
+                'type' => $document->type,
+                'status' => $document->status,
+                'file_path' => $document->file_path,
+                'file_public_id' => $document->file_public_id,
+                'uploaded_at' => optional($document->created_at)->toDateTimeString(),
+            ];
+        });
+
+        $orders = $user->orders->map(function ($order) {
+            return [
+                'id' => $order->id,
+                'order_number' => $order->order_number,
+                'status' => $order->status,
+                'payment_status' => $order->payment_status,
+                'payment_method' => $order->payment_method,
+                'total_amount' => (float) $order->total_amount,
+                'created_at' => optional($order->created_at)->toDateTimeString(),
+                'items' => $order->orderItems->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'product_name' => $item->product_name ?? optional($item->product)->name,
+                        'quantity' => $item->quantity,
+                        'unit_price' => (float) $item->unit_price,
+                        'total_price' => (float) $item->total_price,
+                    ];
+                }),
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'user' => $userData,
+                'addresses' => $addresses,
+                'id_documents' => $idDocuments,
+                'orders' => $orders,
+                'order_summary' => $orderSummary,
+            ],
+        ]);
+    }
+
+    /**
      * Show reviews management
      */
     public function reviews(Request $request)

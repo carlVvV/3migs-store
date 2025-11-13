@@ -89,6 +89,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the saved addresses for the user.
+     */
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(Address::class);
+    }
+
+    /**
      * Get the ID documents uploaded by the user.
      */
     public function idDocuments(): HasMany
