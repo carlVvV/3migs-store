@@ -11,6 +11,8 @@ use App\Models\BarongProduct;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
 use App\Http\Requests\StoreBarongProductRequest;
 use App\Services\CloudinaryService;
@@ -1919,29 +1921,41 @@ class AdminController extends Controller
             return response()->json(['error' => 'Document not found'], 404);
         }
 
-        $apiKey = \Illuminate\Support\Facades\Config::get('services.veriff.api_key');
+        $apiKey = Config::get('services.veriff.api_key');
+        $apiSecret = Config::get('services.veriff.secret_key');
 
-        if (!$apiKey) {
-            return response()->json(['error' => 'Veriff API key not configured'], 500);
+        if (!$apiKey || !$apiSecret) {
+            return response()->json(['error' => 'Veriff API credentials not configured'], 500);
         }
 
-        try {
-            // Fetch verification status from Veriff API
-            $response = \Illuminate\Support\Facades\Http::withHeaders([
-                'X-AUTH-CLIENT' => $apiKey,
-            ])->get("https://api.veriff.me/v1/sessions/{$request->session_id}");
+        $sessionId = $request->input('session_id');
 
-            if (!$response->successful()) {
+        try {
+            // Generate HMAC signature for GET request
+            // For GET requests, Veriff requires signing the session ID
+            $signature = hash_hmac('sha256', $sessionId, $apiSecret);
+
+            // Fetch verification decision from Veriff API using the /decision endpoint
+            $response = Http::withHeaders([
+                'X-Auth-Client' => $apiKey,
+                'X-Signature' => $signature,
+            ])->get("https://api.veriff.me/v1/sessions/{$sessionId}/decision");
+
+            if ($response->failed()) {
                 return response()->json([
                     'error' => 'Failed to fetch status from Veriff',
                     'details' => $response->json(),
+                    'status_code' => $response->status(),
                 ], $response->status());
             }
 
             $veriffData = $response->json('verification');
             
             if (!$veriffData || !isset($veriffData['status'])) {
-                return response()->json(['error' => 'Invalid response from Veriff API'], 400);
+                return response()->json([
+                    'error' => 'Invalid response from Veriff API',
+                    'response' => $response->json(),
+                ], 400);
             }
 
             $veriffStatus = $veriffData['status'];
