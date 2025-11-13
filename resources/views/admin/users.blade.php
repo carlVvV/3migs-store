@@ -603,12 +603,20 @@ document.addEventListener('DOMContentLoaded', () => {
         button.classList.add('opacity-50', 'cursor-not-allowed');
 
         try {
+            // Get CSRF token from meta tag
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            if (!csrfToken) {
+                throw new Error('CSRF token not found. Please refresh the page.');
+            }
+
             // Use absolute URL to avoid routing issues
             const url = window.location.origin + '/admin/veriff/sync-status';
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
                 },
                 credentials: 'include',
                 body: JSON.stringify({ session_id: sessionId }),
