@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\MigsBotController;
 use App\Http\Controllers\Api\V1\CustomDesignController;
 use App\Http\Controllers\Api\V1\ImageUploadController;
+use App\Http\Controllers\Api\V1\IdDocumentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -174,6 +175,12 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::post('/seed/sample', [OrderController::class, 'seedSample']);
         // Simple GET alias for seeding in local/testing
         Route::get('/seed/sample', [OrderController::class, 'seedSample']);
+    });
+
+    // ID document upload & verification routes
+    Route::prefix('id-documents')->group(function () {
+        Route::get('/', [IdDocumentController::class, 'index']);
+        Route::post('/', [IdDocumentController::class, 'store']);
     });
 
     // Review routes

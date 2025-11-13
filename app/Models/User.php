@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
@@ -57,7 +58,7 @@ class User extends Authenticatable
     /**
      * Get the orders for the user
      */
-    public function orders()
+    public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
     }
@@ -65,7 +66,7 @@ class User extends Authenticatable
     /**
      * Get the reviews for the user
      */
-    public function reviews()
+    public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
     }
@@ -73,7 +74,7 @@ class User extends Authenticatable
     /**
      * Get the cart items for the user
      */
-    public function cart()
+    public function cart(): HasMany
     {
         return $this->hasMany(Cart::class);
     }
@@ -81,9 +82,17 @@ class User extends Authenticatable
     /**
      * Get the wishlist items for the user
      */
-    public function wishlist()
+    public function wishlist(): HasMany
     {
         return $this->hasMany(Wishlist::class);
+    }
+
+    /**
+     * Get the ID documents uploaded by the user.
+     */
+    public function idDocuments(): HasMany
+    {
+        return $this->hasMany(IdDocument::class);
     }
 
     /**

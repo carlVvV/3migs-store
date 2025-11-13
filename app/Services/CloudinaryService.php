@@ -117,6 +117,51 @@ class CloudinaryService
         
         return $results;
     }
+
+    /**
+     * Upload a generic file (image or document) to Cloudinary.
+     *
+     * @param UploadedFile $file
+     * @param array $options
+     * @return array
+     */
+    public function uploadFile(UploadedFile $file, array $options = []): array
+    {
+        try {
+            $folder = $options['folder'] ?? config('cloudinary.default_folder', 'uploads');
+
+            $resourceType = $options['resource_type']
+                ?? (in_array(strtolower($file->getClientOriginalExtension()), ['pdf']) ? 'raw' : 'image');
+
+            $uploadOptions = array_merge(
+                [
+                    'folder' => $folder,
+                    'resource_type' => $resourceType,
+                    'use_filename' => true,
+                    'unique_filename' => true,
+                ],
+                $options
+            );
+
+            $result = $this->uploadApi->upload($file->getRealPath(), $uploadOptions);
+
+            return [
+                'public_id' => $result['public_id'],
+                'secure_url' => $result['secure_url'] ?? $result['url'] ?? null,
+                'url' => $result['secure_url'] ?? $result['url'] ?? null,
+                'bytes' => $result['bytes'] ?? null,
+                'format' => $result['format'] ?? null,
+                'resource_type' => $resourceType,
+            ];
+        } catch (\Exception $e) {
+            Log::error('Cloudinary generic upload failed', [
+                'error' => $e->getMessage(),
+                'filename' => $file->getClientOriginalName(),
+            ]);
+
+            throw $e;
+        }
+    }
     
     /**
      * Delete an image from Cloudinary
