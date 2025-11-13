@@ -1931,9 +1931,9 @@ class AdminController extends Controller
         $sessionId = $request->input('session_id');
 
         try {
-            // Generate HMAC signature for GET request
-            // For GET requests, Veriff requires signing the session ID
-            $signature = hash_hmac('sha256', $sessionId, $apiSecret);
+            // Generate signature for GET request
+            // For GET requests, Veriff requires SHA256 hash of (sessionId + secret), not HMAC
+            $signature = hash('sha256', $sessionId . $apiSecret);
 
             // Fetch verification decision from Veriff API using the /decision endpoint
             $response = Http::withHeaders([
