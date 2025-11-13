@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\IdDocument;
 use App\Models\BarongProduct;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -282,7 +283,8 @@ class OrderController extends Controller
                 'phone' => 'required|string|max:20',
                 'email' => 'required|email|max:255',
                 'save_info' => 'boolean',
-                'payment_method' => 'required|in:ewallet,cod'
+                'payment_method' => 'required|in:ewallet,cod',
+                'id_document_id' => 'nullable|integer|exists:id_documents,id',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error('Order validation failed', [
@@ -330,6 +332,33 @@ class OrderController extends Controller
             $subtotal = $cartItems->sum(function ($item) {
                 return $item->price * $item->quantity;
             });
+
+            $idDocumentId = $request->input('id_document_id');
+
+            if ($idDocumentId) {
+                $document = IdDocument::where('id', $idDocumentId)
+                    ->where('user_id', $user->id)
+                    ->first();
+
+                if (!$document) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'The selected ID document is invalid.',
+                    ], 422);
+                }
+
+                if ($request->payment_method === 'cod' && $document->status !== 'approved') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Cash on delivery is only available after your ID is verified.',
+                    ], 422);
+                }
+            } elseif ($request->payment_method === 'cod') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cash on delivery requires a verified ID.',
+                ], 422);
+            }
 
             // Apply coupon discount if any
             $discount = 0;
@@ -401,6 +430,7 @@ class OrderController extends Controller
                 'discount' => $discount,
                 'shipping_fee' => 0, // Free shipping
                 'total_amount' => $total,
+                'id_document_id' => $idDocumentId,
                 'billing_address' => [
                     'full_name' => $request->full_name,
                     'company_name' => $request->company_name,
