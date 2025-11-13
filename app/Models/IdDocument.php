@@ -13,8 +13,7 @@ class IdDocument extends Model
     protected $fillable = [
         'user_id',
         'type',
-        'file_path',
-        'file_public_id',
+        'veriff_session_id',
         'status',
     ];
 

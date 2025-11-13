@@ -21,6 +21,7 @@
         "vite": "^7.0.7"
     },
     "dependencies": {
+        "@veriff/incontext-sdk": "^2.5.0",
         "select-philippines-address": "^1.0.6"
     }
 }

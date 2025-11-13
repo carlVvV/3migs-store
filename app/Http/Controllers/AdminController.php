@@ -821,8 +821,7 @@ class AdminController extends Controller
                 'id' => $document->id,
                 'type' => $document->type,
                 'status' => $document->status,
-                'file_path' => $document->file_path,
-                'file_public_id' => $document->file_public_id,
+                'veriff_session_id' => $document->veriff_session_id,
                 'uploaded_at' => optional($document->created_at)->toDateTimeString(),
             ];
         });

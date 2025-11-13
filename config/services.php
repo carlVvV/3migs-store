@@ -61,4 +61,9 @@ return [
     'redirect' => env('GOOGLE_REDIRECT_URI'),
 ],
 
+    'veriff' => [
+        'api_key' => env('VERIFF_API_KEY'),
+        'secret_key' => env('VERIFF_SECRET_KEY'),
+    ],
+
 ];

@@ -13,5 +13,6 @@ class VerifyCsrfToken extends Middleware
      */
     protected $except = [
         'api/v1/psgc/search/*',
+        'api/veriff-webhook',
     ];
 }

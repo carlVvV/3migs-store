@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\V1\MigsBotController;
 use App\Http\Controllers\Api\V1\CustomDesignController;
 use App\Http\Controllers\Api\V1\ImageUploadController;
 use App\Http\Controllers\Api\V1\IdDocumentController;
+use App\Http\Controllers\Api\V1\VeriffSessionController;
+use App\Http\Controllers\Api\VeriffWebhookController;
 
 /*
 |--------------------------------------------------------------------------
@@ -177,11 +179,12 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::get('/seed/sample', [OrderController::class, 'seedSample']);
     });
 
-    // ID document upload & verification routes
+    // ID document verification routes
     Route::prefix('id-documents')->group(function () {
         Route::get('/', [IdDocumentController::class, 'index']);
-        Route::post('/', [IdDocumentController::class, 'store']);
     });
+
+    Route::post('/veriff-session', [VeriffSessionController::class, 'store']);
 
     // Review routes
     Route::prefix('reviews')->group(function () {
@@ -228,3 +231,5 @@ Route::prefix('v1')->group(function () {
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
 });
+
+Route::post('/veriff-webhook', [VeriffWebhookController::class, 'handle']);

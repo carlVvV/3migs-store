@@ -446,9 +446,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return documents.map((doc) => {
             const status = getIdStatus([doc]);
-            const link = doc.file_path
-                ? `<a href="${escapeAttribute(doc.file_path)}" target="_blank" rel="noopener" class="text-sm text-blue-600 hover:text-blue-800">View document</a>`
-                : '<span class="text-sm text-gray-500">No file URL</span>';
 
             return `
                 <div class="border border-gray-200 rounded-md p-4">
@@ -456,7 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div>
                             <p class="font-semibold text-gray-900">${escapeHtml(doc.type) || 'ID Document'}</p>
                             <p class="text-xs text-gray-500">Uploaded ${formatDate(doc.uploaded_at)}</p>
-                            <div class="mt-2">${link}</div>
+                            <div class="mt-2 text-xs text-gray-500">Veriff Session: ${escapeHtml(doc.veriff_session_id) || 'N/A'}</div>
                         </div>
                         <span class="inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold rounded-full ${status.classes}">
                             <i class="${status.icon}"></i>

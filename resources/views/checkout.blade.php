@@ -258,20 +258,19 @@
                                     Checking your ID verification status...
                                 </span>
                             </div>
-                            <div id="id-upload-instructions" class="text-sm text-gray-500">
-                                Upload a clear photo or scan of a valid government-issued ID. Accepted formats: JPG, PNG, PDF (max 5MB).
-                            </div>
-                            <div id="id-upload-container" class="flex items-center gap-3 hidden">
-                                <input type="file" id="id-file-input" accept=".jpg,.jpeg,.png,.pdf" class="hidden">
-                                <button id="id-upload-button" type="button" class="inline-flex items-center px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-md hover:bg-gray-900 transition-colors">
-                                    <i class="fas fa-upload mr-2"></i>
-                                    Upload ID
+                            <p id="id-instructions" class="text-sm text-gray-500">
+                                We partner with Veriff to securely verify your identity.
+                            </p>
+                            <div id="id-action-container" class="flex items-center gap-3 hidden">
+                                <button id="id-start-veriff" type="button" class="inline-flex items-center px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-md hover:bg-gray-900 transition-colors">
+                                    <i class="fas fa-id-badge mr-2"></i>
+                                    Start ID Verification
                                 </button>
-                                <span class="text-xs text-gray-500">Maximum size 5MB.</span>
+                                <span class="text-xs text-gray-500">A secure window will open to complete the process.</span>
                             </div>
-                            <div id="id-upload-progress" class="flex items-center gap-2 text-sm text-gray-600 hidden">
+                            <div id="id-veriff-loading" class="flex items-center gap-2 text-sm text-gray-600 hidden">
                                 <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500"></div>
-                                Uploading your ID...
+                                Starting verification...
                             </div>
                         </div>
                     </div>
@@ -423,19 +422,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const idVerificationSection = document.getElementById('id-verification-section');
     const idStatusBadge = document.getElementById('id-status-badge');
     const idStatusMessage = document.getElementById('id-status-message');
-    const idUploadInstructions = document.getElementById('id-upload-instructions');
-    const idUploadContainer = document.getElementById('id-upload-container');
-    const idUploadButton = document.getElementById('id-upload-button');
-    const idFileInput = document.getElementById('id-file-input');
-    const idUploadProgress = document.getElementById('id-upload-progress');
+    const idInstructions = document.getElementById('id-instructions');
+    const idActionContainer = document.getElementById('id-action-container');
+    const idStartButton = document.getElementById('id-start-veriff');
+    const idVeriffLoading = document.getElementById('id-veriff-loading');
 
-    if (idUploadButton && idFileInput) {
-        idUploadButton.addEventListener('click', function(event) {
-            event.preventDefault();
-            idFileInput.click();
-        });
-
-        idFileInput.addEventListener('change', handleIdFileSelection);
+    if (idStartButton) {
+        idStartButton.addEventListener('click', startVeriff);
     }
     
     if (isLoggedIn) {
@@ -525,9 +518,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateIdVerificationStateFromDocuments(documents) {
         const docs = Array.isArray(documents) ? documents : [];
-        const approved = docs.find(doc => doc.status === 'approved');
-        const pending = docs.find(doc => doc.status === 'pending');
-        const rejected = docs.find(doc => doc.status === 'rejected');
+        const normalized = docs.map((doc) => ({
+            ...doc,
+            normalizedStatus: normalizeDocumentStatus(doc.status),
+        }));
+
+        const approved = normalized.find(doc => doc.normalizedStatus === 'approved');
+        const pending = normalized.find(doc => doc.normalizedStatus === 'pending');
+        const rejected = normalized.find(doc => doc.normalizedStatus === 'rejected');
 
         if (approved) {
             idVerificationState = {
@@ -544,7 +542,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (rejected) {
             idVerificationState = {
                 status: 'rejected',
-                documentId: null,
+                documentId: rejected.id ?? null,
                 document: rejected,
             };
         } else {
@@ -585,48 +583,48 @@ document.addEventListener('DOMContentLoaded', function() {
                 icon: 'fas fa-spinner fa-spin',
                 badgeClasses: 'bg-gray-100 text-gray-700',
                 message: 'Checking your ID verification status...',
-                showUpload: false,
-                showInstructions: false,
+                instructions: '',
+                showAction: false,
             },
             approved: {
                 label: 'ID Verified',
                 icon: 'fas fa-check-circle',
                 badgeClasses: 'bg-green-100 text-green-800',
                 message: 'Your ID has been verified. You are all set for checkout.',
-                showUpload: false,
-                showInstructions: false,
+                instructions: 'Thank you for verifying your identity.',
+                showAction: false,
             },
             pending: {
-                label: 'Pending Review',
+                label: 'Verification In Progress',
                 icon: 'fas fa-hourglass-half',
                 badgeClasses: 'bg-yellow-100 text-yellow-800',
-                message: 'Your ID is currently under review. We will notify you once it is verified.',
-                showUpload: false,
-                showInstructions: false,
+                message: 'Your verification is being processed. We will notify you once it is completed.',
+                instructions: 'You can continue shopping while we finish verifying your ID.',
+                showAction: false,
             },
             rejected: {
-                label: 'ID Rejected',
+                label: 'Verification Failed',
                 icon: 'fas fa-times-circle',
                 badgeClasses: 'bg-red-100 text-red-800',
-                message: 'Your last ID upload was rejected. Please upload a new ID.',
-                showUpload: true,
-                showInstructions: true,
+                message: 'Your last verification attempt was unsuccessful. Please try again.',
+                instructions: 'Click the button below to relaunch the secure verification process.',
+                showAction: true,
             },
             none: {
-                label: 'ID Required',
+                label: 'Verification Required',
                 icon: 'fas fa-id-card',
                 badgeClasses: 'bg-gray-100 text-gray-700',
-                message: 'Upload a valid government ID to complete checkout and use all payment options.',
-                showUpload: true,
-                showInstructions: true,
+                message: 'Verify your identity to unlock all checkout options.',
+                instructions: 'This quick, secure check is powered by Veriff.',
+                showAction: true,
             },
             error: {
                 label: 'Status Unavailable',
                 icon: 'fas fa-exclamation-circle',
                 badgeClasses: 'bg-red-100 text-red-800',
-                message: 'Unable to load your ID status. You can try uploading an ID again.',
-                showUpload: true,
-                showInstructions: true,
+                message: 'We could not determine your ID status. Please try again.',
+                instructions: 'Click the button below to start the verification process.',
+                showAction: true,
             },
         };
 
@@ -642,91 +640,151 @@ document.addEventListener('DOMContentLoaded', function() {
             idStatusMessage.textContent = config.message;
         }
 
-        if (idUploadInstructions) {
-            if (config.showInstructions) {
-                idUploadInstructions.classList.remove('hidden');
+        if (idInstructions) {
+            if (config.instructions) {
+                idInstructions.textContent = config.instructions;
+                idInstructions.classList.remove('hidden');
             } else {
-                idUploadInstructions.classList.add('hidden');
+                idInstructions.classList.add('hidden');
             }
         }
 
-        if (idUploadContainer) {
-            if (config.showUpload) {
-                idUploadContainer.classList.remove('hidden');
+        if (idActionContainer) {
+            if (config.showAction) {
+                idActionContainer.classList.remove('hidden');
             } else {
-                idUploadContainer.classList.add('hidden');
+                idActionContainer.classList.add('hidden');
             }
         }
 
-        if (idUploadProgress) {
-            idUploadProgress.classList.add('hidden');
+        if (idStartButton) {
+            idStartButton.disabled = !config.showAction;
+            idStartButton.classList.toggle('opacity-50', !config.showAction);
+            idStartButton.classList.toggle('cursor-not-allowed', !config.showAction);
+        }
+
+        if (idVeriffLoading) {
+            idVeriffLoading.classList.add('hidden');
         }
     }
 
-    function handleIdFileSelection(event) {
-        const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
-
-        if (!file) {
-            return;
+    function normalizeDocumentStatus(status) {
+        const normalized = (status || '').toLowerCase();
+        switch (normalized) {
+            case 'approved':
+                return 'approved';
+            case 'declined':
+            case 'rejected':
+            case 'fail':
+                return 'rejected';
+            case 'resubmission_requested':
+            case 'pending':
+            case 'created':
+            case 'submitted':
+            default:
+                return 'pending';
         }
-
-        const maxSize = 5 * 1024 * 1024; // 5MB
-        if (file.size > maxSize) {
-            showNotification('File is too large. Maximum size is 5MB.', 'error');
-            event.target.value = '';
-            return;
-        }
-
-        const allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
-        const extension = file.name.split('.').pop().toLowerCase();
-        if (!allowedExtensions.includes(extension)) {
-            showNotification('Invalid file type. Please upload a JPG, PNG, or PDF file.', 'error');
-            event.target.value = '';
-            return;
-        }
-
-        uploadIdDocument(file);
     }
 
-    async function uploadIdDocument(file) {
-        if (!idUploadProgress) {
+    async function startVeriff() {
+        if (idVerificationState.status === 'loading') {
             return;
         }
 
-        idUploadProgress.classList.remove('hidden');
+        if (typeof window.createVeriffFrame !== 'function') {
+            showNotification('Verification service unavailable. Please refresh and try again.', 'error');
+            return;
+        }
 
-        const formData = new FormData();
-        formData.append('id_file', file);
-
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-        const headers = csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {};
+        if (idVeriffLoading) {
+            idVeriffLoading.classList.remove('hidden');
+        }
+        if (idActionContainer) {
+            idActionContainer.classList.add('pointer-events-none', 'opacity-50');
+        }
+        if (idStartButton) {
+            idStartButton.disabled = true;
+            idStartButton.classList.add('opacity-50', 'cursor-not-allowed');
+        }
 
         try {
-            const response = await fetch('/api/v1/id-documents', {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const response = await fetch('/api/v1/veriff-session', {
                 method: 'POST',
-                headers,
-                body: formData,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                },
+                body: JSON.stringify({}),
                 credentials: 'same-origin',
             });
 
-            const data = await response.json();
+            const payload = await response.json().catch(() => ({}));
 
-            if (!response.ok || !data.success) {
-                throw new Error(data.message || 'Failed to upload ID document.');
+            if (!response.ok || !payload.success) {
+                throw new Error(payload.message || 'Failed to start verification session.');
             }
 
-            showNotification('ID uploaded successfully. We will review it shortly.', 'success');
-            await initializeIdVerification();
+            const sessionUrl = payload.data?.session_url;
+            const sessionId = payload.data?.session_id || null;
+            const documentId = payload.data?.document_id || null;
+
+            if (!sessionUrl) {
+                throw new Error('Missing verification session URL.');
+            }
+
+            idVerificationState = {
+                status: 'pending',
+                documentId,
+                document: {
+                    veriff_session_id: sessionId,
+                    status: 'pending',
+                },
+            };
+            persistIdDocumentState();
+            updateIdVerificationUI();
+
+            const controller = window.createVeriffFrame({
+                url: sessionUrl,
+                onEvent: (event) => {
+                    const messages = window.VeriffMessages || {};
+
+                    switch (event) {
+                        case messages.STARTED:
+                            showNotification('Verification started. Follow the instructions in the Veriff window.', 'info');
+                            break;
+                        case messages.SUBMITTED:
+                        case messages.FINISHED:
+                            idVerificationState.status = 'pending';
+                            persistIdDocumentState();
+                            updateIdVerificationUI();
+                            showNotification('Verification submitted. We will update your status shortly.', 'success');
+                            break;
+                        case messages.CANCELED:
+                            showNotification('Verification was canceled. You can restart the process anytime.', 'info');
+                            break;
+                        case messages.RELOAD_REQUEST:
+                            showNotification('Verification requires a reload. Please try again.', 'info');
+                            break;
+                        default:
+                            break;
+                    }
+                },
+            });
         } catch (error) {
-            console.error('ID upload failed', error);
-            showNotification(error.message || 'Failed to upload ID document. Please try again.', 'error');
+            console.error('Failed to start Veriff session', error);
+            showNotification(error.message || 'Unable to start verification. Please try again.', 'error');
         } finally {
-            if (idUploadProgress) {
-                idUploadProgress.classList.add('hidden');
+            if (idVeriffLoading) {
+                idVeriffLoading.classList.add('hidden');
             }
-
-            if (idFileInput) {
-                idFileInput.value = '';
+            if (idActionContainer) {
+                idActionContainer.classList.remove('pointer-events-none', 'opacity-50');
+            }
+            if (idStartButton) {
+                idStartButton.disabled = false;
+                idStartButton.classList.remove('opacity-50', 'cursor-not-allowed');
             }
         }
     }
