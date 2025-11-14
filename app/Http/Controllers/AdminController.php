@@ -1377,8 +1377,8 @@ class AdminController extends Controller
                 }
             })
             ->groupBy('users.id', 'users.name', 'users.email')
-            ->havingRaw('total_spent > 0')
-            ->orderByDesc('total_spent')
+            ->havingRaw('(COALESCE(SUM(orders.total_amount), 0) + COALESCE(SUM(custom_design_orders.total_amount), 0)) > 0')
+            ->orderByRaw('(COALESCE(SUM(orders.total_amount), 0) + COALESCE(SUM(custom_design_orders.total_amount), 0)) DESC')
             ->limit(10)
             ->get();
         
