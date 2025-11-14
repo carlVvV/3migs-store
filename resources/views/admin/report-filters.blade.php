@@ -5,7 +5,7 @@
             <h3 class="text-lg leading-6 font-medium text-gray-900">Filter Reports</h3>
         </div>
         
-        <form method="GET" action="{{ route('admin.reports') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <form method="GET" action="{{ route('admin.reports') }}" class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <!-- Date From -->
             <div>
                 <label for="date_from" class="block text-sm font-medium text-gray-700 mb-2">Date From</label>
@@ -60,8 +60,20 @@
                 </select>
             </div>
 
+            <!-- Format Selector -->
+            <div>
+                <label for="format" class="block text-sm font-medium text-gray-700 mb-2">View Format</label>
+                <select name="format" 
+                        id="format"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <option value="daily" {{ request('format') == 'daily' ? 'selected' : '' }}>Daily</option>
+                    <option value="weekly" {{ request('format') == 'weekly' ? 'selected' : '' }}>Weekly</option>
+                    <option value="monthly" {{ request('format') == 'monthly' || !request('format') ? 'selected' : '' }}>Monthly</option>
+                </select>
+            </div>
+
             <!-- Action Buttons -->
-            <div class="md:col-span-4 flex items-center gap-2 mt-3">
+            <div class="md:col-span-5 flex items-center gap-2 mt-3">
                 <button type="submit" 
                         class="inline-flex items-center px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
                     <i class="fas fa-filter mr-2"></i>

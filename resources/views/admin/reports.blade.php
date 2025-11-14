@@ -89,11 +89,20 @@
         </a>
     </div>
 
-    <!-- Sales Chart Placeholder -->
+    <!-- Sales Chart -->
     <div class="bg-white shadow rounded-lg">
         <div class="px-4 py-5 sm:p-6">
             <div class="flex items-center justify-between mb-3">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">Sales & Orders (Monthly)</h3>
+                @php
+                    $formatLabels = [
+                        'daily' => 'Daily',
+                        'weekly' => 'Weekly',
+                        'monthly' => 'Monthly'
+                    ];
+                    $currentFormat = $salesReport['format'] ?? 'monthly';
+                    $formatLabel = $formatLabels[$currentFormat] ?? 'Monthly';
+                @endphp
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Sales & Orders ({{ $formatLabel }})</h3>
                 <div class="flex items-center gap-2">
                     <span class="inline-flex items-center px-2.5 py-1 rounded-md bg-green-100 text-green-800 text-xs font-medium">Revenue: ₱{{ number_format($salesReport['total_revenue'], 2) }}</span>
                     <span class="inline-flex items-center px-2.5 py-1 rounded-md bg-blue-100 text-blue-800 text-xs font-medium">Orders: {{ number_format($salesReport['total_orders']) }}</span>
@@ -110,8 +119,28 @@
         (function(){
             const ctx = document.getElementById('salesChart');
             if (!ctx) return;
-            const data = @json($salesReport['sales_by_month']);
-            const labels = data.map(m => m.month);
+            const data = @json($salesReport['sales_by_period']);
+            const format = @json($salesReport['format'] ?? 'monthly');
+            
+            // Format labels based on format type
+            const labels = data.map(item => {
+                const period = item.period;
+                if (format === 'daily') {
+                    // Format: YYYY-MM-DD -> MMM DD, YYYY
+                    const date = new Date(period + 'T00:00:00');
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                } else if (format === 'weekly') {
+                    // Format: YYYY-MM-DD (week start) -> Week of MMM DD, YYYY
+                    const date = new Date(period + 'T00:00:00');
+                    return 'Week of ' + date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                } else {
+                    // Format: YYYY-MM -> MMM YYYY
+                    const [year, month] = period.split('-');
+                    const date = new Date(year, month - 1, 1);
+                    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                }
+            });
+            
             const revenues = data.map(m => Number(m.revenue));
             const orders = data.map(m => Number(m.orders_count));
             const maxOrders = orders.length ? Math.max(...orders) : 0;
@@ -158,7 +187,13 @@
                             grid: { drawOnChartArea: false },
                             ticks: { precision: 0, stepSize: step }
                         },
-                        x: { grid: { display: false } }
+                        x: { 
+                            grid: { display: false },
+                            ticks: {
+                                maxRotation: format === 'daily' ? 45 : 0,
+                                minRotation: format === 'daily' ? 45 : 0
+                            }
+                        }
                     },
                     plugins: {
                         legend: { display: true },
@@ -222,32 +257,49 @@
         </div>
     </div>
 
-    <!-- Monthly Sales -->
+    <!-- Sales Trend Table -->
     <div class="bg-white shadow rounded-lg">
         <div class="px-4 py-5 sm:p-6">
-            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Monthly Sales Trend</h3>
-            @if($salesReport['sales_by_month']->count() > 0)
+            @php
+                $formatLabels = [
+                    'daily' => 'Daily',
+                    'weekly' => 'Weekly',
+                    'monthly' => 'Monthly'
+                ];
+                $currentFormat = $salesReport['format'] ?? 'monthly';
+                $formatLabel = $formatLabels[$currentFormat] ?? 'Monthly';
+            @endphp
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">{{ $formatLabel }} Sales Trend</h3>
+            @if($salesReport['sales_by_period']->count() > 0)
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    {{ $formatLabel === 'Daily' ? 'Date' : ($formatLabel === 'Weekly' ? 'Week' : 'Month') }}
+                                </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Orders</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Growth</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            @foreach($salesReport['sales_by_month'] as $month)
+                            @foreach($salesReport['sales_by_period'] as $period)
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    {{ $month->month }}
+                                    @if($currentFormat === 'daily')
+                                        {{ \Carbon\Carbon::parse($period->period)->format('M d, Y') }}
+                                    @elseif($currentFormat === 'weekly')
+                                        Week of {{ \Carbon\Carbon::parse($period->period)->format('M d, Y') }}
+                                    @else
+                                        {{ \Carbon\Carbon::createFromFormat('Y-m', $period->period)->format('M Y') }}
+                                    @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {{ $month->orders_count }}
+                                    {{ $period->orders_count }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    ₱{{ number_format($month->revenue, 2) }}
+                                    ₱{{ number_format($period->revenue, 2) }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     <span class="text-green-600">+0%</span>
@@ -260,7 +312,7 @@
             @else
                 <div class="text-center py-8">
                     <i class="fas fa-chart-line text-gray-400 text-4xl mb-4"></i>
-                    <p class="text-gray-500">No monthly sales data available</p>
+                    <p class="text-gray-500">No {{ strtolower($formatLabel) }} sales data available</p>
                 </div>
             @endif
         </div>

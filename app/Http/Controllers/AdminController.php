@@ -1186,6 +1186,7 @@ class AdminController extends Controller
         $dateTo = $request->input('date_to');
         $period = $request->input('period');
         $status = $request->input('status', 'all');
+        $format = $request->input('format', 'monthly'); // daily, weekly, monthly
         
         // ============================================
         // 2. DATE RANGE LOGIC
@@ -1298,57 +1299,105 @@ class AdminController extends Controller
         $totalCustomers = $regularCustomerIds->merge($customCustomerIds)->unique()->count();
         
         // ============================================
-        // 6. SALES & ORDERS CHART DATA (Last 12 Months)
+        // 6. SALES & ORDERS CHART DATA (Daily/Weekly/Monthly)
         // ============================================
-        // PostgreSQL compatible date formatting
         $driver = DB::getDriverName();
-        $ymExpr = $driver === 'pgsql' ? 'TO_CHAR(created_at, \'YYYY-MM\')' : 'DATE_FORMAT(created_at, "%Y-%m")';
         
-        // Get last 12 months of regular orders
-        $regularSalesByMonth = Order::whereIn('status', $statusFilter)
+        // Determine date expression based on format
+        if ($format === 'daily') {
+            // Daily format: YYYY-MM-DD
+            if ($driver === 'pgsql') {
+                $dateExpr = "TO_CHAR(created_at, 'YYYY-MM-DD')";
+            } elseif ($driver === 'sqlite') {
+                $dateExpr = "strftime('%Y-%m-%d', created_at)";
+            } else {
+                $dateExpr = "DATE_FORMAT(created_at, '%Y-%m-%d')";
+            }
+            $dateField = 'date';
+            $defaultRange = now()->subDays(30); // Last 30 days for daily view
+        } elseif ($format === 'weekly') {
+            // Weekly format: YYYY-MM-DD (week start)
+            if ($driver === 'pgsql') {
+                $dateExpr = "TO_CHAR(DATE_TRUNC('week', created_at), 'YYYY-MM-DD')";
+            } elseif ($driver === 'sqlite') {
+                // SQLite: Calculate week start (Monday) - strftime('%w') returns 0-6 (Sunday=0)
+                // We want Monday to be the start, so we adjust: (day_of_week + 6) % 7 gives days to subtract
+                $dateExpr = "date(created_at, '-' || ((strftime('%w', created_at) + 6) % 7) || ' days')";
+            } else {
+                $dateExpr = "DATE_FORMAT(DATE_SUB(created_at, INTERVAL WEEKDAY(created_at) DAY), '%Y-%m-%d')";
+            }
+            $dateField = 'week';
+            $defaultRange = now()->subWeeks(12); // Last 12 weeks for weekly view
+        } else {
+            // Monthly format: YYYY-MM (default)
+            if ($driver === 'pgsql') {
+                $dateExpr = "TO_CHAR(created_at, 'YYYY-MM')";
+            } elseif ($driver === 'sqlite') {
+                $dateExpr = "strftime('%Y-%m', created_at)";
+            } else {
+                $dateExpr = "DATE_FORMAT(created_at, '%Y-%m')";
+            }
+            $dateField = 'month';
+            $defaultRange = now()->subMonths(12); // Last 12 months for monthly view
+        }
+        
+        // Build base query for regular orders
+        $regularSalesQuery = Order::whereIn('status', $statusFilter)
             ->when($startDate, function($q) use ($startDate) {
                 $q->whereDate('created_at', '>=', $startDate);
             })
             ->when($endDate, function($q) use ($endDate) {
                 $q->whereDate('created_at', '<=', $endDate);
-            })
-            ->where('created_at', '>=', now()->subMonths(12))
+            });
+        
+        // Apply default range if no date filters
+        if (!$startDate && !$endDate) {
+            $regularSalesQuery->where('created_at', '>=', $defaultRange);
+        }
+        
+        $regularSales = $regularSalesQuery
             ->select(
-                DB::raw($ymExpr . ' as month'),
+                DB::raw($dateExpr . ' as ' . $dateField),
                 DB::raw('COUNT(*) as orders_count'),
                 DB::raw('SUM(total_amount) as revenue')
             )
-            ->groupBy('month')
-            ->orderBy('month')
+            ->groupBy($dateField)
+            ->orderBy($dateField)
             ->get();
         
-        // Get last 12 months of custom orders
-        $customSalesByMonth = CustomDesignOrder::whereIn('status', $statusFilter)
+        // Build base query for custom orders
+        $customSalesQuery = CustomDesignOrder::whereIn('status', $statusFilter)
             ->when($startDate, function($q) use ($startDate) {
                 $q->whereDate('created_at', '>=', $startDate);
             })
             ->when($endDate, function($q) use ($endDate) {
                 $q->whereDate('created_at', '<=', $endDate);
-            })
-            ->where('created_at', '>=', now()->subMonths(12))
+            });
+        
+        // Apply default range if no date filters
+        if (!$startDate && !$endDate) {
+            $customSalesQuery->where('created_at', '>=', $defaultRange);
+        }
+        
+        $customSales = $customSalesQuery
             ->select(
-                DB::raw($ymExpr . ' as month'),
+                DB::raw($dateExpr . ' as ' . $dateField),
                 DB::raw('COUNT(*) as orders_count'),
                 DB::raw('SUM(total_amount) as revenue')
             )
-            ->groupBy('month')
-            ->orderBy('month')
+            ->groupBy($dateField)
+            ->orderBy($dateField)
             ->get();
         
-        // Combine both order types by month
-        $allSales = $regularSalesByMonth->concat($customSalesByMonth);
-        $salesByMonth = $allSales->groupBy('month')->map(function ($monthOrders) {
+        // Combine both order types
+        $allSales = $regularSales->concat($customSales);
+        $salesByPeriod = $allSales->groupBy($dateField)->map(function ($periodOrders) use ($dateField) {
             return (object) [
-                'month' => $monthOrders->first()->month,
-                'orders_count' => (int) $monthOrders->sum('orders_count'),
-                'revenue' => (float) $monthOrders->sum('revenue'),
+                'period' => $periodOrders->first()->$dateField,
+                'orders_count' => (int) $periodOrders->sum('orders_count'),
+                'revenue' => (float) $periodOrders->sum('revenue'),
             ];
-        })->sortBy('month')->values();
+        })->sortBy('period')->values();
         
         // ============================================
         // 7. TOP CUSTOMERS TABLE (Top 10)
@@ -1472,12 +1521,14 @@ class AdminController extends Controller
             'average_order_value' => $averageOrderValue,
             'total_customers' => $totalCustomers,
             'top_customers' => $topCustomers,
-            'sales_by_month' => $salesByMonth,
-            'orders_by_month' => $salesByMonth, // Same data, different name for chart
+            'sales_by_period' => $salesByPeriod,
+            'sales_by_month' => $salesByPeriod, // Keep for backward compatibility
+            'orders_by_month' => $salesByPeriod, // Keep for backward compatibility
             'best_sellers' => $bestSellers,
             'custom_orders' => $recentCustomOrders,
             'custom_orders_summary' => $customOrdersSummary,
             'weekly_sales' => $weeklySales,
+            'format' => $format, // Pass format to view
         ];
         
         return view('admin.reports', compact('salesReport'));
