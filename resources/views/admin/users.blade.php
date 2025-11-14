@@ -592,7 +592,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function syncVeriffStatus(sessionId, button) {
         if (!sessionId) {
-            alert('Session ID is missing');
+            if (typeof window.notify === 'function') {
+                window.notify('Session ID is missing', 'error');
+            } else {
+                alert('Session ID is missing');
+            }
             return;
         }
 
