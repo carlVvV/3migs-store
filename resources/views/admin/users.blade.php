@@ -630,14 +630,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (data.success) {
                 // Show success toast notification
-                window.notify(`Status synced successfully! Veriff: ${data.veriff_status}, Database: ${data.document.status}`, 'success');
+                const newStatus = data.document?.status || data.veriff_status;
+                window.notify(`Status synced successfully! Veriff: ${data.veriff_status}, Database: ${newStatus}`, 'success');
+                
+                // Reset button state
+                button.innerHTML = originalHTML;
+                button.disabled = false;
+                button.classList.remove('opacity-50', 'cursor-not-allowed');
                 
                 // Reload the user details to show updated status
-                if (currentUserId) {
-                    const fallbackName = nameEl?.textContent || 'User Details';
-                    const fallbackEmail = emailEl?.textContent || '';
-                    openModal(currentUserId, fallbackName, fallbackEmail);
-                }
+                // Use a small delay to ensure the database update is committed
+                setTimeout(() => {
+                    if (currentUserId) {
+                        const fallbackName = nameEl?.textContent || 'User Details';
+                        const fallbackEmail = emailEl?.textContent || '';
+                        openModal(currentUserId, fallbackName, fallbackEmail);
+                    }
+                }, 300);
             } else {
                 // Show error toast notification
                 const errorMessage = data.error || data.message || data.details?.message || 'Unknown error';

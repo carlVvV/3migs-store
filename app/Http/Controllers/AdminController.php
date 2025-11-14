@@ -824,6 +824,7 @@ class AdminController extends Controller
                 'type' => $document->type,
                 'status' => $document->status,
                 'veriff_session_id' => $document->veriff_session_id,
+                'created_at' => optional($document->created_at)->toDateTimeString(),
                 'uploaded_at' => optional($document->created_at)->toDateTimeString(),
             ];
         });
@@ -1961,9 +1962,21 @@ class AdminController extends Controller
                 
                 // Update the status in our database
                 $document->status = $newStatus;
-                $document->save();
+                $saved = $document->save();
+                
+                // Log for debugging
+                \Log::info('Veriff Status Sync', [
+                    'session_id' => $sessionId,
+                    'veriff_status' => $veriffStatus,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'saved' => $saved,
+                ]);
+                
+                // Refresh the document from database to ensure we have the latest data
+                $document->refresh();
 
-                // Return a success message
+                // Return a success message with updated document
                 return response()->json([
                     'success' => true,
                     'message' => "Status synced from Veriff. Changed from '{$oldStatus}' to '{$newStatus}'",
@@ -1973,6 +1986,9 @@ class AdminController extends Controller
                         'user_id' => $document->user_id,
                         'session_id' => $document->veriff_session_id,
                         'status' => $document->status,
+                        'type' => $document->type,
+                        'created_at' => $document->created_at?->toDateTimeString(),
+                        'updated_at' => $document->updated_at?->toDateTimeString(),
                     ]
                 ]);
             }
