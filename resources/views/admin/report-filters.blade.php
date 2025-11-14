@@ -5,7 +5,7 @@
             <h3 class="text-lg leading-6 font-medium text-gray-900">Filter Reports</h3>
         </div>
         
-        <form method="GET" action="{{ route('admin.reports') }}" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <form method="GET" action="{{ route('admin.reports') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <!-- Date From -->
             <div>
                 <label for="date_from" class="block text-sm font-medium text-gray-700 mb-2">Date From</label>
@@ -45,21 +45,6 @@
                 </select>
             </div>
 
-            <!-- Order Status Filter -->
-            <div>
-                <label for="status" class="block text-sm font-medium text-gray-700 mb-2">Order Status</label>
-                <select name="status" 
-                        id="status"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                    <option value="all" {{ request('status') == 'all' || !request('status') ? 'selected' : '' }}>All Status</option>
-                    <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
-                    <option value="delivered" {{ request('status') == 'delivered' ? 'selected' : '' }}>Delivered</option>
-                    <option value="shipped" {{ request('status') == 'shipped' ? 'selected' : '' }}>Shipped</option>
-                    <option value="processing" {{ request('status') == 'processing' ? 'selected' : '' }}>Processing</option>
-                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                </select>
-            </div>
-
             <!-- Format Selector -->
             <div>
                 <label for="format" class="block text-sm font-medium text-gray-700 mb-2">View Format</label>
@@ -73,7 +58,7 @@
             </div>
 
             <!-- Action Buttons -->
-            <div class="md:col-span-5 flex items-center gap-2 mt-3">
+            <div class="md:col-span-4 flex items-center gap-2 mt-3">
                 <button type="submit" 
                         class="inline-flex items-center px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
                     <i class="fas fa-filter mr-2"></i>
