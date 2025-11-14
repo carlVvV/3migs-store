@@ -314,7 +314,14 @@ class CartController extends Controller
                 'total_stock' => $product->getTotalStock(),
             ]);
 
-            if ($usesSizeStocks) {
+            // Check if custom measurements are provided
+            $hasCustomMeasurements = !empty($validator['custom_measurements']) && 
+                is_array($validator['custom_measurements']) &&
+                !empty(array_filter($validator['custom_measurements'], function($val) {
+                    return !empty($val) && trim($val) !== '';
+                }));
+
+            if ($usesSizeStocks && !$hasCustomMeasurements) {
                 $selectedSize = $validator['size'] ?? null;
                 if (!$selectedSize) {
                     // Auto-select when exactly one size is available

@@ -483,31 +483,39 @@ function addToCartProductView() {
     let size = getSelectedSize();
     try { console.debug('AddToCart preflight selected size:', size); } catch (_) {}
     
-    // Check if size is properly selected; if exactly one size available, auto-select it
-    if (!size || size === 'null' || size === '' || size === null) {
-        const availableSizeButtons = Array.from(document.querySelectorAll('.size-btn'))
-            .filter(btn => !btn.classList.contains('opacity-50') && !btn.hasAttribute('disabled'));
-        if (availableSizeButtons.length === 1) {
-            const onlyBtn = availableSizeButtons[0];
-            const autoSize = onlyBtn.getAttribute('data-size');
-            if (autoSize) {
-                selectSize(autoSize, onlyBtn);
-                const updatedPayload = {
-                    product_id: Number(productId),
-                    quantity: Number(quantity),
-                    size: autoSize
-                };
-                proceedWithCartAdd(updatedPayload);
-                return;
-            }
-        }
-        showSizeRequiredNotice();
-        return;
-    }
+    // Check if custom measurements are provided
+    const hasCustomMeasurements = customMeasurements && 
+        Object.keys(customMeasurements).length > 0 && 
+        Object.values(customMeasurements).some(val => val && val.trim() !== '');
     
-    // If size variable didn't update, infer from UI selection
-    if (!size || size === 'null' || size === '' || size === null) {
-        size = getSelectedSize();
+    // Only require size selection if no custom measurements are provided
+    if (!hasCustomMeasurements) {
+        // Check if size is properly selected; if exactly one size available, auto-select it
+        if (!size || size === 'null' || size === '' || size === null) {
+            const availableSizeButtons = Array.from(document.querySelectorAll('.size-btn'))
+                .filter(btn => !btn.classList.contains('opacity-50') && !btn.hasAttribute('disabled'));
+            if (availableSizeButtons.length === 1) {
+                const onlyBtn = availableSizeButtons[0];
+                const autoSize = onlyBtn.getAttribute('data-size');
+                if (autoSize) {
+                    selectSize(autoSize, onlyBtn);
+                    const updatedPayload = {
+                        product_id: Number(productId),
+                        quantity: Number(quantity),
+                        size: autoSize
+                    };
+                    proceedWithCartAdd(updatedPayload);
+                    return;
+                }
+            }
+            showSizeRequiredNotice();
+            return;
+        }
+        
+        // If size variable didn't update, infer from UI selection
+        if (!size || size === 'null' || size === '' || size === null) {
+            size = getSelectedSize();
+        }
     }
 
     // Validate product ID
@@ -659,8 +667,14 @@ function proceedWithCartAdd(payload) {
         const hiddenId = document.getElementById('productId')?.value;
         if (hiddenId) payload.product_id = Number(hiddenId);
     }
-    // Infer size from UI if missing
-    if (!payload.size) {
+    
+    // Check if custom measurements are provided
+    const hasCustomMeasurements = payload.custom_measurements && 
+        Object.keys(payload.custom_measurements).length > 0 && 
+        Object.values(payload.custom_measurements).some(val => val && val.trim() !== '');
+    
+    // Infer size from UI if missing and no custom measurements
+    if (!payload.size && !hasCustomMeasurements) {
         const uiSize = getSelectedSize();
         if (uiSize) payload.size = uiSize;
     }
@@ -672,8 +686,8 @@ function proceedWithCartAdd(payload) {
         return;
     }
     
-    // Check stock availability only if size is provided
-    if (size) {
+    // Check stock availability only if size is provided and no custom measurements
+    if (size && !hasCustomMeasurements) {
         const selectedButton = document.querySelector(`[data-size="${size}"]`);
         if (!selectedButton) {
             showError('Size selection error. Please select a size again.');
