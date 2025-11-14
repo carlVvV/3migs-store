@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\PSGCCity;
 use App\Models\PSGCBarangay;
+use App\Models\PSGCRegion;
+use App\Models\PSGCProvince;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -12,57 +14,43 @@ class PhilippineAddressService
     private $cacheTimeout = 86400; // 24 hours
 
     /**
-     * Get all regions using select-philippines-address package
+     * Get all regions from database
      */
     public function getRegions()
     {
         return Cache::remember('philippine_address_regions', $this->cacheTimeout, function () {
-            try {
-                $nodeCommand = "node -e \"const { regions } = require('./node_modules/select-philippines-address'); regions().then(data => console.log(JSON.stringify(data)));\"";
-                $output = shell_exec($nodeCommand);
-                $data = json_decode($output, true);
-                
-                if ($data && is_array($data)) {
-                    return array_map(function ($region) {
-                        return [
-                            'code' => $region['region_code'] ?? '',
-                            'name' => $region['region_name'] ?? '',
-                        ];
-                    }, $data);
-                }
-            } catch (\Exception $e) {
-                Log::error('Failed to fetch regions', ['error' => $e->getMessage()]);
-            }
+            // Query regions directly from database
+            $regions = PSGCRegion::orderBy('name', 'asc')->get();
             
-            return [];
+            // Format the data for the frontend
+            return $regions->map(function ($region) {
+                return [
+                    'code' => $region->code,
+                    'name' => $region->name,
+                ];
+            })->toArray();
         });
     }
 
     /**
-     * Get provinces by region code
+     * Get provinces by region code from database
      */
     public function getProvincesByRegion($regionCode)
     {
         return Cache::remember("philippine_address_provinces_{$regionCode}", $this->cacheTimeout, function () use ($regionCode) {
-            try {
-                $nodeCommand = "node -e \"const { provinces } = require('./node_modules/select-philippines-address'); provinces('{$regionCode}').then(data => console.log(JSON.stringify(data)));\"";
-                $output = shell_exec($nodeCommand);
-                $data = json_decode($output, true);
-                
-                if ($data && is_array($data)) {
-                    return array_map(function ($province) {
-                        return [
-                            'code' => $province['province_code'] ?? '',
-                            'name' => $province['province_name'] ?? '',
-                            'region_code' => $province['region_code'] ?? '',
-                        ];
-                    }, $data);
-                }
-            } catch (\Exception $e) {
-                Log::error('Failed to fetch provinces', ['error' => $e->getMessage(), 'region_code' => $regionCode]);
-            }
+            // Query provinces directly from database
+            $provinces = PSGCProvince::where('region_code', $regionCode)
+                                ->orderBy('name', 'asc')
+                                ->get();
             
-            return [];
+            // Format the data for the frontend
+            return $provinces->map(function ($province) {
+                return [
+                    'code' => $province->code,
+                    'name' => $province->name,
+                    'region_code' => $province->region_code,
+                ];
+            })->toArray();
         });
     }
 
