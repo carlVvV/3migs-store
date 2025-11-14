@@ -84,6 +84,16 @@ class PSGCController extends Controller
                 $cities = $this->psgcService->getCitiesByProvince($provinceCode);
             }
             
+            // Debug: Log first city to see what we're returning
+            if (!empty($cities)) {
+                Log::info('Cities API Response Sample', [
+                    'province_code' => $provinceCode,
+                    'total_cities' => count($cities),
+                    'first_city' => $cities[0] ?? null,
+                    'has_zip_in_first' => isset($cities[0]['zipCode']) || isset($cities[0]['zip_code']),
+                ]);
+            }
+            
             return response()->json([
                 'success' => true,
                 'data' => $cities

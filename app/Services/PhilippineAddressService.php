@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\PSGCCity;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -69,82 +70,28 @@ class PhilippineAddressService
      */
     public function getCitiesByProvince($provinceCode)
     {
-        return Cache::remember("philippine_address_cities_{$provinceCode}", $this->cacheTimeout, function () use ($provinceCode) {
-            try {
-                $nodeCommand = "node -e \"const { cities } = require('./node_modules/select-philippines-address'); cities('{$provinceCode}').then(data => console.log(JSON.stringify(data)));\"";
-                $output = shell_exec($nodeCommand);
-                $data = json_decode($output, true);
-                
-                if ($data && is_array($data)) {
-                    return array_map(function ($city) {
-                        $code = $city['city_code'] ?? '';
-                        $zip = $city['zip_code'] ?? $city['zipCode'] ?? null;
-
-                        // Try to get zip code from database if not provided by Node.js package
-                        if (!$zip && $code) {
-                            // Try exact match first
-                            $zip = \App\Models\PSGCCity::where('code', $code)->value('zip_code');
-                            
-                            // If still no zip, try with different code formats
-                            if (!$zip) {
-                                // Try with 9-digit code (remove last digit if 10 digits)
-                                if (strlen($code) === 10) {
-                                    $code9 = substr($code, 0, 9);
-                                    $zip = \App\Models\PSGCCity::where('code', $code9)->value('zip_code');
-                                }
-                                // Try with 9-digit code padded to 10
-                                if (!$zip && strlen($code) === 9) {
-                                    $code10 = $code . '0';
-                                    $zip = \App\Models\PSGCCity::where('code', $code10)->value('zip_code');
-                                }
-                            }
-                            
-                        }
-
-                        // If still no zip code, attempt to match by city name and province
-                        if (!$zip && !empty($city['city_name'])) {
-                            $query = \App\Models\PSGCCity::query()
-                                ->whereRaw('LOWER(name) = ?', [strtolower($city['city_name'])]);
-
-                            if (!empty($city['province_code'])) {
-                                $query->whereRaw('LEFT(province_code, ?) = ?', [strlen($city['province_code']), $city['province_code']]);
-                            }
-
-                            $dbCity = $query->first();
-
-                            if (!$dbCity && !empty($city['province_code'])) {
-                                $dbCity = \App\Models\PSGCCity::where('province_code', 'like', $city['province_code'] . '%')
-                                    ->where('name', 'like', $city['city_name'] . '%')
-                                    ->first();
-                            }
-
-                            if ($dbCity) {
-                                $zip = $dbCity->zip_code;
-                            }
-                        }
-
-                        if (!$zip) {
-                            Log::warning('Zip code still missing for city', [
-                                'city_name' => $city['city_name'] ?? null,
-                                'city_code' => $code,
-                                'province_code' => $city['province_code'] ?? null
-                            ]);
-                        }
-
-                        return [
-                            'code' => $code,
-                            'name' => $city['city_name'] ?? '',
-                            'province_code' => $city['province_code'] ?? '',
-                            'zipCode' => $zip,
-                            'zip_code' => $zip,
-                        ];
-                    }, $data);
-                }
-            } catch (\Exception $e) {
-                Log::error('Failed to fetch cities', ['error' => $e->getMessage(), 'province_code' => $provinceCode]);
-            }
+        // We will use the same cache key to avoid changing the controller
+        $cacheKey = "philippine_address_cities_{$provinceCode}";
+        
+        // Cache for 24 hours
+        return Cache::remember($cacheKey, 60 * 60 * 24, function () use ($provinceCode) {
+            // --- NEW, SIMPLE LOGIC ---
+            // 1. Get all cities/municipalities directly from our database.
+            $cities = PSGCCity::where('province_code', $provinceCode)
+                                ->orderBy('name', 'asc')
+                                ->get();
             
-            return [];
+            // 2. Format the data for the frontend (as per the documentation)
+            return $cities->map(function ($city) {
+                return [
+                    'code'          => $city->code,
+                    'name'          => $city->name,
+                    'province_code' => $city->province_code,
+                    'zipCode'       => $city->zip_code, // Set both for frontend
+                    'zip_code'      => $city->zip_code  // compatibility
+                ];
+            })->toArray();
+            // --- END OF NEW LOGIC ---
         });
     }
 
