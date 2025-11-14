@@ -32,8 +32,8 @@ class PsgcSyncBulacan extends Command
         $this->info('🔍 Syncing Bulacan cities and municipalities...');
         $this->newLine();
 
-        // Bulacan province code
-        $bulacanProvinceCode = '031400000';
+        // Bulacan province code (10 digits format from psgc.cloud)
+        $bulacanProvinceCode = '0301400000';
         
         // Find Bulacan province
         $province = PSGCProvince::where('code', $bulacanProvinceCode)->first();
@@ -67,9 +67,13 @@ class PsgcSyncBulacan extends Command
 
         $allLocations = array_merge($citiesResponse->json(), $municipalitiesResponse->json());
         
-        // Filter for Bulacan (province_code = 031400000)
+        // Filter for Bulacan (province_code = 0301400000)
         $bulacanCities = array_filter($allLocations, function ($loc) use ($bulacanProvinceCode) {
             $provinceCode = $loc['provinceCode'] ?? $loc['province_code'] ?? null;
+            // Also check for 9-digit format (031400000) and convert to 10-digit
+            if ($provinceCode === '031400000') {
+                $provinceCode = '0301400000';
+            }
             return $provinceCode === $bulacanProvinceCode;
         });
 
@@ -79,10 +83,12 @@ class PsgcSyncBulacan extends Command
             $this->warn('⚠️  No Bulacan cities found in API response.');
             $this->info('Trying alternative method: filtering by city code pattern...');
             
-            // Alternative: filter by code pattern (0314xxxxxx = Bulacan)
+            // Alternative: filter by code pattern (03014xxxxx = Bulacan in 10-digit format)
             $bulacanCities = array_filter($allLocations, function ($loc) {
                 $code = $loc['code'] ?? '';
-                return strlen($code) >= 4 && substr($code, 0, 4) === '0314';
+                // Check for both 9-digit (0314xxxxx) and 10-digit (03014xxxxx) formats
+                return (strlen($code) >= 4 && substr($code, 0, 4) === '0314') ||
+                       (strlen($code) >= 5 && substr($code, 0, 5) === '03014');
             });
             
             $total = count($bulacanCities);
@@ -170,6 +176,16 @@ class PsgcSyncBulacan extends Command
             $this->warn("   Skipped: {$skipped} cities");
         }
         $this->newLine();
+
+        // Fix any cities with wrong province code (e.g., Malolos with 031400000)
+        $this->info('Fixing cities with incorrect province codes...');
+        $fixed = PSGCCity::where('province_code', '031400000')
+            ->where('name', 'LIKE', '%Malolos%')
+            ->update(['province_code' => $bulacanProvinceCode]);
+        
+        if ($fixed > 0) {
+            $this->info("   ✓ Fixed {$fixed} city/cities with incorrect province code");
+        }
 
         // Verify
         $finalCount = PSGCCity::where('province_code', $bulacanProvinceCode)->count();
