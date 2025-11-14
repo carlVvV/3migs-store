@@ -182,6 +182,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     // ID document verification routes
     Route::prefix('id-documents')->group(function () {
         Route::get('/', [IdDocumentController::class, 'index']);
+        Route::delete('/{id}', [IdDocumentController::class, 'destroy']);
     });
 
     Route::post('/veriff-session', [VeriffSessionController::class, 'store']);

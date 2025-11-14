@@ -775,6 +775,40 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    /**
+     * Delete an incomplete ID document from the database.
+     * Called when user cancels or abandons verification.
+     */
+    async function deleteIncompleteIdDocument(documentId) {
+        if (!documentId) {
+            return; // No document to delete
+        }
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const response = await fetch(`/api/v1/id-documents/${documentId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                },
+                credentials: 'same-origin',
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (response.ok && data.success) {
+                console.log('Incomplete ID document deleted successfully');
+            } else {
+                console.warn('Failed to delete incomplete document:', data.message || 'Unknown error');
+            }
+        } catch (error) {
+            console.error('Error deleting incomplete ID document:', error);
+            // Don't show error to user - this is a cleanup operation
+        }
+    }
+
     async function startVeriff() {
         if (idVerificationState.status === 'loading') {
             return;
@@ -874,6 +908,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     else if (event === messages.CANCELED) {
                         // The user clicked "X" or "Cancel".
                         // *Do not* change the UI state to 'processing'.
+                        // Delete the incomplete document from database
+                        deleteIncompleteIdDocument(idVerificationState.documentId);
+                        
                         // Reset to previous status (before starting verification)
                         idVerificationState.status = idVerificationState.previousStatus || 'none';
                         // Clear the document info since verification was cancelled
@@ -902,9 +939,19 @@ document.addEventListener('DOMContentLoaded', function() {
                             showNotification('Verification requires a reload. Please try again.', 'info');
                         }
                     }
-                    // 5. Handle any other status (e.g., 'expired')
+                    // 5. Handle any other status (e.g., 'expired', 'abandoned')
                     else {
                         console.warn("Veriff session ended with event:", event);
+                        // Delete incomplete document for expired/abandoned sessions
+                        deleteIncompleteIdDocument(idVerificationState.documentId);
+                        
+                        // Reset state
+                        idVerificationState.status = idVerificationState.previousStatus || 'none';
+                        idVerificationState.documentId = null;
+                        idVerificationState.document = null;
+                        persistIdDocumentState();
+                        updateIdVerificationUI();
+                        
                         if (typeof window.notify === 'function') {
                             window.notify('Verification session ended. Please try again.', 'error');
                         } else {

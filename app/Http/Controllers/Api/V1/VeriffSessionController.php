@@ -64,6 +64,12 @@ class VeriffSessionController extends Controller
             ], 500);
         }
 
+        // Delete any existing incomplete documents for this user
+        // (pending or rejected status - don't delete approved ones)
+        IdDocument::where('user_id', $user->id)
+            ->whereIn('status', ['pending', 'rejected'])
+            ->delete();
+
         $document = IdDocument::create([
             'user_id' => $user->id,
             'type' => 'veriff',
