@@ -115,9 +115,11 @@ class PsgcFullSync extends Command
                     $regionCode = substr($code, 0, 2) . '0000000';
                 }
                 
-                if ($provinceCode === null && strlen($code) >= 6) {
-                    // Extract province code from city code (first 6 digits + 0000)
-                    $provinceCode = substr($code, 0, 6) . '0000';
+                if ($provinceCode === null && strlen($code) >= 4) {
+                    // Extract province code from city code
+                    // Example: 031411000 (Malolos) -> 031400000 (Bulacan)
+                    // Pattern: first 4 digits (0314) + "00" + "000" = 031400000
+                    $provinceCode = substr($code, 0, 4) . '00000';
                 }
                 
                 // Skip if we still don't have required fields
