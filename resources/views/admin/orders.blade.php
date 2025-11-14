@@ -382,7 +382,7 @@ async function openAdminOrderModal(modal, orderId) {
                 const parts = [];
                 if (measurements.shoulder && String(measurements.shoulder).trim()) parts.push(`Shoulder: ${escapeHtml(String(measurements.shoulder))}"`);
                 if (measurements.chest && String(measurements.chest).trim()) parts.push(`Chest: ${escapeHtml(String(measurements.chest))}"`);
-                if (measurements.sleeve && String(measurements.sleeve).trim()) parts.push(`Sleeve: ${escapeHtml(String(measurements.sleeve))}"`);
+                if (measurements.sleeve && String(measurements.sleeve).trim()) parts.push(`Sleeve Length: ${escapeHtml(String(measurements.sleeve))}"`);
                 if (measurements.waist && String(measurements.waist).trim()) parts.push(`Waist: ${escapeHtml(String(measurements.waist))}"`);
                 if (measurements.notes && String(measurements.notes).trim()) parts.push(`Notes: ${escapeHtml(String(measurements.notes))}`);
                 customMeasurementsHtml = parts.length > 0 ? `<div class="text-xs text-gray-500 mt-1">${parts.join(' • ')}</div>` : '';

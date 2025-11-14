@@ -189,11 +189,11 @@
                                                     <div class="text-xs text-gray-500 mt-1">
                                                         @php
                                                             $parts = [];
-                                                            if (!empty($item->custom_measurements['shoulder'])) $parts[] = 'Shoulder: ' . $item->custom_measurements['shoulder'] . '"';
-                                                            if (!empty($item->custom_measurements['chest'])) $parts[] = 'Chest: ' . $item->custom_measurements['chest'] . '"';
-                                                            if (!empty($item->custom_measurements['sleeve'])) $parts[] = 'Sleeve: ' . $item->custom_measurements['sleeve'] . '"';
-                                                            if (!empty($item->custom_measurements['waist'])) $parts[] = 'Waist: ' . $item->custom_measurements['waist'] . '"';
-                                                            if (!empty($item->custom_measurements['notes'])) $parts[] = 'Notes: ' . $item->custom_measurements['notes'];
+                                                            if (!empty($item->custom_measurements['shoulder']) && trim($item->custom_measurements['shoulder']) !== '') $parts[] = 'Shoulder: ' . trim($item->custom_measurements['shoulder']) . '"';
+                                                            if (!empty($item->custom_measurements['chest']) && trim($item->custom_measurements['chest']) !== '') $parts[] = 'Chest: ' . trim($item->custom_measurements['chest']) . '"';
+                                                            if (!empty($item->custom_measurements['sleeve']) && trim($item->custom_measurements['sleeve']) !== '') $parts[] = 'Sleeve Length: ' . trim($item->custom_measurements['sleeve']) . '"';
+                                                            if (!empty($item->custom_measurements['waist']) && trim($item->custom_measurements['waist']) !== '') $parts[] = 'Waist: ' . trim($item->custom_measurements['waist']) . '"';
+                                                            if (!empty($item->custom_measurements['notes']) && trim($item->custom_measurements['notes']) !== '') $parts[] = 'Notes: ' . trim($item->custom_measurements['notes']);
                                                         @endphp
                                                         {{ implode(' • ', $parts) }}
                                                     </div>

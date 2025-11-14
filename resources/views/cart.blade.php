@@ -413,11 +413,12 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         
         Object.keys(labels).forEach(key => {
-            if (measurements[key] && measurements[key].trim() !== '') {
+            const value = measurements[key];
+            if (value !== null && value !== undefined && String(value).trim() !== '') {
                 if (key === 'notes') {
-                    parts.push(`<span class="text-gray-500 italic">${escapeHtml(measurements[key])}</span>`);
+                    parts.push(`<span class="text-gray-500 italic">${escapeHtml(String(value))}</span>`);
                 } else {
-                    parts.push(`<span>${labels[key]}: ${escapeHtml(measurements[key])}"</span>`);
+                    parts.push(`<span>${labels[key]}: ${escapeHtml(String(value))}"</span>`);
                 }
             }
         });

@@ -1597,11 +1597,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (hasCustomMeasurements) {
                 const measurements = item.custom_measurements;
                 const parts = [];
-                if (measurements.shoulder && measurements.shoulder.trim()) parts.push(`Shoulder: ${escapeHtml(measurements.shoulder)}"`);
-                if (measurements.chest && measurements.chest.trim()) parts.push(`Chest: ${escapeHtml(measurements.chest)}"`);
-                if (measurements.sleeve && measurements.sleeve.trim()) parts.push(`Sleeve: ${escapeHtml(measurements.sleeve)}"`);
-                if (measurements.waist && measurements.waist.trim()) parts.push(`Waist: ${escapeHtml(measurements.waist)}"`);
-                if (measurements.notes && measurements.notes.trim()) parts.push(`Notes: ${escapeHtml(measurements.notes)}`);
+                if (measurements.shoulder && String(measurements.shoulder).trim()) parts.push(`Shoulder: ${escapeHtml(String(measurements.shoulder))}"`);
+                if (measurements.chest && String(measurements.chest).trim()) parts.push(`Chest: ${escapeHtml(String(measurements.chest))}"`);
+                if (measurements.sleeve && String(measurements.sleeve).trim()) parts.push(`Sleeve Length: ${escapeHtml(String(measurements.sleeve))}"`);
+                if (measurements.waist && String(measurements.waist).trim()) parts.push(`Waist: ${escapeHtml(String(measurements.waist))}"`);
+                if (measurements.notes && String(measurements.notes).trim()) parts.push(`Notes: ${escapeHtml(String(measurements.notes))}`);
                 customMeasurementsHtml = parts.length > 0 ? `<p class="text-xs text-gray-600 mt-1">${parts.join(' • ')}</p>` : '';
             }
             
