@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\User;
 use App\Models\Review;
 use App\Models\BarongProduct;
+use App\Models\CustomDesignOrder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
@@ -1176,177 +1177,260 @@ class AdminController extends Controller
     /**
      * Display the reports page
      */
-    
     public function reports(Request $request)
     {
-        // Apply filters
+        // ============================================
+        // 1. GET FILTERS FROM REQUEST
+        // ============================================
         $dateFrom = $request->input('date_from');
         $dateTo = $request->input('date_to');
         $period = $request->input('period');
         $status = $request->input('status', 'all');
         
+        // ============================================
+        // 2. DATE RANGE LOGIC
+        // ============================================
+        $startDate = $dateFrom;
+        $endDate = $dateTo;
+        
         // Determine date range based on period if set
-        if ($period && !$dateFrom && !$dateTo) {
+        if ($period && !$startDate && !$endDate) {
             $today = now();
             switch($period) {
                 case 'today':
-                    $dateFrom = $today->toDateString();
-                    $dateTo = $today->toDateString();
+                    $startDate = $today->toDateString();
+                    $endDate = $today->toDateString();
                     break;
                 case 'week':
-                    $dateFrom = $today->subDays(7)->toDateString();
-                    $dateTo = now()->toDateString();
+                    $startDate = $today->subDays(7)->toDateString();
+                    $endDate = now()->toDateString();
                     break;
                 case 'month':
-                    $dateFrom = $today->startOfMonth()->toDateString();
-                    $dateTo = now()->toDateString();
+                    $startDate = $today->startOfMonth()->toDateString();
+                    $endDate = now()->toDateString();
                     break;
                 case 'last_month':
-                    $dateFrom = $today->subMonth()->startOfMonth()->toDateString();
-                    $dateTo = $today->endOfMonth()->toDateString();
+                    $startDate = $today->subMonth()->startOfMonth()->toDateString();
+                    $endDate = $today->endOfMonth()->toDateString();
                     break;
                 case '3months':
-                    $dateFrom = $today->subMonths(3)->toDateString();
-                    $dateTo = now()->toDateString();
+                    $startDate = $today->subMonths(3)->toDateString();
+                    $endDate = now()->toDateString();
                     break;
                 case '6months':
-                    $dateFrom = $today->subMonths(6)->toDateString();
-                    $dateTo = now()->toDateString();
+                    $startDate = $today->subMonths(6)->toDateString();
+                    $endDate = now()->toDateString();
                     break;
                 case 'year':
-                    $dateFrom = $today->subYear()->toDateString();
-                    $dateTo = now()->toDateString();
+                    $startDate = $today->subYear()->toDateString();
+                    $endDate = now()->toDateString();
+                    break;
+                case 'all':
+                    $startDate = null;
+                    $endDate = null;
                     break;
             }
         }
         
-        // Build query with filters
-        $regularQuery = Order::query();
-        $customQuery = \App\Models\CustomDesignOrder::query();
-        
-        if ($dateFrom) {
-            $regularQuery->whereDate('created_at', '>=', $dateFrom);
-            $customQuery->whereDate('created_at', '>=', $dateFrom);
-        }
-        
-        if ($dateTo) {
-            $regularQuery->whereDate('created_at', '<=', $dateTo);
-            $customQuery->whereDate('created_at', '<=', $dateTo);
-        }
-        
-        // Status filter
+        // ============================================
+        // 3. STATUS FILTER LOGIC
+        // ============================================
         $statusFilter = ['completed', 'delivered', 'shipped', 'processing'];
         if ($status !== 'all') {
             $statusFilter = [$status];
         }
         
-        $regularQuery->whereIn('status', $statusFilter);
-        $customQuery->whereIn('status', $statusFilter);
+        // ============================================
+        // 4. BUILD BASE QUERIES WITH FILTERS
+        // ============================================
+        $regularQuery = Order::query()->whereIn('status', $statusFilter);
+        $customQuery = CustomDesignOrder::query()->whereIn('status', $statusFilter);
         
-        // Sales by month (last 12 months) - PostgreSQL compatible
+        if ($startDate) {
+            $regularQuery->whereDate('created_at', '>=', $startDate);
+            $customQuery->whereDate('created_at', '>=', $startDate);
+        }
+        
+        if ($endDate) {
+            $regularQuery->whereDate('created_at', '<=', $endDate);
+            $customQuery->whereDate('created_at', '<=', $endDate);
+        }
+        
+        // ============================================
+        // 5. DASHBOARD CARDS DATA
+        // ============================================
+        // Total Revenue (regular + custom orders)
+        $regularRevenue = (float) $regularQuery->clone()->sum('total_amount');
+        $customRevenue = (float) $customQuery->clone()->sum('total_amount');
+        $totalRevenue = $regularRevenue + $customRevenue;
+        
+        // Total Orders (regular + custom orders)
+        $regularOrdersCount = (int) $regularQuery->clone()->count();
+        $customOrdersCount = (int) $customQuery->clone()->count();
+        $totalOrders = $regularOrdersCount + $customOrdersCount;
+        
+        // Average Order Value
+        $averageOrderValue = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
+        
+        // Total Customers (unique users who placed orders in the filtered period)
+        $regularCustomerIds = Order::whereIn('status', $statusFilter)
+            ->when($startDate, function($q) use ($startDate) {
+                $q->whereDate('created_at', '>=', $startDate);
+            })
+            ->when($endDate, function($q) use ($endDate) {
+                $q->whereDate('created_at', '<=', $endDate);
+            })
+            ->distinct()
+            ->pluck('user_id')
+            ->filter();
+        
+        $customCustomerIds = CustomDesignOrder::whereIn('status', $statusFilter)
+            ->when($startDate, function($q) use ($startDate) {
+                $q->whereDate('created_at', '>=', $startDate);
+            })
+            ->when($endDate, function($q) use ($endDate) {
+                $q->whereDate('created_at', '<=', $endDate);
+            })
+            ->distinct()
+            ->pluck('user_id')
+            ->filter();
+        
+        $totalCustomers = $regularCustomerIds->merge($customCustomerIds)->unique()->count();
+        
+        // ============================================
+        // 6. SALES & ORDERS CHART DATA (Last 12 Months)
+        // ============================================
+        // PostgreSQL compatible date formatting
         $driver = DB::getDriverName();
         $ymExpr = $driver === 'pgsql' ? 'TO_CHAR(created_at, \'YYYY-MM\')' : 'DATE_FORMAT(created_at, "%Y-%m")';
-
-        // Get regular orders sales by month
-        $regular_sales_by_month = $regularQuery->clone()->select(
-                DB::raw($ymExpr . ' as ym'),
+        
+        // Get last 12 months of regular orders
+        $regularSalesByMonth = Order::whereIn('status', $statusFilter)
+            ->when($startDate, function($q) use ($startDate) {
+                $q->whereDate('created_at', '>=', $startDate);
+            })
+            ->when($endDate, function($q) use ($endDate) {
+                $q->whereDate('created_at', '<=', $endDate);
+            })
+            ->where('created_at', '>=', now()->subMonths(12))
+            ->select(
+                DB::raw($ymExpr . ' as month'),
                 DB::raw('COUNT(*) as orders_count'),
                 DB::raw('SUM(total_amount) as revenue')
             )
-            ->groupBy('ym')
-            ->orderBy('ym')
+            ->groupBy('month')
+            ->orderBy('month')
             ->get();
-
-        // Get custom design orders sales by month
-        $custom_sales_by_month = $customQuery->clone()->select(
-                DB::raw($ymExpr . ' as ym'),
+        
+        // Get last 12 months of custom orders
+        $customSalesByMonth = CustomDesignOrder::whereIn('status', $statusFilter)
+            ->when($startDate, function($q) use ($startDate) {
+                $q->whereDate('created_at', '>=', $startDate);
+            })
+            ->when($endDate, function($q) use ($endDate) {
+                $q->whereDate('created_at', '<=', $endDate);
+            })
+            ->where('created_at', '>=', now()->subMonths(12))
+            ->select(
+                DB::raw($ymExpr . ' as month'),
                 DB::raw('COUNT(*) as orders_count'),
                 DB::raw('SUM(total_amount) as revenue')
             )
-            ->groupBy('ym')
-            ->orderBy('ym')
+            ->groupBy('month')
+            ->orderBy('month')
             ->get();
-
+        
         // Combine both order types by month
-        $all_sales = $regular_sales_by_month->concat($custom_sales_by_month);
-        $sales_by_month = $all_sales->groupBy('ym')->map(function ($monthOrders) {
-            $totalOrders = $monthOrders->sum('orders_count');
-            $totalRevenue = $monthOrders->sum('revenue');
+        $allSales = $regularSalesByMonth->concat($customSalesByMonth);
+        $salesByMonth = $allSales->groupBy('month')->map(function ($monthOrders) {
             return (object) [
-                'month' => $monthOrders->first()->ym,
-                'orders_count' => (int) $totalOrders,
-                'revenue' => (float) $totalRevenue,
+                'month' => $monthOrders->first()->month,
+                'orders_count' => (int) $monthOrders->sum('orders_count'),
+                'revenue' => (float) $monthOrders->sum('revenue'),
             ];
         })->sortBy('month')->values();
-
-        // Calculate totals with filters
-        $regular_revenue = (float) $regularQuery->clone()->sum('total_amount');
-        $custom_revenue = (float) $customQuery->clone()->sum('total_amount');
-        $total_revenue = $regular_revenue + $custom_revenue;
-
-        $regular_orders = (int) $regularQuery->clone()->count();
-        $custom_orders = (int) $customQuery->clone()->count();
-        $total_orders = $regular_orders + $custom_orders;
-
-        $average_order_value = $total_orders > 0 ? $total_revenue / $total_orders : 0;
-
-        // Best selling products (by quantity)
-        $best_sellers = DB::table('order_items')
-            ->join('barong_products', 'order_items.product_id', '=', 'barong_products.id')
-            ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->select('product_id', 'barong_products.name', DB::raw('SUM(order_items.quantity) as total_qty'), DB::raw('SUM(order_items.total_price) as total_sales'))
-            ->whereIn('orders.status', $statusFilter);
-            
-        if ($dateFrom) {
-            $best_sellers->whereDate('orders.created_at', '>=', $dateFrom);
-        }
-        if ($dateTo) {
-            $best_sellers->whereDate('orders.created_at', '<=', $dateTo);
-        }
-            
-        $best_sellers = $best_sellers
-            ->groupBy('product_id', 'barong_products.name')
-            ->orderByDesc('total_qty')
-            ->limit(10)
-            ->get();
-
-        // Top customers by total spent (with filters applied)
-        $top_customers = User::select('users.id', 'users.name', 'users.email')
-            ->selectRaw('COUNT(orders.id) as orders_count')
-            ->selectRaw('SUM(orders.total_amount) as total_spent')
-            ->join('orders', 'users.id', '=', 'orders.user_id')
-            ->whereIn('orders.status', $statusFilter)
-            ->when($dateFrom, function ($q) use ($dateFrom) {
-                $q->whereDate('orders.created_at', '>=', $dateFrom);
+        
+        // ============================================
+        // 7. TOP CUSTOMERS TABLE (Top 10)
+        // ============================================
+        $topCustomers = User::select('users.id', 'users.name', 'users.email')
+            ->selectRaw('COUNT(DISTINCT orders.id) + COUNT(DISTINCT custom_design_orders.id) as orders_count')
+            ->selectRaw('COALESCE(SUM(orders.total_amount), 0) + COALESCE(SUM(custom_design_orders.total_amount), 0) as total_spent')
+            ->leftJoin('orders', function($join) use ($statusFilter, $startDate, $endDate) {
+                $join->on('users.id', '=', 'orders.user_id')
+                     ->whereIn('orders.status', $statusFilter);
+                if ($startDate) {
+                    $join->whereDate('orders.created_at', '>=', $startDate);
+                }
+                if ($endDate) {
+                    $join->whereDate('orders.created_at', '<=', $endDate);
+                }
             })
-            ->when($dateTo, function ($q) use ($dateTo) {
-                $q->whereDate('orders.created_at', '<=', $dateTo);
+            ->leftJoin('custom_design_orders', function($join) use ($statusFilter, $startDate, $endDate) {
+                $join->on('users.id', '=', 'custom_design_orders.user_id')
+                     ->whereIn('custom_design_orders.status', $statusFilter);
+                if ($startDate) {
+                    $join->whereDate('custom_design_orders.created_at', '>=', $startDate);
+                }
+                if ($endDate) {
+                    $join->whereDate('custom_design_orders.created_at', '<=', $endDate);
+                }
             })
             ->groupBy('users.id', 'users.name', 'users.email')
+            ->havingRaw('total_spent > 0')
             ->orderByDesc('total_spent')
             ->limit(10)
             ->get();
-
-        // Custom design orders data
-        $custom_orders = $customQuery->clone()
-            ->with('user')
-            ->orderBy('created_at', 'desc')
-            ->limit(20)
+        
+        // ============================================
+        // 8. BEST SELLING PRODUCTS (Top 10)
+        // ============================================
+        $bestSellers = DB::table('order_items')
+            ->join('barong_products', 'order_items.product_id', '=', 'barong_products.id')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->select(
+                'barong_products.id as product_id',
+                'barong_products.name',
+                DB::raw('SUM(order_items.quantity) as total_qty'),
+                DB::raw('SUM(order_items.total_price) as total_sales')
+            )
+            ->whereIn('orders.status', $statusFilter)
+            ->when($startDate, function($q) use ($startDate) {
+                $q->whereDate('orders.created_at', '>=', $startDate);
+            })
+            ->when($endDate, function($q) use ($endDate) {
+                $q->whereDate('orders.created_at', '<=', $endDate);
+            })
+            ->groupBy('barong_products.id', 'barong_products.name')
+            ->orderByDesc('total_qty')
+            ->limit(10)
             ->get();
-
-        // Custom design orders summary
-        $custom_orders_summary = [
+        
+        // ============================================
+        // 9. CUSTOM DESIGN ORDERS DATA
+        // ============================================
+        // Custom Orders Summary (for cards)
+        $customOrdersSummary = [
             'total_custom_orders' => $customQuery->clone()->count(),
             'total_custom_revenue' => $customQuery->clone()->sum('total_amount'),
-            'pending_custom_orders' => \App\Models\CustomDesignOrder::where('status', 'pending')->count(),
+            'pending_custom_orders' => CustomDesignOrder::where('status', 'pending')->count(),
             'custom_orders_by_fabric' => $customQuery->clone()
                 ->select('fabric', DB::raw('COUNT(*) as count'), DB::raw('SUM(total_amount) as revenue'))
                 ->groupBy('fabric')
                 ->orderByDesc('count')
                 ->get(),
         ];
-
-        // Weekly sales with filters
+        
+        // Recent Custom Design Orders (last 20)
+        $recentCustomOrders = $customQuery->clone()
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->limit(20)
+            ->get();
+        
+        // ============================================
+        // 10. WEEKLY SALES REPORT (Last 3 Months)
+        // ============================================
         $weeklySalesQuery = DB::table('order_items')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->join('barong_products', 'order_items.product_id', '=', 'barong_products.id')
@@ -1361,15 +1445,15 @@ class AdminController extends Controller
             )
             ->whereIn('orders.status', $statusFilter);
             
-        if ($dateFrom) {
-            $weeklySalesQuery->whereDate('orders.created_at', '>=', $dateFrom);
+        if ($startDate) {
+            $weeklySalesQuery->whereDate('orders.created_at', '>=', $startDate);
         }
-        if ($dateTo) {
-            $weeklySalesQuery->whereDate('orders.created_at', '<=', $dateTo);
+        if ($endDate) {
+            $weeklySalesQuery->whereDate('orders.created_at', '<=', $endDate);
         }
         
         // If no date range specified, default to last 3 months
-        if (!$dateFrom && !$dateTo) {
+        if (!$startDate && !$endDate) {
             $weeklySalesQuery->where('orders.created_at', '>=', now()->subMonths(3));
         }
             
@@ -1378,19 +1462,24 @@ class AdminController extends Controller
             ->orderBy('week', 'desc')
             ->orderBy('total_sales', 'desc')
             ->get();
-
+        
+        // ============================================
+        // 11. PREPARE DATA FOR VIEW
+        // ============================================
         $salesReport = [
-            'total_revenue' => $total_revenue,
-            'total_orders' => $total_orders,
-            'average_order_value' => $average_order_value,
-            'top_customers' => $top_customers,
-            'sales_by_month' => $sales_by_month,
-            'best_sellers' => $best_sellers,
-            'custom_orders' => $custom_orders,
-            'custom_orders_summary' => $custom_orders_summary,
+            'total_revenue' => $totalRevenue,
+            'total_orders' => $totalOrders,
+            'average_order_value' => $averageOrderValue,
+            'total_customers' => $totalCustomers,
+            'top_customers' => $topCustomers,
+            'sales_by_month' => $salesByMonth,
+            'orders_by_month' => $salesByMonth, // Same data, different name for chart
+            'best_sellers' => $bestSellers,
+            'custom_orders' => $recentCustomOrders,
+            'custom_orders_summary' => $customOrdersSummary,
             'weekly_sales' => $weeklySales,
         ];
-
+        
         return view('admin.reports', compact('salesReport'));
     }
 
