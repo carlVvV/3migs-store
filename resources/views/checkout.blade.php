@@ -2472,8 +2472,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function clearCityAndBelow() {
-        document.getElementById('city').innerHTML = '<option value="">Select City/Municipality</option>';
-        document.getElementById('city').disabled = true;
+        const citySelect = document.getElementById('city');
+        citySelect.innerHTML = '<option value="">Select City/Municipality</option>';
+        citySelect.disabled = true;
+        citySelect.value = '';
+        psgcData.selectedCity = null;
+
+        // Clear postal code whenever province (or higher) changes
+        const postalCodeInput = document.getElementById('postal_code');
+        if (postalCodeInput) {
+            postalCodeInput.value = '';
+        }
+
         clearBarangay();
     }
 
