@@ -120,7 +120,7 @@ class PSGCService
         return Cache::remember("psgc_gitlab_cities_{$provinceCode}", $this->cacheTimeout, function () use ($provinceCode) {
             // Handle Bulacan province with complete list of cities and municipalities
             if ($provinceCode === '031400000') {
-                return [
+                $cities = [
                     ['code' => '031401000', 'name' => 'Municipality of Angat', 'type' => 'Municipality', 'zipCode' => null, 'districtCode' => '6th Congressional District', 'isCapital' => false],
                     ['code' => '031402000', 'name' => 'Municipality of Balagtas', 'type' => 'Municipality', 'zipCode' => null, 'districtCode' => '5th Congressional District', 'isCapital' => false],
                     ['code' => '031403000', 'name' => 'City of Baliwag', 'type' => 'City', 'zipCode' => null, 'districtCode' => '2nd Congressional District', 'isCapital' => false],
@@ -146,17 +146,26 @@ class PSGCService
                     ['code' => '031423000', 'name' => 'Municipality of San Rafael', 'type' => 'Municipality', 'zipCode' => null, 'districtCode' => '3rd Congressional District', 'isCapital' => false],
                     ['code' => '031424000', 'name' => 'Municipality of Santa Maria', 'type' => 'Municipality', 'zipCode' => null, 'districtCode' => '6th Congressional District', 'isCapital' => false],
                 ];
+
+                return array_map(function ($city) {
+                    $zip = $city['zipCode'] ?? $city['zip_code'] ?? \App\Models\PSGCCity::where('code', $city['code'])->value('zip_code');
+                    $city['zipCode'] = $zip;
+                    $city['zip_code'] = $zip;
+                    return $city;
+                }, $cities);
             }
             
             $response = Http::get("{$this->baseUrl}/provinces/{$provinceCode}/cities");
             if ($response->successful()) {
                 $cities = $response->json();
                 return array_map(function ($city) {
+                    $zip = $city['zipCode'] ?? null;
                     return [
                         'code' => $city['code'],
                         'name' => $city['name'],
                         'type' => $city['type'] ?? null,
-                        'zipCode' => $city['zipCode'] ?? null,
+                        'zipCode' => $zip,
+                        'zip_code' => $zip,
                         'districtCode' => $city['districtCode'] ?? null,
                         'isCapital' => $city['isCapital'] ?? false,
                     ];
@@ -176,11 +185,13 @@ class PSGCService
             if ($response->successful()) {
                 $cities = $response->json();
                 return array_map(function ($city) {
+                    $zip = $city['zipCode'] ?? null;
                     return [
                         'code' => $city['code'],
                         'name' => $city['name'],
                         'type' => $city['type'] ?? null,
-                        'zipCode' => $city['zipCode'] ?? null,
+                        'zipCode' => $zip,
+                        'zip_code' => $zip,
                         'districtCode' => $city['districtCode'] ?? null,
                         'isCapital' => $city['isCapital'] ?? false,
                         'regionCode' => $city['regionCode'],

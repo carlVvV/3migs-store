@@ -77,11 +77,19 @@ class PhilippineAddressService
                 
                 if ($data && is_array($data)) {
                     return array_map(function ($city) {
+                        $code = $city['city_code'] ?? '';
+                        $zip = $city['zip_code'] ?? $city['zipCode'] ?? null;
+
+                        if (!$zip && $code) {
+                            $zip = \App\Models\PSGCCity::where('code', $code)->value('zip_code');
+                        }
+
                         return [
-                            'code' => $city['city_code'] ?? '',
+                            'code' => $code,
                             'name' => $city['city_name'] ?? '',
                             'province_code' => $city['province_code'] ?? '',
-                            'zipCode' => $city['zip_code'] ?? $city['zipCode'] ?? null,
+                            'zipCode' => $zip,
+                            'zip_code' => $zip,
                         ];
                     }, $data);
                 }
