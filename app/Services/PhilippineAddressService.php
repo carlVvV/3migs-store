@@ -81,6 +81,7 @@ class PhilippineAddressService
                             'code' => $city['city_code'] ?? '',
                             'name' => $city['city_name'] ?? '',
                             'province_code' => $city['province_code'] ?? '',
+                            'zipCode' => $city['zip_code'] ?? $city['zipCode'] ?? null,
                         ];
                     }, $data);
                 }

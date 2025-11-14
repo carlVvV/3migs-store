@@ -207,9 +207,9 @@
                             <label class="block text-sm font-medium text-gray-700 mb-2">
                                 Postal Code <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" name="postal_code" id="postal_code" required
-                                   class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                                   placeholder="Enter postal code">
+                            <input type="text" name="postal_code" id="postal_code" required readonly
+                                   class="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent cursor-not-allowed"
+                                   placeholder="Will be auto-filled when you select a city">
                             <div id="postal_code_error" class="text-red-500 text-xs mt-1 hidden"></div>
                         </div>
                         
@@ -2269,6 +2269,8 @@ document.addEventListener('DOMContentLoaded', function() {
             option.value = city.code;
             option.textContent = city.name;
             option.dataset.cityName = city.name;
+            // Store zip code in dataset for auto-population
+            option.dataset.zipCode = city.zipCode || city.zip_code || '';
             citySelect.appendChild(option);
         });
         
@@ -2424,6 +2426,30 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('city').addEventListener('change', async function() {
             const cityCode = this.value;
             psgcData.selectedCity = psgcData.cities.find(c => c.code === cityCode);
+            
+            // Auto-populate zip code from selected city
+            const postalCodeInput = document.getElementById('postal_code');
+            if (cityCode && this.selectedOptions[0]) {
+                const zipCode = this.selectedOptions[0].dataset.zipCode || 
+                               psgcData.selectedCity?.zipCode || 
+                               psgcData.selectedCity?.zip_code || '';
+                
+                if (zipCode) {
+                    postalCodeInput.value = zipCode;
+                    // Clear any error state
+                    const errorDiv = document.getElementById('postal_code_error');
+                    if (errorDiv) {
+                        errorDiv.classList.add('hidden');
+                    }
+                    postalCodeInput.classList.remove('border-red-500');
+                } else {
+                    // If no zip code available, clear the field
+                    postalCodeInput.value = '';
+                }
+            } else {
+                // Clear zip code if no city selected
+                postalCodeInput.value = '';
+            }
             
             // Clear dependent fields
             clearBarangay();
