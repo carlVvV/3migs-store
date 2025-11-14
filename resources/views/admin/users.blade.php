@@ -259,6 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const ordersEl = document.getElementById('user-modal-orders');
     const orderSummaryEl = document.getElementById('user-modal-order-summary');
     let currentUserId = null;
+    const autoSyncedSessions = new Set();
 
     document.querySelectorAll('.view-user-btn').forEach((button) => {
         button.addEventListener('click', () => {
@@ -371,6 +372,8 @@ document.addEventListener('DOMContentLoaded', () => {
         idDocsEl.innerHTML = renderIdDocuments(idDocuments);
         ordersEl.innerHTML = renderOrders(orders);
         orderSummaryEl.textContent = renderOrderSummary(orderSummary);
+
+        autoSyncPendingDocuments(idDocuments);
     }
 
     function handleFetchResponse(response) {
@@ -590,7 +593,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }).format(number);
     }
 
-    async function syncVeriffStatus(sessionId, button) {
+    function autoSyncPendingDocuments(documents) {
+        if (!Array.isArray(documents) || !documents.length) {
+            return;
+        }
+
+        documents.forEach((doc) => {
+            if (
+                doc &&
+                doc.veriff_session_id &&
+                doc.status === 'pending' &&
+                !autoSyncedSessions.has(doc.veriff_session_id)
+            ) {
+                autoSyncedSessions.add(doc.veriff_session_id);
+                const button = document.querySelector(`.sync-veriff-btn[data-session-id="${doc.veriff_session_id}"]`);
+                syncVeriffStatus(doc.veriff_session_id, button || null, { showToast: false, isAutoSync: true });
+            }
+        });
+    }
+
+    async function syncVeriffStatus(sessionId, button = null, options = {}) {
+        const { showToast = true } = options;
         if (!sessionId) {
             if (typeof window.notify === 'function') {
                 window.notify('Session ID is missing', 'error');
@@ -600,11 +623,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Disable button and show loading state
-        const originalHTML = button.innerHTML;
-        button.disabled = true;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Syncing...';
-        button.classList.add('opacity-50', 'cursor-not-allowed');
+        let originalHTML = null;
+        if (button) {
+            // Disable button and show loading state
+            originalHTML = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Syncing...';
+            button.classList.add('opacity-50', 'cursor-not-allowed');
+        }
 
         try {
             // Get CSRF token from meta tag
@@ -631,12 +657,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success) {
                 // Show success toast notification
                 const newStatus = data.document?.status || data.veriff_status;
-                window.notify(`Status synced successfully! Veriff: ${data.veriff_status}, Database: ${newStatus}`, 'success');
+                if (showToast && typeof window.notify === 'function') {
+                    window.notify(`Status synced successfully! Veriff: ${data.veriff_status}, Database: ${newStatus}`, 'success');
+                }
                 
                 // Reset button state
-                button.innerHTML = originalHTML;
-                button.disabled = false;
-                button.classList.remove('opacity-50', 'cursor-not-allowed');
+                if (button) {
+                    button.innerHTML = originalHTML;
+                    button.disabled = false;
+                    button.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
                 
                 // Reload the user details to show updated status
                 // Use a delay to ensure the database update is committed and cached data is cleared
@@ -651,19 +681,27 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 // Show error toast notification
                 const errorMessage = data.error || data.message || data.details?.message || 'Unknown error';
-                window.notify(`Failed to sync status: ${errorMessage}`, 'error');
-                button.innerHTML = originalHTML;
-                button.disabled = false;
-                button.classList.remove('opacity-50', 'cursor-not-allowed');
+                if (showToast && typeof window.notify === 'function') {
+                    window.notify(`Failed to sync status: ${errorMessage}`, 'error');
+                }
+                if (button) {
+                    button.innerHTML = originalHTML;
+                    button.disabled = false;
+                    button.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
             }
         } catch (error) {
             console.error('Error syncing Veriff status:', error);
             // Show error toast notification
             const errorMessage = error.message || 'Failed to sync status. Please check the console for details.';
-            window.notify(errorMessage, 'error');
-            button.innerHTML = originalHTML;
-            button.disabled = false;
-            button.classList.remove('opacity-50', 'cursor-not-allowed');
+            if (showToast && typeof window.notify === 'function') {
+                window.notify(errorMessage, 'error');
+            }
+            if (button) {
+                button.innerHTML = originalHTML;
+                button.disabled = false;
+                button.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
         }
     }
 
