@@ -99,14 +99,36 @@ class PhilippineAddressService
                                 }
                             }
                             
-                            // Log if we found a zip code from database
-                            if ($zip) {
-                                Log::info('Found zip code from database', [
-                                    'city_code' => $code,
-                                    'zip_code' => $zip,
-                                    'city_name' => $city['city_name'] ?? ''
-                                ]);
+                        }
+
+                        // If still no zip code, attempt to match by city name and province
+                        if (!$zip && !empty($city['city_name'])) {
+                            $query = \App\Models\PSGCCity::query()
+                                ->whereRaw('LOWER(name) = ?', [strtolower($city['city_name'])]);
+
+                            if (!empty($city['province_code'])) {
+                                $query->whereRaw('LEFT(province_code, ?) = ?', [strlen($city['province_code']), $city['province_code']]);
                             }
+
+                            $dbCity = $query->first();
+
+                            if (!$dbCity && !empty($city['province_code'])) {
+                                $dbCity = \App\Models\PSGCCity::where('province_code', 'like', $city['province_code'] . '%')
+                                    ->where('name', 'like', $city['city_name'] . '%')
+                                    ->first();
+                            }
+
+                            if ($dbCity) {
+                                $zip = $dbCity->zip_code;
+                            }
+                        }
+
+                        if (!$zip) {
+                            Log::warning('Zip code still missing for city', [
+                                'city_name' => $city['city_name'] ?? null,
+                                'city_code' => $code,
+                                'province_code' => $city['province_code'] ?? null
+                            ]);
                         }
 
                         return [
