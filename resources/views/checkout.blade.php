@@ -2424,36 +2424,98 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // City change handler
         document.getElementById('city').addEventListener('change', async function() {
-            const cityCode = this.value;
-            psgcData.selectedCity = psgcData.cities.find(c => c.code === cityCode);
+            // --- START OF DEBUGGING LOGIC ---
+            console.clear(); // Clear the console for a fresh log
+            console.log("--- 🏁 START ZIP CODE DEBUGGER ---");
             
-            // Auto-populate zip code from selected city
-            const postalCodeInput = document.getElementById('postal_code');
-            if (cityCode && this.selectedOptions[0]) {
-                const zipCode = this.selectedOptions[0].dataset.zipCode || 
-                               psgcData.selectedCity?.zipCode || 
-                               psgcData.selectedCity?.zip_code || '';
+            try {
+                const cityCode = this.value;
                 
-                if (zipCode) {
-                    postalCodeInput.value = zipCode;
-                    // Clear any error state
-                    const errorDiv = document.getElementById('postal_code_error');
-                    if (errorDiv) {
-                        errorDiv.classList.add('hidden');
+                // 1. Log the ID of the selected city
+                console.log("1. Selected City Code from dropdown:", cityCode);
+                
+                if (!cityCode) {
+                    console.warn("2. No City Code selected. Clearing zip code.");
+                    const postalCodeInput = document.getElementById('postal_code');
+                    postalCodeInput.value = '';
+                    clearBarangay();
+                    console.log("--- 🛑 END ZIP CODE DEBUGGER (No city selected) ---");
+                    return;
+                }
+                
+                // 2. Log the entire 'cities' array to check if the data is present
+                console.log("2. Checking 'psgcData.cities' array:", JSON.parse(JSON.stringify(psgcData.cities)));
+                console.log("2b. Number of cities in array:", psgcData.cities.length);
+                
+                // 3. Try to find the city object
+                psgcData.selectedCity = psgcData.cities.find(c => c.code === cityCode);
+                console.log("3. Found city object:", psgcData.selectedCity ? JSON.parse(JSON.stringify(psgcData.selectedCity)) : "!!! NOT FOUND !!!");
+                
+                // 4. Check the selected option's dataset
+                const selectedOption = this.selectedOptions[0];
+                console.log("4. Selected option element:", selectedOption);
+                console.log("4b. Selected option dataset:", selectedOption ? {
+                    zipCode: selectedOption.dataset.zipCode,
+                    cityName: selectedOption.dataset.cityName
+                } : "No option selected");
+                
+                const postalCodeInput = document.getElementById('postal_code');
+                
+                if (psgcData.selectedCity) {
+                    // 5. If the city is found, log all possible zip code properties
+                    console.log("5. City object properties:", {
+                        'zipCode': psgcData.selectedCity.zipCode,
+                        'zip_code': psgcData.selectedCity.zip_code,
+                        'postal_code': psgcData.selectedCity.postal_code,
+                        'code': psgcData.selectedCity.code,
+                        'name': psgcData.selectedCity.name
+                    });
+                    
+                    // Try multiple sources for zip code
+                    const zipCodeFromDataset = selectedOption?.dataset.zipCode || '';
+                    const zipCodeFromCityZipCode = psgcData.selectedCity.zipCode || '';
+                    const zipCodeFromCityZip_code = psgcData.selectedCity.zip_code || '';
+                    
+                    console.log("6. Zip code sources:", {
+                        'fromDataset': zipCodeFromDataset,
+                        'fromCity.zipCode': zipCodeFromCityZipCode,
+                        'fromCity.zip_code': zipCodeFromCityZip_code
+                    });
+                    
+                    const zipCode = zipCodeFromDataset || zipCodeFromCityZipCode || zipCodeFromCityZip_code || '';
+                    
+                    if (zipCode) {
+                        postalCodeInput.value = zipCode;
+                        console.log("7. SUCCESS: Set postal_code input value to:", zipCode);
+                        
+                        // Clear any error state
+                        const errorDiv = document.getElementById('postal_code_error');
+                        if (errorDiv) {
+                            errorDiv.classList.add('hidden');
+                        }
+                        postalCodeInput.classList.remove('border-red-500');
+                    } else {
+                        console.error("7. ERROR: No zip code found in any source. All sources were empty/null.");
+                        postalCodeInput.value = '';
                     }
-                    postalCodeInput.classList.remove('border-red-500');
                 } else {
-                    // If no zip code available, clear the field
+                    console.error("5. ERROR: Could not find a city in the array with code:", cityCode);
+                    console.error("5b. Available city codes:", psgcData.cities.map(c => c.code));
                     postalCodeInput.value = '';
                 }
-            } else {
-                // Clear zip code if no city selected
-                postalCodeInput.value = '';
+                
+            } catch (e) {
+                console.error("--- 💥 A CRITICAL ERROR OCCURRED ---", e);
+                console.error("Error stack:", e.stack);
             }
+            
+            console.log("--- 🛑 END ZIP CODE DEBUGGER ---");
+            // --- END OF DEBUGGING LOGIC ---
             
             // Clear dependent fields
             clearBarangay();
             
+            const cityCode = this.value;
             if (cityCode) {
                 await loadBarangaysByCity(cityCode);
             }
