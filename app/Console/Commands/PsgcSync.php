@@ -419,17 +419,127 @@ class PsgcSync extends Command
     
     /**
      * Sync barangays from psgc.cloud
+     * Fetches barangays by city since the /api/barangays endpoint may not exist
      */
     private function syncBarangays()
     {
-        $response = Http::get('https://psgc.cloud/api/barangays');
+        // First, try to fetch all barangays at once (if endpoint exists)
+        $response = Http::timeout(30)->get('https://psgc.cloud/api/barangays');
         
-        if ($response->failed()) {
-            $this->error('Failed to fetch barangays from psgc.cloud.');
+        if ($response->successful()) {
+            $this->info('  Using /api/barangays endpoint...');
+            $barangays = $response->json();
+            $this->syncBarangaysFromArray($barangays);
             return;
         }
         
-        $barangays = $response->json();
+        // If that fails, fetch barangays by city
+        $this->info('  /api/barangays endpoint not available. Fetching by city...');
+        $this->info('  This will take longer but is more reliable.');
+        
+        $cities = PSGCCity::orderBy('code')->get();
+        $totalCities = $cities->count();
+        $totalBarangays = 0;
+        $created = 0;
+        $updated = 0;
+        $skipped = 0;
+        
+        $bar = $this->output->createProgressBar($totalCities);
+        $bar->start();
+        
+        foreach ($cities as $city) {
+            try {
+                // Fetch barangays for this city
+                $response = Http::timeout(10)->get("https://psgc.cloud/api/cities/{$city->code}/barangays");
+                
+                if ($response->successful()) {
+                    $barangays = $response->json();
+                    
+                    foreach ($barangays as $barangay) {
+                        if (empty($barangay['code']) || empty($barangay['name'])) {
+                            continue;
+                        }
+                        
+                        $existing = PSGCBarangay::where('code', $barangay['code'])->first();
+                        
+                        $regionCode = $barangay['regionCode'] ?? $barangay['region_code'] ?? $city->region_code ?? null;
+                        $regionName = $barangay['regionName'] ?? $barangay['region_name'] ?? $city->region_name ?? null;
+                        $provinceCode = $barangay['provinceCode'] ?? $barangay['province_code'] ?? $city->province_code ?? null;
+                        $provinceName = $barangay['provinceName'] ?? $barangay['province_name'] ?? $city->province_name ?? null;
+                        $cityCode = $barangay['cityCode'] ?? $barangay['city_code'] ?? $city->code ?? null;
+                        $cityName = $barangay['cityName'] ?? $barangay['city_name'] ?? $city->name ?? null;
+                        
+                        $data = [
+                            'code' => $barangay['code'],
+                            'name' => $barangay['name'],
+                        ];
+                        
+                        if ($regionCode !== null) {
+                            $data['region_code'] = $regionCode;
+                        }
+                        if ($regionName !== null) {
+                            $data['region_name'] = $regionName;
+                        }
+                        if ($provinceCode !== null) {
+                            $data['province_code'] = $provinceCode;
+                        }
+                        if ($provinceName !== null) {
+                            $data['province_name'] = $provinceName;
+                        }
+                        if ($cityCode !== null) {
+                            $data['city_code'] = $cityCode;
+                        }
+                        if ($cityName !== null) {
+                            $data['city_name'] = $cityName;
+                        }
+                        
+                        if ($existing) {
+                            $needsUpdate = false;
+                            foreach ($data as $key => $value) {
+                                if ($existing->$key != $value) {
+                                    $existing->$key = $value;
+                                    $needsUpdate = true;
+                                }
+                            }
+                            if ($needsUpdate) {
+                                $existing->save();
+                                $updated++;
+                            }
+                        } else {
+                            if ($cityCode === null) {
+                                $skipped++;
+                                continue;
+                            }
+                            PSGCBarangay::create($data);
+                            $created++;
+                        }
+                        
+                        $totalBarangays++;
+                    }
+                } else {
+                    // Log failed city but continue
+                    Log::warning("Failed to fetch barangays for city: {$city->name} ({$city->code})");
+                }
+                
+                // Small delay to avoid rate limiting
+                usleep(100000); // 0.1 second delay
+                
+            } catch (\Exception $e) {
+                Log::error("Error fetching barangays for city {$city->name}: " . $e->getMessage());
+            }
+            
+            $bar->advance();
+        }
+        
+        $bar->finish();
+        $this->info("\n  ✓ Created: {$created}, Updated: {$updated}, Skipped: {$skipped}, Total: {$totalBarangays}");
+    }
+    
+    /**
+     * Helper method to sync barangays from an array (used when /api/barangays works)
+     */
+    private function syncBarangaysFromArray($barangays)
+    {
         $total = count($barangays);
         $created = 0;
         $updated = 0;
@@ -457,7 +567,6 @@ class PsgcSync extends Command
                 'name' => $barangay['name'],
             ];
             
-            // Only add region/province/city fields if they're not null
             if ($regionCode !== null) {
                 $data['region_code'] = $regionCode;
             }
@@ -490,9 +599,7 @@ class PsgcSync extends Command
                     $updated++;
                 }
             } else {
-                // For new records, city_code is typically required, so skip if null
                 if ($cityCode === null) {
-                    $this->warn("  ⚠ Skipping barangay {$barangay['name']} (code: {$barangay['code']}) - missing city_code");
                     $bar->advance();
                     continue;
                 }
