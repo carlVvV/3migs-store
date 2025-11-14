@@ -2511,8 +2511,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         postalCodeInput.classList.remove('border-red-500');
                     } else {
-                        console.error("7. ERROR: No zip code found in any source. All sources were empty/null.");
+                        // Zip code not available - this is OK, just leave field empty
+                        console.warn("7. INFO: No zip code available for this city. User can enter manually.");
                         postalCodeInput.value = '';
+                        // Don't show error - zip code might not be available in database
                     }
                 } else {
                     console.error("5. ERROR: Could not find a city in the array with code:", cityCode);

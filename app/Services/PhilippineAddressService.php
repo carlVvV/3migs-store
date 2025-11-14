@@ -84,12 +84,15 @@ class PhilippineAddressService
             
             // 2. Format the data for the frontend (as per the documentation)
             return $cities->map(function ($city) {
+                // Handle null/empty zip codes - convert to empty string for consistency
+                $zipCode = !empty($city->zip_code) ? $city->zip_code : '';
+                
                 return [
                     'code'          => $city->code,
                     'name'          => $city->name,
                     'province_code' => $city->province_code,
-                    'zipCode'       => $city->zip_code, // Set both for frontend
-                    'zip_code'      => $city->zip_code  // compatibility
+                    'zipCode'       => $zipCode, // Set both for frontend
+                    'zip_code'      => $zipCode  // compatibility
                 ];
             })->toArray();
             // --- END OF NEW LOGIC ---

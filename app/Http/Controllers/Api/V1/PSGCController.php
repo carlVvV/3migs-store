@@ -86,11 +86,19 @@ class PSGCController extends Controller
             
             // Debug: Log first city to see what we're returning
             if (!empty($cities)) {
+                $firstCity = $cities[0] ?? null;
+                $hasZip = !empty($firstCity['zipCode']) || !empty($firstCity['zip_code']);
+                
                 Log::info('Cities API Response Sample', [
                     'province_code' => $provinceCode,
                     'total_cities' => count($cities),
-                    'first_city' => $cities[0] ?? null,
-                    'has_zip_in_first' => isset($cities[0]['zipCode']) || isset($cities[0]['zip_code']),
+                    'first_city' => $firstCity,
+                    'first_city_zipCode' => $firstCity['zipCode'] ?? 'NULL',
+                    'first_city_zip_code' => $firstCity['zip_code'] ?? 'NULL',
+                    'has_zip_in_first' => $hasZip,
+                    'cities_with_zip' => collect($cities)->filter(function($c) {
+                        return !empty($c['zipCode']) || !empty($c['zip_code']);
+                    })->count(),
                 ]);
             }
             
