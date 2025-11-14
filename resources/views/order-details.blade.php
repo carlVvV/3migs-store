@@ -169,8 +169,37 @@
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
                                     @foreach($order->orderItems as $item)
+                                    @php
+                                        $hasCustomMeasurements = !empty($item->custom_measurements) && 
+                                            is_array($item->custom_measurements) &&
+                                            !empty(array_filter($item->custom_measurements, function($val) {
+                                                return !empty($val) && trim($val) !== '';
+                                            }));
+                                    @endphp
                                     <tr>
-                                        <td class="px-4 py-3 text-sm text-blue-700">{{ $item->product_name ?? ($item->product->name ?? 'Item') }}</td>
+                                        <td class="px-4 py-3 text-sm">
+                                            <div>
+                                                <span class="text-blue-700">{{ $item->product_name ?? ($item->product->name ?? 'Item') }}</span>
+                                                @if($hasCustomMeasurements)
+                                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 ml-2">
+                                                        <i class="fas fa-ruler-combined mr-1 text-xs"></i>Custom Size
+                                                    </span>
+                                                @endif
+                                                @if($hasCustomMeasurements)
+                                                    <div class="text-xs text-gray-500 mt-1">
+                                                        @php
+                                                            $parts = [];
+                                                            if (!empty($item->custom_measurements['shoulder'])) $parts[] = 'Shoulder: ' . $item->custom_measurements['shoulder'] . '"';
+                                                            if (!empty($item->custom_measurements['chest'])) $parts[] = 'Chest: ' . $item->custom_measurements['chest'] . '"';
+                                                            if (!empty($item->custom_measurements['sleeve'])) $parts[] = 'Sleeve: ' . $item->custom_measurements['sleeve'] . '"';
+                                                            if (!empty($item->custom_measurements['waist'])) $parts[] = 'Waist: ' . $item->custom_measurements['waist'] . '"';
+                                                            if (!empty($item->custom_measurements['notes'])) $parts[] = 'Notes: ' . $item->custom_measurements['notes'];
+                                                        @endphp
+                                                        {{ implode(' • ', $parts) }}
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </td>
                                         <td class="px-4 py-3 text-sm text-gray-600">{{ $item->product_sku ?? ($item->product->sku ?? '—') }}</td>
                                         <td class="px-4 py-3 text-sm text-gray-600">{{ $item->size ?? '—' }}</td>
                                         <td class="px-4 py-3 text-sm text-gray-600">{{ $item->color ?? '—' }}</td>

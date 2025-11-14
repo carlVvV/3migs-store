@@ -128,10 +128,37 @@
                                     @endif
                                 </div>
                                 <div class="flex-1">
-                                    <h4 class="font-medium text-gray-800">{{ $item->product->name ?? 'Product' }}</h4>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <h4 class="font-medium text-gray-800">{{ $item->product->name ?? 'Product' }}</h4>
+                                        @php
+                                            $hasCustomMeasurements = !empty($item->custom_measurements) && 
+                                                is_array($item->custom_measurements) &&
+                                                !empty(array_filter($item->custom_measurements, function($val) {
+                                                    return !empty($val) && trim($val) !== '';
+                                                }));
+                                        @endphp
+                                        @if($hasCustomMeasurements)
+                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                                <i class="fas fa-ruler-combined mr-1 text-xs"></i>Custom Size
+                                            </span>
+                                        @endif
+                                    </div>
                                     <p class="text-sm text-gray-600">Quantity: {{ $item->quantity }}</p>
                                     @if($item->size)
                                         <p class="text-sm text-gray-600">Size: {{ $item->size }}</p>
+                                    @endif
+                                    @if($hasCustomMeasurements)
+                                        <div class="text-xs text-gray-500 mt-1">
+                                            @php
+                                                $parts = [];
+                                                if (!empty($item->custom_measurements['shoulder'])) $parts[] = 'Shoulder: ' . $item->custom_measurements['shoulder'] . '"';
+                                                if (!empty($item->custom_measurements['chest'])) $parts[] = 'Chest: ' . $item->custom_measurements['chest'] . '"';
+                                                if (!empty($item->custom_measurements['sleeve'])) $parts[] = 'Sleeve: ' . $item->custom_measurements['sleeve'] . '"';
+                                                if (!empty($item->custom_measurements['waist'])) $parts[] = 'Waist: ' . $item->custom_measurements['waist'] . '"';
+                                                if (!empty($item->custom_measurements['notes'])) $parts[] = 'Notes: ' . $item->custom_measurements['notes'];
+                                            @endphp
+                                            {{ implode(' • ', $parts) }}
+                                        </div>
                                     @endif
                                 </div>
                                 <div class="text-right">
@@ -775,8 +802,37 @@
                 const line = unit * qty;
                 subtotal += line;
                 const tr = document.createElement('tr');
+                // Check if item has custom measurements
+                const hasCustomMeasurements = it.custom_measurements && 
+                    typeof it.custom_measurements === 'object' &&
+                    Object.keys(it.custom_measurements).some(k => it.custom_measurements[k] && String(it.custom_measurements[k]).trim() !== '');
+                
+                // Format custom measurements
+                let customMeasurementsHtml = '';
+                if (hasCustomMeasurements) {
+                    const measurements = it.custom_measurements;
+                    const parts = [];
+                    if (measurements.shoulder && String(measurements.shoulder).trim()) parts.push(`Shoulder: ${escapeHtml(String(measurements.shoulder))}"`);
+                    if (measurements.chest && String(measurements.chest).trim()) parts.push(`Chest: ${escapeHtml(String(measurements.chest))}"`);
+                    if (measurements.sleeve && String(measurements.sleeve).trim()) parts.push(`Sleeve: ${escapeHtml(String(measurements.sleeve))}"`);
+                    if (measurements.waist && String(measurements.waist).trim()) parts.push(`Waist: ${escapeHtml(String(measurements.waist))}"`);
+                    if (measurements.notes && String(measurements.notes).trim()) parts.push(`Notes: ${escapeHtml(String(measurements.notes))}`);
+                    customMeasurementsHtml = parts.length > 0 ? `<div class="text-xs text-gray-500 mt-1">${parts.join(' • ')}</div>` : '';
+                }
+                
+                const productName = escapeHtml((it.product && it.product.name) || it.name || 'Item');
+                const customSizeBadge = hasCustomMeasurements ? 
+                    `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 ml-2">
+                        <i class="fas fa-ruler-combined mr-1 text-xs"></i>Custom Size
+                    </span>` : '';
+                
                 tr.innerHTML = `
-                    <td class="px-3 py-2 text-sm text-blue-700">${escapeHtml((it.product && it.product.name) || it.name || 'Item')}</td>
+                    <td class="px-3 py-2 text-sm">
+                        <div>
+                            <span class="text-blue-700">${productName}${customSizeBadge}</span>
+                            ${customMeasurementsHtml}
+                        </div>
+                    </td>
                     <td class="px-3 py-2 text-sm text-gray-600">${escapeHtml(it.product_sku || (it.product && it.product.sku) || '—')}</td>
                     <td class="px-3 py-2 text-sm text-gray-600">${escapeHtml(it.size || '—')}</td>
                     <td class="px-3 py-2 text-sm text-gray-600">${escapeHtml(it.color || '—')}</td>

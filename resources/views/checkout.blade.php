@@ -1552,6 +1552,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
     function displayOrderItems(items) {
         const container = document.getElementById('order-items');
         container.innerHTML = '';
@@ -1580,13 +1587,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
             }
             
+            // Check if item has custom measurements
+            const hasCustomMeasurements = item.custom_measurements && 
+                Object.keys(item.custom_measurements).some(k => item.custom_measurements[k] && item.custom_measurements[k].trim() !== '');
+            
+            // Format custom measurements
+            let customMeasurementsHtml = '';
+            if (hasCustomMeasurements) {
+                const measurements = item.custom_measurements;
+                const parts = [];
+                if (measurements.shoulder && measurements.shoulder.trim()) parts.push(`Shoulder: ${escapeHtml(measurements.shoulder)}"`);
+                if (measurements.chest && measurements.chest.trim()) parts.push(`Chest: ${escapeHtml(measurements.chest)}"`);
+                if (measurements.sleeve && measurements.sleeve.trim()) parts.push(`Sleeve: ${escapeHtml(measurements.sleeve)}"`);
+                if (measurements.waist && measurements.waist.trim()) parts.push(`Waist: ${escapeHtml(measurements.waist)}"`);
+                if (measurements.notes && measurements.notes.trim()) parts.push(`Notes: ${escapeHtml(measurements.notes)}`);
+                customMeasurementsHtml = parts.length > 0 ? `<p class="text-xs text-gray-600 mt-1">${parts.join(' • ')}</p>` : '';
+            }
+            
             itemElement.innerHTML = `
                 <img src="${item.image || '/images/placeholder.jpg'}" 
                      alt="${item.name}" 
                      class="w-12 h-12 object-cover rounded">
                 <div class="flex-1">
-                    <h4 class="text-sm font-medium text-gray-900">${item.name}</h4>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h4 class="text-sm font-medium text-gray-900">${item.name}</h4>
+                        ${hasCustomMeasurements ? `
+                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                <i class="fas fa-ruler-combined mr-1 text-xs"></i>Custom Size
+                            </span>
+                        ` : ''}
+                    </div>
                     <p class="text-sm text-gray-500">Qty: ${item.quantity}</p>
+                    ${customMeasurementsHtml}
                 </div>
                 ${priceDisplay}
             `;

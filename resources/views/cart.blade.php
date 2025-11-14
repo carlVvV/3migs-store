@@ -342,8 +342,20 @@ document.addEventListener('DOMContentLoaded', function() {
                              alt="${item.name}" 
                              class="w-16 h-16 object-cover rounded-md flex-shrink-0">
                         <div class="flex-1 min-w-0">
-                            <h4 class="font-medium text-gray-900 hover:text-blue-600 transition-colors">${item.name}</h4>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h4 class="font-medium text-gray-900 hover:text-blue-600 transition-colors">${item.name}</h4>
+                                ${item.custom_measurements && Object.keys(item.custom_measurements).some(k => item.custom_measurements[k] && item.custom_measurements[k].trim() !== '') ? `
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                        <i class="fas fa-ruler-combined mr-1 text-xs"></i>Custom Size
+                                    </span>
+                                ` : ''}
+                            </div>
                             <p class="text-sm text-gray-500 mt-1">${categoryName}</p>
+                            ${item.custom_measurements && Object.keys(item.custom_measurements).some(k => item.custom_measurements[k] && item.custom_measurements[k].trim() !== '') ? `
+                                <div class="text-xs text-gray-600 mt-1 space-y-0.5">
+                                    ${formatCustomMeasurements(item.custom_measurements)}
+                                </div>
+                            ` : ''}
                             <div class="flex items-center gap-2 mt-1 flex-wrap">
                                 ${item.size ? `
                                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-black text-white" id="size-badge-${itemId}">
@@ -386,6 +398,37 @@ document.addEventListener('DOMContentLoaded', function() {
     function formatCurrency(value) {
         const num = Number(value || 0);
         return '₱' + num.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatCustomMeasurements(measurements) {
+        if (!measurements || typeof measurements !== 'object') return '';
+        
+        const parts = [];
+        const labels = {
+            shoulder: 'Shoulder',
+            chest: 'Chest',
+            sleeve: 'Sleeve',
+            waist: 'Waist',
+            notes: 'Notes'
+        };
+        
+        Object.keys(labels).forEach(key => {
+            if (measurements[key] && measurements[key].trim() !== '') {
+                if (key === 'notes') {
+                    parts.push(`<span class="text-gray-500 italic">${escapeHtml(measurements[key])}</span>`);
+                } else {
+                    parts.push(`<span>${labels[key]}: ${escapeHtml(measurements[key])}"</span>`);
+                }
+            }
+        });
+        
+        return parts.length > 0 ? parts.join(' • ') : '';
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     // Optimistic UI subtotal + total update while typing

@@ -80,6 +80,7 @@ class CartController extends Controller
                             'added_at' => $details['added_at'] ?? now(),
                             'size' => $details['size'] ?? null,
                             'color' => $details['color'] ?? null,
+                            'custom_measurements' => $details['custom_measurements'] ?? null,
                         ];
                     }
                 }
@@ -137,6 +138,7 @@ class CartController extends Controller
                     'wholesale_savings' => $wholesaleSavings,
                     'size' => $cartItem->size ?? null,
                     'color' => $cartItem->color ?? null,
+                    'custom_measurements' => $cartItem->custom_measurements ?? null,
                 ];
             }
 

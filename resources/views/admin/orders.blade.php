@@ -370,11 +370,38 @@ async function openAdminOrderModal(modal, orderId) {
             subtotal += line;
             const tr = document.createElement('tr');
             const productData = it.product ? encodeURIComponent(JSON.stringify(it.product)) : '';
+            // Check if item has custom measurements
+            const hasCustomMeasurements = it.custom_measurements && 
+                typeof it.custom_measurements === 'object' &&
+                Object.keys(it.custom_measurements).some(k => it.custom_measurements[k] && String(it.custom_measurements[k]).trim() !== '');
+            
+            // Format custom measurements
+            let customMeasurementsHtml = '';
+            if (hasCustomMeasurements) {
+                const measurements = it.custom_measurements;
+                const parts = [];
+                if (measurements.shoulder && String(measurements.shoulder).trim()) parts.push(`Shoulder: ${escapeHtml(String(measurements.shoulder))}"`);
+                if (measurements.chest && String(measurements.chest).trim()) parts.push(`Chest: ${escapeHtml(String(measurements.chest))}"`);
+                if (measurements.sleeve && String(measurements.sleeve).trim()) parts.push(`Sleeve: ${escapeHtml(String(measurements.sleeve))}"`);
+                if (measurements.waist && String(measurements.waist).trim()) parts.push(`Waist: ${escapeHtml(String(measurements.waist))}"`);
+                if (measurements.notes && String(measurements.notes).trim()) parts.push(`Notes: ${escapeHtml(String(measurements.notes))}`);
+                customMeasurementsHtml = parts.length > 0 ? `<div class="text-xs text-gray-500 mt-1">${parts.join(' • ')}</div>` : '';
+            }
+            
+            const productName = escapeHtml((it.product && it.product.name) || it.name || 'Item');
+            const customSizeBadge = hasCustomMeasurements ? 
+                `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 ml-2">
+                    <i class="fas fa-ruler-combined mr-1 text-xs"></i>Custom Size
+                </span>` : '';
+            
             tr.innerHTML = `
                 <td class="px-4 py-2 text-sm text-gray-800">
-                    <button class="text-blue-600 hover:underline adm-item-product-btn" data-product="${productData}">
-                        ${escapeHtml((it.product && it.product.name) || it.name || 'Item')}
-                    </button>
+                    <div>
+                        <button class="text-blue-600 hover:underline adm-item-product-btn" data-product="${productData}">
+                            ${productName}${customSizeBadge}
+                        </button>
+                        ${customMeasurementsHtml}
+                    </div>
                 </td>
                 <td class="px-4 py-2 text-sm text-gray-600">${qty}</td>
                 <td class="px-4 py-2 text-sm text-gray-600">₱${formatMoney(unit)}</td>
