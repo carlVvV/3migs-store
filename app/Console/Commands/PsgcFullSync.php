@@ -5,6 +5,8 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 use App\Models\PSGCCity;
+use App\Models\PSGCRegion;
+use App\Models\PSGCProvince;
 use Illuminate\Support\Facades\Log;
 
 class PsgcFullSync extends Command
@@ -80,19 +82,31 @@ class PsgcFullSync extends Command
             ];
             
             if ($existing) {
-                // For existing records, only update non-null fields
-                // Don't overwrite region/province if API doesn't provide them
+                // For existing records, update all fields including missing region/province names
                 if ($regionCode !== null) {
                     $data['region_code'] = $regionCode;
                 }
                 if ($regionName !== null) {
                     $data['region_name'] = $regionName;
+                } elseif ($existing->region_code && empty($existing->region_name)) {
+                    // Look up region name from database if missing
+                    $region = PSGCRegion::where('code', $existing->region_code)->first();
+                    if ($region) {
+                        $data['region_name'] = $region->name;
+                    }
                 }
+                
                 if ($provinceCode !== null) {
                     $data['province_code'] = $provinceCode;
                 }
                 if ($provinceName !== null) {
                     $data['province_name'] = $provinceName;
+                } elseif ($existing->province_code && empty($existing->province_name)) {
+                    // Look up province name from database if missing
+                    $province = PSGCProvince::where('code', $existing->province_code)->first();
+                    if ($province) {
+                        $data['province_name'] = $province->name;
+                    }
                 }
                 
                 // Update only changed fields
