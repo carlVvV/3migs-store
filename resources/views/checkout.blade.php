@@ -2445,7 +2445,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log("--- 🏁 START ZIP CODE DEBUGGER ---");
             
             try {
-                const cityCode = this.value;
+            const cityCode = this.value;
                 
                 // 1. Log the ID of the selected city
                 console.log("1. Selected City Code from dropdown:", cityCode);
@@ -2464,7 +2464,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log("2b. Number of cities in array:", psgcData.cities.length);
                 
                 // 3. Try to find the city object
-                psgcData.selectedCity = psgcData.cities.find(c => c.code === cityCode);
+            psgcData.selectedCity = psgcData.cities.find(c => c.code === cityCode);
                 console.log("3. Found city object:", psgcData.selectedCity ? JSON.parse(JSON.stringify(psgcData.selectedCity)) : "!!! NOT FOUND !!!");
                 
                 // 4. Check the selected option's dataset

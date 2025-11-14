@@ -401,18 +401,53 @@ class CartController extends Controller
                 $cart = session()->get('cart', []);
 
                 if (isset($cart[$product->id])) {
-                    // Prevent mixing different sizes for the same product in session cart
+                    // Check if we should allow combining items (same size or both have custom measurements)
                     $existingSize = $cart[$product->id]['size'] ?? null;
+                    $existingCustomMeasurements = $cart[$product->id]['custom_measurements'] ?? null;
                     $incomingSize = $validator['size'] ?? null;
-                    if ($usesSizeStocks && $existingSize && $incomingSize && $existingSize !== $incomingSize) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'This product is already in your cart with size ' . $existingSize . '. Remove it first to add a different size.'
-                        ], 400);
+                    $incomingCustomMeasurements = $validator['custom_measurements'] ?? null;
+                    
+                    // Check if existing item has custom measurements
+                    $existingHasCustom = !empty($existingCustomMeasurements) && 
+                        is_array($existingCustomMeasurements) &&
+                        !empty(array_filter($existingCustomMeasurements, function($val) {
+                            return !empty($val) && trim($val) !== '';
+                        }));
+                    
+                    // Check if incoming has custom measurements
+                    $incomingHasCustom = !empty($incomingCustomMeasurements) && 
+                        is_array($incomingCustomMeasurements) &&
+                        !empty(array_filter($incomingCustomMeasurements, function($val) {
+                            return !empty($val) && trim($val) !== '';
+                        }));
+
+                    // Only allow combining if sizes match or both have custom measurements
+                    if ($usesSizeStocks && !$hasCustomMeasurements) {
+                        if ($existingSize && $incomingSize && $existingSize !== $incomingSize) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'This product is already in your cart with size ' . $existingSize . '. Remove it first to add a different size.'
+                            ], 400);
+                        }
+                        
+                        // Don't allow mixing custom measurements with size-based items
+                        if ($existingHasCustom && !$incomingHasCustom) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'This product is already in your cart with custom measurements. Remove it first to add a standard size.'
+                            ], 400);
+                        }
+                        
+                        if (!$existingHasCustom && $incomingHasCustom) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'This product is already in your cart with size ' . $existingSize . '. Remove it first to add custom measurements.'
+                            ], 400);
+                        }
                     }
 
                     $newQuantity = ($cart[$product->id]['quantity'] ?? 0) + $validator['quantity'];
-                    if ($usesSizeStocks) {
+                    if ($usesSizeStocks && !$hasCustomMeasurements) {
                         $sizeToUse = $existingSize ?: $incomingSize;
                         $availableForSize = (int) ($product->getStockForSize($sizeToUse) ?? 0);
                         if ($newQuantity > $availableForSize) {
@@ -421,7 +456,7 @@ class CartController extends Controller
                                 'message' => 'Insufficient stock for size ' . $sizeToUse . '. Available: ' . $availableForSize . ', Already in cart: ' . ($cart[$product->id]['quantity'] ?? 0)
                             ], 400);
                         }
-                    } else {
+                    } else if (!$usesSizeStocks && !$hasCustomMeasurements) {
                         if ($newQuantity > $product->getTotalStock()) {
                             return response()->json([
                                 'success' => false,
@@ -431,6 +466,10 @@ class CartController extends Controller
                     }
 
                     $cart[$product->id]['quantity'] = $newQuantity;
+                    // Update custom measurements if provided
+                    if ($incomingHasCustom) {
+                        $cart[$product->id]['custom_measurements'] = $incomingCustomMeasurements;
+                    }
                 } else {
                     $cart[$product->id] = [
                         'quantity' => $validator['quantity'],
@@ -460,20 +499,56 @@ class CartController extends Controller
                 ->first();
 
             if ($existingCartItem) {
-                // Update quantity
-                $newQuantity = $existingCartItem->quantity + $validator['quantity'];
+                // Check if we should allow combining items (same size or both have custom measurements)
+                $existingSize = $existingCartItem->size;
+                $existingCustomMeasurements = $existingCartItem->custom_measurements;
+                $incomingSize = $validator['size'] ?? null;
+                $incomingCustomMeasurements = $validator['custom_measurements'] ?? null;
+                
+                // Check if existing item has custom measurements
+                $existingHasCustom = !empty($existingCustomMeasurements) && 
+                    is_array($existingCustomMeasurements) &&
+                    !empty(array_filter($existingCustomMeasurements, function($val) {
+                        return !empty($val) && trim($val) !== '';
+                    }));
+                
+                // Check if incoming has custom measurements
+                $incomingHasCustom = !empty($incomingCustomMeasurements) && 
+                    is_array($incomingCustomMeasurements) &&
+                    !empty(array_filter($incomingCustomMeasurements, function($val) {
+                        return !empty($val) && trim($val) !== '';
+                    }));
 
-                // Enforce size consistency and per-size stock constraint
-                if ($usesSizeStocks) {
-                    $existingSize = $existingCartItem->size;
-                    $incomingSize = $validator['size'] ?? null;
+                // Only allow combining if sizes match or both have custom measurements
+                if ($usesSizeStocks && !$hasCustomMeasurements) {
                     if ($existingSize && $incomingSize && $existingSize !== $incomingSize) {
                         return response()->json([
                             'success' => false,
                             'message' => 'This product is already in your cart with size ' . $existingSize . '. Remove it first to add a different size.'
                         ], 400);
                     }
+                    
+                    // Don't allow mixing custom measurements with size-based items
+                    if ($existingHasCustom && !$incomingHasCustom) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'This product is already in your cart with custom measurements. Remove it first to add a standard size.'
+                        ], 400);
+                    }
+                    
+                    if (!$existingHasCustom && $incomingHasCustom) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'This product is already in your cart with size ' . $existingSize . '. Remove it first to add custom measurements.'
+                        ], 400);
+                    }
+                }
 
+                // Update quantity
+                $newQuantity = $existingCartItem->quantity + $validator['quantity'];
+
+                // Enforce size consistency and per-size stock constraint (only if no custom measurements)
+                if ($usesSizeStocks && !$hasCustomMeasurements) {
                     $sizeToUse = $existingSize ?: $incomingSize;
                     if (!$sizeToUse) {
                         return response()->json([
@@ -495,7 +570,7 @@ class CartController extends Controller
                             'message' => 'Insufficient stock for size ' . $sizeToUse . '. Available: ' . $availableForSize . ', Already in cart: ' . $existingCartItem->quantity
                         ], 400);
                     }
-                } else {
+                } else if (!$usesSizeStocks && !$hasCustomMeasurements) {
                     if ($newQuantity > $product->getTotalStock()) {
                         return response()->json([
                             'success' => false,
@@ -508,10 +583,18 @@ class CartController extends Controller
                 $totalCartQuantity = $user->cart()->where('id', '!=', $existingCartItem->id)->sum('quantity') + $newQuantity;
                 $finalPrice = $product->getPriceForQuantity($totalCartQuantity);
                 
-                $existingCartItem->update([
+                // Update cart item, including custom measurements if provided
+                $updateData = [
                     'quantity' => $newQuantity,
-                    'price' => $finalPrice // Update price with wholesale pricing if applicable
-                ]);
+                    'price' => $finalPrice
+                ];
+                
+                // Update custom measurements if provided
+                if ($incomingHasCustom) {
+                    $updateData['custom_measurements'] = $incomingCustomMeasurements;
+                }
+                
+                $existingCartItem->update($updateData);
 
                 $cartItem = $existingCartItem;
             } else {
@@ -520,15 +603,25 @@ class CartController extends Controller
                 $finalPrice = $product->getPriceForQuantity($totalCartQuantity);
                 
                 // Create new cart item
-                $cartItem = Cart::create([
+                $cartData = [
                     'user_id' => $user->id,
                     'product_id' => $product->id,
                     'quantity' => $validator['quantity'],
                     'price' => $finalPrice,
                     'size' => $validator['size'] ?? null,
                     'color' => $validator['color'] ?? null,
-                    'custom_measurements' => $validator['custom_measurements'] ?? null
-                ]);
+                ];
+                
+                // Only add custom_measurements if it has actual values
+                if (!empty($validator['custom_measurements']) && 
+                    is_array($validator['custom_measurements']) &&
+                    !empty(array_filter($validator['custom_measurements'], function($val) {
+                        return !empty($val) && trim($val) !== '';
+                    }))) {
+                    $cartData['custom_measurements'] = $validator['custom_measurements'];
+                }
+                
+                $cartItem = Cart::create($cartData);
             }
 
             $cartItem->load('product');
@@ -548,11 +641,24 @@ class CartController extends Controller
                 'trace' => $e->getTraceAsString(),
                 'request_data' => $request->all(),
                 'user_id' => Auth::user() ? Auth::user()->id : 'guest',
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
             ]);
+            
+            // Check if it's a database column error (migration not run)
+            if (strpos($e->getMessage(), 'custom_measurements') !== false || 
+                strpos($e->getMessage(), "doesn't exist") !== false ||
+                strpos($e->getMessage(), 'Unknown column') !== false) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Database migration required. Please run: php artisan migrate',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
             
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to add product to cart',
+                'message' => 'Failed to add product to cart: ' . $e->getMessage(),
                 'error' => $e->getMessage()
             ], 500);
         }

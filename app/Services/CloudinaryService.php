@@ -117,7 +117,7 @@ class CloudinaryService
         
         return $results;
     }
-
+    
     /**
      * Upload a generic file (image or document) to Cloudinary.
      *
