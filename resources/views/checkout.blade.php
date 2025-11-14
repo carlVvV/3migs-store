@@ -781,9 +781,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (typeof window.createVeriffFrame !== 'function') {
-            showNotification('Verification service unavailable. Please refresh and try again.', 'error');
+            if (typeof window.notify === 'function') {
+                window.notify('Verification service unavailable. Please refresh and try again.', 'error');
+            } else {
+                showNotification('Verification service unavailable. Please refresh and try again.', 'error');
+            }
             return;
         }
+
+        // Store previous status to restore if user cancels
+        const previousStatus = idVerificationState.status;
+        idVerificationState.previousStatus = previousStatus;
 
         if (idVeriffLoading) {
             idVeriffLoading.classList.remove('hidden');
@@ -823,47 +831,97 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error('Missing verification session URL.');
             }
 
-            idVerificationState = {
+            // Store session info but DON'T set status to 'pending' yet
+            // Only set to 'pending' when user actually submits
+            idVerificationState.documentId = documentId;
+            idVerificationState.document = {
+                veriff_session_id: sessionId,
                 status: 'pending',
-                documentId,
-                document: {
-                    veriff_session_id: sessionId,
-                    status: 'pending',
-                },
             };
-            persistIdDocumentState();
-            updateIdVerificationUI();
 
             const controller = window.createVeriffFrame({
                 url: sessionUrl,
                 onEvent: (event) => {
                     const messages = window.VeriffMessages || {};
 
-                    switch (event) {
-                        case messages.STARTED:
-                            showNotification('Verification started. Follow the instructions in the Veriff window.', 'info');
-                            break;
-                        case messages.SUBMITTED:
-                        case messages.FINISHED:
-                            idVerificationState.status = 'pending';
-                            persistIdDocumentState();
-                            updateIdVerificationUI();
-                            showNotification('Verification submitted. We will update your status shortly.', 'success');
-                            break;
-                        case messages.CANCELED:
-                            showNotification('Verification was canceled. You can restart the process anytime.', 'info');
-                            break;
-                        case messages.RELOAD_REQUEST:
-                            showNotification('Verification requires a reload. Please try again.', 'info');
-                            break;
-                        default:
-                            break;
+                    // --- Start of New Logic ---
+                    
+                    // 1. Handle errors (if any error event exists)
+                    if (event === messages.ERROR || event === 'error') {
+                        console.error("Veriff SDK Error:", event);
+                        if (typeof window.notify === 'function') {
+                            window.notify('An error occurred. Please try again.', 'error');
+                        } else {
+                            showNotification('An error occurred. Please try again.', 'error');
+                        }
+                        return;
                     }
+
+                    // 2. Handle the "success" (user completed the flow)
+                    if (event === messages.SUBMITTED || event === messages.FINISHED) {
+                        // This is the *only* time we should show "processing/pending".
+                        // The user has successfully submitted their documents.
+                        idVerificationState.status = 'pending';
+                        persistIdDocumentState();
+                        updateIdVerificationUI();
+                        if (typeof window.notify === 'function') {
+                            window.notify('ID verification submitted. We will notify you when it is complete.', 'info');
+                        } else {
+                            showNotification('ID verification submitted. We will notify you when it is complete.', 'info');
+                        }
+                    }
+                    // 3. Handle the "cancelled" (user closed the modal)
+                    else if (event === messages.CANCELED) {
+                        // The user clicked "X" or "Cancel".
+                        // *Do not* change the UI state to 'processing'.
+                        // Reset to previous status (before starting verification)
+                        idVerificationState.status = idVerificationState.previousStatus || 'none';
+                        // Clear the document info since verification was cancelled
+                        idVerificationState.documentId = null;
+                        idVerificationState.document = null;
+                        persistIdDocumentState();
+                        updateIdVerificationUI();
+                        if (typeof window.notify === 'function') {
+                            window.notify('ID verification was cancelled.', 'warning');
+                        } else {
+                            showNotification('ID verification was cancelled.', 'warning');
+                        }
+                    }
+                    // 4. Handle other statuses
+                    else if (event === messages.STARTED) {
+                        if (typeof window.notify === 'function') {
+                            window.notify('Verification started. Follow the instructions in the Veriff window.', 'info');
+                        } else {
+                            showNotification('Verification started. Follow the instructions in the Veriff window.', 'info');
+                        }
+                    }
+                    else if (event === messages.RELOAD_REQUEST) {
+                        if (typeof window.notify === 'function') {
+                            window.notify('Verification requires a reload. Please try again.', 'info');
+                        } else {
+                            showNotification('Verification requires a reload. Please try again.', 'info');
+                        }
+                    }
+                    // 5. Handle any other status (e.g., 'expired')
+                    else {
+                        console.warn("Veriff session ended with event:", event);
+                        if (typeof window.notify === 'function') {
+                            window.notify('Verification session ended. Please try again.', 'error');
+                        } else {
+                            showNotification('Verification session ended. Please try again.', 'error');
+                        }
+                    }
+
+                    // --- End of New Logic ---
                 },
             });
         } catch (error) {
             console.error('Failed to start Veriff session', error);
-            showNotification(error.message || 'Unable to start verification. Please try again.', 'error');
+            if (typeof window.notify === 'function') {
+                window.notify(error.message || 'Unable to start verification. Please try again.', 'error');
+            } else {
+                showNotification(error.message || 'Unable to start verification. Please try again.', 'error');
+            }
         } finally {
             if (idVeriffLoading) {
                 idVeriffLoading.classList.add('hidden');
