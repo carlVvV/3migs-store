@@ -80,8 +80,33 @@ class PhilippineAddressService
                         $code = $city['city_code'] ?? '';
                         $zip = $city['zip_code'] ?? $city['zipCode'] ?? null;
 
+                        // Try to get zip code from database if not provided by Node.js package
                         if (!$zip && $code) {
+                            // Try exact match first
                             $zip = \App\Models\PSGCCity::where('code', $code)->value('zip_code');
+                            
+                            // If still no zip, try with different code formats
+                            if (!$zip) {
+                                // Try with 9-digit code (remove last digit if 10 digits)
+                                if (strlen($code) === 10) {
+                                    $code9 = substr($code, 0, 9);
+                                    $zip = \App\Models\PSGCCity::where('code', $code9)->value('zip_code');
+                                }
+                                // Try with 9-digit code padded to 10
+                                if (!$zip && strlen($code) === 9) {
+                                    $code10 = $code . '0';
+                                    $zip = \App\Models\PSGCCity::where('code', $code10)->value('zip_code');
+                                }
+                            }
+                            
+                            // Log if we found a zip code from database
+                            if ($zip) {
+                                Log::info('Found zip code from database', [
+                                    'city_code' => $code,
+                                    'zip_code' => $zip,
+                                    'city_name' => $city['city_name'] ?? ''
+                                ]);
+                            }
                         }
 
                         return [
