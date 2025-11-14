@@ -1915,12 +1915,6 @@ class AdminController extends Controller
             'session_id' => 'required|string',
         ]);
 
-        $document = \App\Models\IdDocument::where('veriff_session_id', $request->session_id)->first();
-
-        if (!$document) {
-            return response()->json(['error' => 'Document not found'], 404);
-        }
-
         $apiKey = Config::get('services.veriff.api_key');
         $apiSecret = Config::get('services.veriff.secret_key');
 
@@ -1941,7 +1935,9 @@ class AdminController extends Controller
                 'X-Signature' => $signature,
             ])->get("https://api.veriff.me/v1/sessions/{$sessionId}/decision");
 
+            // Check if the call was successful
             if ($response->failed()) {
+                // This will now return the real error
                 return response()->json([
                     'error' => 'Failed to fetch status from Veriff',
                     'details' => $response->json(),
@@ -1949,35 +1945,44 @@ class AdminController extends Controller
                 ], $response->status());
             }
 
-            $veriffData = $response->json('verification');
-            
-            if (!$veriffData || !isset($veriffData['status'])) {
+            // If successful, update the database
+            $data = $response->json();
+            $veriffStatus = $data['verification']['status']; // e.g., 'declined', 'approved'
+
+            // --- START OF NEW CODE TO ADD ---
+
+            // Find the document
+            $document = \App\Models\IdDocument::where('veriff_session_id', $sessionId)->first();
+
+            if ($document) {
+                // Map Veriff status to our internal status
+                $oldStatus = $document->status;
+                $newStatus = $this->mapVeriffStatus($veriffStatus);
+                
+                // Update the status in our database
+                $document->status = $newStatus;
+                $document->save();
+
+                // Return a success message
                 return response()->json([
-                    'error' => 'Invalid response from Veriff API',
-                    'response' => $response->json(),
-                ], 400);
+                    'success' => true,
+                    'message' => "Status synced from Veriff. Changed from '{$oldStatus}' to '{$newStatus}'",
+                    'veriff_status' => $veriffStatus,
+                    'document' => [
+                        'id' => $document->id,
+                        'user_id' => $document->user_id,
+                        'session_id' => $document->veriff_session_id,
+                        'status' => $document->status,
+                    ]
+                ]);
             }
 
-            $veriffStatus = $veriffData['status'];
-            $oldStatus = $document->status;
+            // --- END OF NEW CODE TO ADD ---
 
-            // Map Veriff status to our status
-            $newStatus = $this->mapVeriffStatus($veriffStatus);
-            
-            $document->status = $newStatus;
-            $document->save();
-
+            // Handle case where document wasn't found in our DB
             return response()->json([
-                'success' => true,
-                'message' => "Status synced from Veriff. Changed from '{$oldStatus}' to '{$newStatus}'",
-                'veriff_status' => $veriffStatus,
-                'document' => [
-                    'id' => $document->id,
-                    'user_id' => $document->user_id,
-                    'session_id' => $document->veriff_session_id,
-                    'status' => $document->status,
-                ]
-            ]);
+                'error' => 'Document not found in local database for that session ID.',
+            ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Failed to sync status',
