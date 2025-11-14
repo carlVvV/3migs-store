@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\PSGCCity;
+use App\Models\PSGCBarangay;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -100,26 +101,22 @@ class PhilippineAddressService
      */
     public function getBarangaysByCity($cityCode)
     {
-        return Cache::remember("philippine_address_barangays_{$cityCode}", $this->cacheTimeout, function () use ($cityCode) {
-            try {
-                $nodeCommand = "node -e \"const { barangays } = require('./node_modules/select-philippines-address'); barangays('{$cityCode}').then(data => console.log(JSON.stringify(data)));\"";
-                $output = shell_exec($nodeCommand);
-                $data = json_decode($output, true);
-                
-                if ($data && is_array($data)) {
-                    return array_map(function ($barangay) {
-                        return [
-                            'code' => $barangay['barangay_code'] ?? '',
-                            'name' => $barangay['barangay_name'] ?? '',
-                            'city_code' => $barangay['city_code'] ?? '',
-                        ];
-                    }, $data);
-                }
-            } catch (\Exception $e) {
-                Log::error('Failed to fetch barangays', ['error' => $e->getMessage(), 'city_code' => $cityCode]);
-            }
+        $cacheKey = "philippine_address_barangays_{$cityCode}";
+        
+        return Cache::remember($cacheKey, 60 * 60 * 24, function () use ($cityCode) {
+            // Query barangays directly from database
+            $barangays = PSGCBarangay::where('city_code', $cityCode)
+                                ->orderBy('name', 'asc')
+                                ->get();
             
-            return [];
+            // Format the data for the frontend
+            return $barangays->map(function ($barangay) {
+                return [
+                    'code' => $barangay->code,
+                    'name' => $barangay->name,
+                    'city_code' => $barangay->city_code,
+                ];
+            })->toArray();
         });
     }
 }
