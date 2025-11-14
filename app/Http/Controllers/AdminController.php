@@ -1953,8 +1953,6 @@ class AdminController extends Controller
             $data = $response->json();
             $veriffStatus = $data['verification']['status']; // e.g., 'declined', 'approved'
 
-            // --- START OF NEW CODE TO ADD ---
-
             // Find the document
             $document = \App\Models\IdDocument::where('veriff_session_id', $sessionId)->first();
 
@@ -1963,64 +1961,35 @@ class AdminController extends Controller
                 $oldStatus = $document->status;
                 $newStatus = $this->mapVeriffStatus($veriffStatus);
                 
-                // Only update if status actually changed
-                if ($oldStatus !== $newStatus) {
-                    // Use update() method for more explicit update
-                    $updated = $document->update(['status' => $newStatus]);
-                    
-                    // If update() returns false, try direct DB update as fallback
-                    if (!$updated) {
-                        \Log::warning('Model update() returned false, trying DB::table()', [
-                            'document_id' => $document->id,
-                            'new_status' => $newStatus,
-                        ]);
-                        $updated = \DB::table('id_documents')
-                            ->where('id', $document->id)
-                            ->update(['status' => $newStatus, 'updated_at' => now()]);
-                    }
-                    
-                    // Log for debugging
-                    \Log::info('Veriff Status Sync', [
-                        'session_id' => $sessionId,
-                        'veriff_status' => $veriffStatus,
-                        'old_status' => $oldStatus,
-                        'new_status' => $newStatus,
-                        'updated' => $updated,
+                // Update the status in our database
+                $document->status = $newStatus;
+                $saved = $document->save();
+                
+                // If save() fails, try direct DB update
+                if (!$saved) {
+                    \Log::warning('Veriff sync: save() returned false, trying DB::table()', [
                         'document_id' => $document->id,
+                        'new_status' => $newStatus,
                     ]);
-                    
-                    // Refresh the document from database to ensure we have the latest data
+                    DB::table('id_documents')
+                        ->where('id', $document->id)
+                        ->update(['status' => $newStatus, 'updated_at' => now()]);
                     $document->refresh();
-                    
-                    // Verify the update was successful
-                    if ($document->status !== $newStatus) {
-                        \Log::error('Status update failed after refresh', [
-                            'expected' => $newStatus,
-                            'actual' => $document->status,
-                            'document_id' => $document->id,
-                            'updated_result' => $updated,
-                        ]);
-                    } else {
-                        \Log::info('Status update confirmed successful', [
-                            'document_id' => $document->id,
-                            'status' => $document->status,
-                        ]);
-                    }
-                } else {
-                    \Log::info('Veriff Status Sync - No change needed', [
-                        'session_id' => $sessionId,
-                        'veriff_status' => $veriffStatus,
-                        'current_status' => $oldStatus,
-                        'mapped_status' => $newStatus,
-                    ]);
                 }
+                
+                \Log::info('Veriff Status Sync: Updated', [
+                    'session_id' => $sessionId,
+                    'document_id' => $document->id,
+                    'veriff_status' => $veriffStatus,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'saved' => $saved,
+                ]);
 
-                // Return a success message with updated document
                 return response()->json([
                     'success' => true,
-                    'message' => $oldStatus !== $newStatus 
-                        ? "Status synced from Veriff. Changed from '{$oldStatus}' to '{$newStatus}'"
-                        : "Status already up to date: '{$newStatus}'",
+                    'status' => 'success',
+                    'message' => "Status synced from Veriff. Changed from '{$oldStatus}' to '{$newStatus}'",
                     'veriff_status' => $veriffStatus,
                     'document' => [
                         'id' => $document->id,
@@ -2033,8 +2002,6 @@ class AdminController extends Controller
                     ]
                 ]);
             }
-
-            // --- END OF NEW CODE TO ADD ---
 
             // Handle case where document wasn't found in our DB
             return response()->json([

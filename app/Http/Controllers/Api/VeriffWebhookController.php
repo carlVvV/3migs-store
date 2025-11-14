@@ -47,87 +47,67 @@ class VeriffWebhookController extends Controller
             return response()->json(['message' => 'Invalid signature.'], 401);
         }
 
-        $payload = $request->json('verification');
+        // Get the full payload
+        $payload = $request->json();
         
-        // Log the payload structure for debugging
-        Log::info('Veriff webhook: Payload received', [
-            'payload_structure' => $payload ? array_keys($payload) : 'null',
-            'full_payload' => $request->json()->all(),
+        // Get the Veriff status and session ID from the webhook
+        $verification = $payload->get('verification');
+        $veriffStatus = $verification && isset($verification['status']) ? $verification['status'] : null;
+        $sessionId = $verification && isset($verification['id']) ? $verification['id'] : null;
+
+        if (!$veriffStatus || !$sessionId) {
+            Log::warning('Veriff webhook: Invalid webhook payload', [
+                'payload' => $payload->all(),
+            ]);
+            return response()->json(['error' => 'Invalid webhook payload'], 400);
+        }
+
+        Log::info('Veriff webhook: Processing', [
+            'session_id' => $sessionId,
+            'veriff_status' => $veriffStatus,
         ]);
 
-        if (!$payload || !isset($payload['id'], $payload['status'])) {
-            Log::warning('Veriff webhook: Invalid payload structure', [
-                'payload_keys' => $payload ? array_keys($payload) : 'null',
-            ]);
-            return response()->json(['message' => 'Invalid payload.'], 400);
-        }
-
-        $sessionId = $payload['id'];
-        $veriffStatus = $payload['status'];
-
+        // Find the document
         $document = IdDocument::where('veriff_session_id', $sessionId)->first();
 
-        if (!$document) {
-            Log::warning('Veriff webhook: Document not found', [
-                'session_id' => $sessionId,
-                'veriff_status' => $veriffStatus,
-                'full_payload' => $request->json()->all(),
-            ]);
-            return response()->json(['message' => 'Document not found.'], 404);
-        }
-
-        // Map Veriff status to our database status
-        $oldStatus = $document->status;
-        $newStatus = $this->mapVeriffStatus($veriffStatus);
-
-        // Only update if status actually changed
-        if ($oldStatus !== $newStatus) {
-            // Use update() method for more explicit update
-            $updated = $document->update(['status' => $newStatus]);
+        if ($document) {
+            // Map Veriff status to our internal status
+            $oldStatus = $document->status;
+            $newStatus = $this->mapVeriffStatus($veriffStatus);
             
-            // If update() returns false, try direct DB update as fallback
-            if (!$updated) {
-                Log::warning('Veriff webhook: Model update() returned false, trying DB::table()', [
+            // Update the status in our database
+            $document->status = $newStatus;
+            $saved = $document->save();
+            
+            // If save() fails, try direct DB update
+            if (!$saved) {
+                Log::warning('Veriff webhook: save() returned false, trying DB::table()', [
                     'document_id' => $document->id,
                     'new_status' => $newStatus,
                 ]);
-                $updated = \DB::table('id_documents')
+                DB::table('id_documents')
                     ->where('id', $document->id)
                     ->update(['status' => $newStatus, 'updated_at' => now()]);
+                $document->refresh();
             }
             
-            // Refresh the document from database to ensure we have the latest data
-            $document->refresh();
-            
-            // Verify the update was successful
-            if ($document->status !== $newStatus) {
-                Log::error('Veriff webhook: Status update failed after refresh', [
-                    'expected' => $newStatus,
-                    'actual' => $document->status,
-                    'document_id' => $document->id,
-                    'updated_result' => $updated,
-                ]);
-            } else {
-                Log::info('Veriff webhook: Status updated successfully', [
-                    'session_id' => $sessionId,
-                    'user_id' => $document->user_id,
-                    'veriff_status' => $veriffStatus,
-                    'old_status' => $oldStatus,
-                    'new_status' => $newStatus,
-                    'document_id' => $document->id,
-                ]);
-            }
-        } else {
-            Log::info('Veriff webhook: Status unchanged', [
+            Log::info('Veriff webhook: Status updated', [
                 'session_id' => $sessionId,
-                'user_id' => $document->user_id,
+                'document_id' => $document->id,
                 'veriff_status' => $veriffStatus,
-                'current_status' => $oldStatus,
-                'mapped_status' => $newStatus,
+                'old_status' => $oldStatus,
+                'new_status' => $newStatus,
+                'saved' => $saved,
             ]);
+
+            return response()->json(['status' => 'success', 'message' => 'Status updated'], 200);
         }
 
-        return response()->json(['message' => 'Webhook processed.'], 200);
+        // If we get a webhook for a session we don't have
+        Log::warning('Veriff webhook: Document not found for session', [
+            'session_id' => $sessionId,
+        ]);
+        return response()->json(['error' => 'Document not found for session'], 404);
     }
 
     /**
