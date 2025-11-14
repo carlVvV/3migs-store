@@ -110,6 +110,11 @@
                                 <i class="fas fa-ruler mr-1"></i>
                                 Size Guide
                             </button>
+                            <button type="button" onclick="openCustomSizingModal()" 
+                                    class="text-sm text-gray-600 hover:text-gray-900 hover:underline">
+                                <i class="fas fa-ruler-combined mr-1"></i>
+                                Add Custom Sizing
+                            </button>
                         </div>
                         <button type="button" onclick="checkForUpdates()" 
                                 class="text-sm text-blue-600 hover:text-blue-800 flex items-center">
@@ -244,6 +249,7 @@
 <script>
 let currentQuantity = 1;
 let selectedSize = null; // Always start with no size selected
+let customMeasurements = null;
 let lastUpdateTime = '{{ $product->updated_at->toISOString() }}';
 let updateInterval;
 
@@ -519,6 +525,12 @@ function addToCartProductView() {
     if (size && size !== 'null' && size !== null && size !== '') {
         payload.size = size;
     }
+    
+    // Add custom measurements if available
+    if (customMeasurements && Object.keys(customMeasurements).length > 0) {
+        payload.custom_measurements = customMeasurements;
+    }
+    
     try { console.debug('Cart add payload (final):', payload); } catch (_) {}
     
     // Proceed with cart addition
@@ -757,6 +769,8 @@ function proceedWithCartAdd(payload) {
         // Restore button state
         addToCartBtn.innerHTML = originalText;
         addToCartBtn.disabled = false;
+        // Reset custom measurements after attempt
+        customMeasurements = null;
     });
 }
 
@@ -1332,6 +1346,99 @@ function createOrGetSizeChartModal() {
 
     return modal;
 }
+
+// Custom Sizing Modal Functions
+function openCustomSizingModal() {
+    document.getElementById('custom-sizing-modal').classList.remove('hidden');
+}
+
+function closeCustomSizingModal() {
+    document.getElementById('custom-sizing-modal').classList.add('hidden');
+}
+
+function saveCustomMeasurementsAndAddToCart() {
+    // 1. Get data from modal inputs
+    customMeasurements = {
+        shoulder: document.getElementById('measure-shoulder').value,
+        chest: document.getElementById('measure-chest').value,
+        sleeve: document.getElementById('measure-sleeve').value,
+        waist: document.getElementById('measure-waist').value,
+        notes: document.getElementById('measure-notes').value,
+    };
+
+    // 2. Close the modal
+    closeCustomSizingModal();
+
+    // 3. Call the existing add to cart function
+    // This will now use the 'customMeasurements' variable
+    addToCartProductView();
+}
+</script>
+
+<!-- Custom Sizing Modal -->
+<div id="custom-sizing-modal" class="fixed inset-0 z-50 hidden" style="background-color: rgba(0, 0, 0, 0.5);">
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 relative" style="max-height: 90vh; overflow-y: auto;">
+            <button onclick="closeCustomSizingModal()" class="absolute top-4 right-4 text-gray-600 hover:text-gray-900">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+            <h3 class="text-xl font-semibold mb-4">Enter Your Custom Measurements</h3>
+            <p class="text-sm text-gray-500 mb-4">Please provide your measurements in inches.</p>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="measure-shoulder" class="block text-sm font-medium text-gray-700 mb-1">Shoulder</label>
+                    <input type="text" id="measure-shoulder" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="e.g., 18">
+                </div>
+                <div>
+                    <label for="measure-chest" class="block text-sm font-medium text-gray-700 mb-1">Chest</label>
+                    <input type="text" id="measure-chest" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="e.g., 40">
+                </div>
+                <div>
+                    <label for="measure-sleeve" class="block text-sm font-medium text-gray-700 mb-1">Sleeve Length</label>
+                    <input type="text" id="measure-sleeve" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="e.g., 26">
+                </div>
+                <div>
+                    <label for="measure-waist" class="block text-sm font-medium text-gray-700 mb-1">Waist</label>
+                    <input type="text" id="measure-waist" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="e.g., 32">
+                </div>
+                <div class="col-span-2">
+                    <label for="measure-notes" class="block text-sm font-medium text-gray-700 mb-1">Special Notes</label>
+                    <textarea id="measure-notes" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" rows="3" placeholder="Any special instructions or additional measurements..."></textarea>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" onclick="closeCustomSizingModal()" class="px-6 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+                    Cancel
+                </button>
+                <button type="button" onclick="saveCustomMeasurementsAndAddToCart()" class="bg-black text-white px-6 py-2 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors">
+                    Save and Add to Cart
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Close modal when clicking outside
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('custom-sizing-modal');
+    if (modal) {
+        const modalContent = modal.querySelector('.bg-white');
+        modal.addEventListener('click', function(e) {
+            // Close if clicking on the overlay (not the modal content)
+            if (e.target === modal || (modalContent && !modalContent.contains(e.target))) {
+                closeCustomSizingModal();
+            }
+        });
+    }
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
+            closeCustomSizingModal();
+        }
+    });
+});
 </script>
 @endsection
 

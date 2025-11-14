@@ -21,6 +21,7 @@ class Cart extends Model
         'price',
         'size',
         'color',
+        'custom_measurements',
     ];
 
     /**
@@ -30,6 +31,7 @@ class Cart extends Model
      */
     protected $casts = [
         'price' => 'decimal:2',
+        'custom_measurements' => 'array',
     ];
 
     /**

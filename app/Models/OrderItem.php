@@ -16,12 +16,14 @@ class OrderItem extends Model
         'unit_price',
         'total_price',
         'product_attributes',
+        'custom_measurements',
     ];
 
     protected $casts = [
         'unit_price' => 'decimal:2',
         'total_price' => 'decimal:2',
         'product_attributes' => 'array',
+        'custom_measurements' => 'array',
     ];
 
     /**

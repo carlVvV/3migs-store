@@ -523,7 +523,8 @@ class OrderController extends Controller
                     'product_sku' => $cartItem->product->sku,
                     'quantity' => $cartItem->quantity,
                     'unit_price' => $cartItem->price,
-                    'total_price' => $cartItem->price * $cartItem->quantity
+                    'total_price' => $cartItem->price * $cartItem->quantity,
+                    'custom_measurements' => $cartItem->custom_measurements ?? null
                 ]);
 
                 // Update product stock (size-aware)

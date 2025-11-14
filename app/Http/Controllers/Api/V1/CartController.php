@@ -240,6 +240,7 @@ class CartController extends Controller
                 // Allow flexible size labels; stock checks later ensure validity
                 'size' => 'nullable|string|max:20',
                 'color' => 'nullable|string|max:255',
+                'custom_measurements' => 'nullable|array',
             ]);
 
             // Log validation results
@@ -428,6 +429,7 @@ class CartController extends Controller
                         'quantity' => $validator['quantity'],
                         'size' => $validator['size'] ?? null,
                         'color' => $validator['color'] ?? null,
+                        'custom_measurements' => $validator['custom_measurements'] ?? null,
                         'added_at' => now()
                     ];
                 }
@@ -517,7 +519,8 @@ class CartController extends Controller
                     'quantity' => $validator['quantity'],
                     'price' => $finalPrice,
                     'size' => $validator['size'] ?? null,
-                    'color' => $validator['color'] ?? null
+                    'color' => $validator['color'] ?? null,
+                    'custom_measurements' => $validator['custom_measurements'] ?? null
                 ]);
             }
 
