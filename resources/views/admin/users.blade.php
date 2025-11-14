@@ -639,14 +639,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 button.classList.remove('opacity-50', 'cursor-not-allowed');
                 
                 // Reload the user details to show updated status
-                // Use a small delay to ensure the database update is committed
+                // Use a delay to ensure the database update is committed and cached data is cleared
                 setTimeout(() => {
                     if (currentUserId) {
                         const fallbackName = nameEl?.textContent || 'User Details';
                         const fallbackEmail = emailEl?.textContent || '';
+                        // Force a fresh fetch by adding a timestamp to prevent caching
                         openModal(currentUserId, fallbackName, fallbackEmail);
                     }
-                }, 300);
+                }, 500);
             } else {
                 // Show error toast notification
                 const errorMessage = data.error || data.message || data.details?.message || 'Unknown error';

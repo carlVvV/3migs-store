@@ -775,6 +775,9 @@ class AdminController extends Controller
      */
     public function userDetails(User $user)
     {
+        // Reload the user to ensure fresh data (clears any cached relationships)
+        $user->refresh();
+        
         $user->load([
             'addresses' => fn ($query) => $query->orderByDesc('is_default')->orderByDesc('created_at'),
             'idDocuments' => fn ($query) => $query->latest(),
@@ -1960,26 +1963,64 @@ class AdminController extends Controller
                 $oldStatus = $document->status;
                 $newStatus = $this->mapVeriffStatus($veriffStatus);
                 
-                // Update the status in our database
-                $document->status = $newStatus;
-                $saved = $document->save();
-                
-                // Log for debugging
-                \Log::info('Veriff Status Sync', [
-                    'session_id' => $sessionId,
-                    'veriff_status' => $veriffStatus,
-                    'old_status' => $oldStatus,
-                    'new_status' => $newStatus,
-                    'saved' => $saved,
-                ]);
-                
-                // Refresh the document from database to ensure we have the latest data
-                $document->refresh();
+                // Only update if status actually changed
+                if ($oldStatus !== $newStatus) {
+                    // Use update() method for more explicit update
+                    $updated = $document->update(['status' => $newStatus]);
+                    
+                    // If update() returns false, try direct DB update as fallback
+                    if (!$updated) {
+                        \Log::warning('Model update() returned false, trying DB::table()', [
+                            'document_id' => $document->id,
+                            'new_status' => $newStatus,
+                        ]);
+                        $updated = \DB::table('id_documents')
+                            ->where('id', $document->id)
+                            ->update(['status' => $newStatus, 'updated_at' => now()]);
+                    }
+                    
+                    // Log for debugging
+                    \Log::info('Veriff Status Sync', [
+                        'session_id' => $sessionId,
+                        'veriff_status' => $veriffStatus,
+                        'old_status' => $oldStatus,
+                        'new_status' => $newStatus,
+                        'updated' => $updated,
+                        'document_id' => $document->id,
+                    ]);
+                    
+                    // Refresh the document from database to ensure we have the latest data
+                    $document->refresh();
+                    
+                    // Verify the update was successful
+                    if ($document->status !== $newStatus) {
+                        \Log::error('Status update failed after refresh', [
+                            'expected' => $newStatus,
+                            'actual' => $document->status,
+                            'document_id' => $document->id,
+                            'updated_result' => $updated,
+                        ]);
+                    } else {
+                        \Log::info('Status update confirmed successful', [
+                            'document_id' => $document->id,
+                            'status' => $document->status,
+                        ]);
+                    }
+                } else {
+                    \Log::info('Veriff Status Sync - No change needed', [
+                        'session_id' => $sessionId,
+                        'veriff_status' => $veriffStatus,
+                        'current_status' => $oldStatus,
+                        'mapped_status' => $newStatus,
+                    ]);
+                }
 
                 // Return a success message with updated document
                 return response()->json([
                     'success' => true,
-                    'message' => "Status synced from Veriff. Changed from '{$oldStatus}' to '{$newStatus}'",
+                    'message' => $oldStatus !== $newStatus 
+                        ? "Status synced from Veriff. Changed from '{$oldStatus}' to '{$newStatus}'"
+                        : "Status already up to date: '{$newStatus}'",
                     'veriff_status' => $veriffStatus,
                     'document' => [
                         'id' => $document->id,
