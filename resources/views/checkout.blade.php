@@ -207,10 +207,11 @@
                             <label class="block text-sm font-medium text-gray-700 mb-2">
                                 Postal Code <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" name="postal_code" id="postal_code" required readonly
-                                   class="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent cursor-not-allowed"
+                            <input type="text" name="postal_code" id="postal_code" required
+                                   class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
                                    placeholder="Will be auto-filled when you select a city">
                             <div id="postal_code_error" class="text-red-500 text-xs mt-1 hidden"></div>
+                            <div id="postal_code_hint" class="text-xs text-gray-500 mt-1 hidden"></div>
                         </div>
                         
                         <!-- Phone Number -->
@@ -2486,6 +2487,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.warn("2. No City Code selected. Clearing zip code.");
                     const postalCodeInput = document.getElementById('postal_code');
                     postalCodeInput.value = '';
+                    postalCodeInput.readOnly = false;
+                    postalCodeInput.classList.remove('bg-gray-50', 'cursor-not-allowed');
+                    postalCodeInput.classList.add('bg-white', 'cursor-text');
+                    
+                    // Hide hint
+                    const hintDiv = document.getElementById('postal_code_hint');
+                    if (hintDiv) {
+                        hintDiv.classList.add('hidden');
+                    }
+                    
                     clearBarangay();
                     console.log("--- 🛑 END ZIP CODE DEBUGGER (No city selected) ---");
                     return;
@@ -2533,8 +2544,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     const zipCode = zipCodeFromDataset || zipCodeFromCityZipCode || zipCodeFromCityZip_code || '';
                     
                     if (zipCode) {
+                        // City has zip code - make field readonly
                         postalCodeInput.value = zipCode;
-                        console.log("7. SUCCESS: Set postal_code input value to:", zipCode);
+                        postalCodeInput.readOnly = true;
+                        postalCodeInput.classList.add('bg-gray-50', 'cursor-not-allowed');
+                        postalCodeInput.classList.remove('bg-white', 'cursor-text');
+                        console.log("7. SUCCESS: Set postal_code input value to:", zipCode, "- Field is now readonly");
+                        
+                        // Update hint message
+                        const hintDiv = document.getElementById('postal_code_hint');
+                        if (hintDiv) {
+                            hintDiv.textContent = 'Zip code auto-filled from database. This field cannot be edited.';
+                            hintDiv.classList.remove('hidden');
+                        }
                         
                         // Clear any error state
                         const errorDiv = document.getElementById('postal_code_error');
@@ -2543,15 +2565,34 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         postalCodeInput.classList.remove('border-red-500');
                     } else {
-                        // Zip code not available - this is OK, just leave field empty
-                        console.warn("7. INFO: No zip code available for this city. User can enter manually.");
+                        // Zip code not available - make field editable
                         postalCodeInput.value = '';
-                        // Don't show error - zip code might not be available in database
+                        postalCodeInput.readOnly = false;
+                        postalCodeInput.classList.remove('bg-gray-50', 'cursor-not-allowed');
+                        postalCodeInput.classList.add('bg-white', 'cursor-text');
+                        console.warn("7. INFO: No zip code available for this city. User can enter manually.");
+                        
+                        // Update hint message
+                        const hintDiv = document.getElementById('postal_code_hint');
+                        if (hintDiv) {
+                            hintDiv.textContent = 'No zip code found for this city. Please enter manually.';
+                            hintDiv.classList.remove('hidden');
+                        }
                     }
                 } else {
                     console.error("5. ERROR: Could not find a city in the array with code:", cityCode);
                     console.error("5b. Available city codes:", psgcData.cities.map(c => c.code));
                     postalCodeInput.value = '';
+                    postalCodeInput.readOnly = false;
+                    postalCodeInput.classList.remove('bg-gray-50', 'cursor-not-allowed');
+                    postalCodeInput.classList.add('bg-white', 'cursor-text');
+                    
+                    // Update hint message
+                    const hintDiv = document.getElementById('postal_code_hint');
+                    if (hintDiv) {
+                        hintDiv.textContent = 'City not found. Please enter postal code manually.';
+                        hintDiv.classList.remove('hidden');
+                    }
                 }
                 
             } catch (e) {
@@ -2594,6 +2635,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const postalCodeInput = document.getElementById('postal_code');
         if (postalCodeInput) {
             postalCodeInput.value = '';
+            postalCodeInput.readOnly = false;
+            postalCodeInput.classList.remove('bg-gray-50', 'cursor-not-allowed');
+            postalCodeInput.classList.add('bg-white', 'cursor-text');
+            
+            // Hide hint
+            const hintDiv = document.getElementById('postal_code_hint');
+            if (hintDiv) {
+                hintDiv.classList.add('hidden');
+            }
         }
 
         clearBarangay();
