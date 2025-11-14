@@ -2239,7 +2239,23 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (data.success) {
                 psgcData.cities = data.data;
+                
+                // DEBUG: Log API response to check zip codes
+                console.log('🔍 API Response for cities:', {
+                    provinceCode: provinceCode,
+                    totalCities: data.data.length,
+                    firstCity: data.data[0] || null,
+                    firstCityHasZipCode: data.data[0]?.zipCode || data.data[0]?.zip_code || 'MISSING',
+                    sampleCities: data.data.slice(0, 3).map(c => ({
+                        name: c.name,
+                        zipCode: c.zipCode,
+                        zip_code: c.zip_code
+                    }))
+                });
+                
                 populateCityDropdown();
+            } else {
+                console.error('❌ API returned error:', data);
             }
         } catch (error) {
             console.error('Failed to load cities:', error);
