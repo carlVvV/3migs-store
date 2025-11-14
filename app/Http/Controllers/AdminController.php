@@ -1539,121 +1539,234 @@ class AdminController extends Controller
      */
     public function reportsPrint(Request $request)
     {
-        $reportStartDate = now()->subDays(6)->startOfDay();
-        $reportEndDate = now()->endOfDay();
+        // Use the same filter logic as reports() method
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
+        $period = $request->input('period');
+        $format = $request->input('format', 'monthly'); // daily, weekly, monthly
         
-        // Get daily sales for last 7 days
-        $dailySales = [];
-        $daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        // Date range logic (same as reports method)
+        $startDate = $dateFrom;
+        $endDate = $dateTo;
         
-        for ($i = 6; $i >= 0; $i--) {
-            $date = now()->subDays($i);
-            $dayName = $daysOfWeek[$date->dayOfWeek];
-            $dateStr = $date->format('Y-m-d');
-            
-            $orders = Order::whereIn('status', ['completed', 'delivered', 'shipped', 'processing'])
-                ->whereDate('created_at', $dateStr)
-                ->get();
-            
-            $dailySales[] = [
-                'date' => $dateStr,
-                'day_name' => $dayName,
-                'revenue' => $orders->sum('total_amount'),
-                'orders' => $orders->count(),
-            ];
+        if ($period && !$startDate && !$endDate) {
+            $today = now();
+            switch($period) {
+                case 'today':
+                    $startDate = $today->toDateString();
+                    $endDate = $today->toDateString();
+                    break;
+                case 'week':
+                    $startDate = $today->subDays(7)->toDateString();
+                    $endDate = now()->toDateString();
+                    break;
+                case 'month':
+                    $startDate = $today->startOfMonth()->toDateString();
+                    $endDate = now()->toDateString();
+                    break;
+                case 'last_month':
+                    $startDate = $today->subMonth()->startOfMonth()->toDateString();
+                    $endDate = $today->endOfMonth()->toDateString();
+                    break;
+                case '3months':
+                    $startDate = $today->subMonths(3)->toDateString();
+                    $endDate = now()->toDateString();
+                    break;
+                case '6months':
+                    $startDate = $today->subMonths(6)->toDateString();
+                    $endDate = now()->toDateString();
+                    break;
+                case 'year':
+                    $startDate = $today->subYear()->toDateString();
+                    $endDate = now()->toDateString();
+                    break;
+                case 'all':
+                    $startDate = null;
+                    $endDate = null;
+                    break;
+            }
         }
         
-        // Build category-by-day sales matrix
-        $rawCategoryDaily = DB::table('order_items')
-            ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->join('barong_products', 'order_items.product_id', '=', 'barong_products.id')
-            ->leftJoin('categories', 'barong_products.category_id', '=', 'categories.id')
+        // Status filter (default to completed orders)
+        $statusFilter = ['completed', 'delivered', 'shipped', 'processing'];
+        
+        // Build queries with filters
+        $regularQuery = Order::query()->whereIn('status', $statusFilter);
+        $customQuery = CustomDesignOrder::query()->whereIn('status', $statusFilter);
+        
+        if ($startDate) {
+            $regularQuery->whereDate('created_at', '>=', $startDate);
+            $customQuery->whereDate('created_at', '>=', $startDate);
+        }
+        
+        if ($endDate) {
+            $regularQuery->whereDate('created_at', '<=', $endDate);
+            $customQuery->whereDate('created_at', '<=', $endDate);
+        }
+        
+        // Calculate totals
+        $regularRevenue = (float) $regularQuery->clone()->sum('total_amount');
+        $customRevenue = (float) $customQuery->clone()->sum('total_amount');
+        $totalRevenue = $regularRevenue + $customRevenue;
+        
+        $regularOrdersCount = (int) $regularQuery->clone()->count();
+        $customOrdersCount = (int) $customQuery->clone()->count();
+        $totalOrders = $regularOrdersCount + $customOrdersCount;
+        
+        $averageOrderValue = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
+        
+        // Get sales by period (same logic as reports method)
+        $driver = DB::getDriverName();
+        
+        if ($format === 'daily') {
+            $dateExpr = $driver === 'pgsql' 
+                ? "TO_CHAR(created_at, 'YYYY-MM-DD')" 
+                : ($driver === 'sqlite' ? "strftime('%Y-%m-%d', created_at)" : "DATE_FORMAT(created_at, '%Y-%m-%d')");
+            $dateField = 'date';
+            $defaultRange = now()->subDays(30);
+        } elseif ($format === 'weekly') {
+            if ($driver === 'pgsql') {
+                $dateExpr = "TO_CHAR(DATE_TRUNC('week', created_at), 'YYYY-MM-DD')";
+            } elseif ($driver === 'sqlite') {
+                $dateExpr = "date(created_at, '-' || ((strftime('%w', created_at) + 6) % 7) || ' days')";
+            } else {
+                $dateExpr = "DATE_FORMAT(DATE_SUB(created_at, INTERVAL WEEKDAY(created_at) DAY), '%Y-%m-%d')";
+            }
+            $dateField = 'week';
+            $defaultRange = now()->subWeeks(12);
+        } else {
+            $dateExpr = $driver === 'pgsql' 
+                ? "TO_CHAR(created_at, 'YYYY-MM')" 
+                : ($driver === 'sqlite' ? "strftime('%Y-%m', created_at)" : "DATE_FORMAT(created_at, '%Y-%m')");
+            $dateField = 'month';
+            $defaultRange = now()->subMonths(12);
+        }
+        
+        $regularSalesQuery = Order::whereIn('status', $statusFilter)
+            ->when($startDate, function($q) use ($startDate) {
+                $q->whereDate('created_at', '>=', $startDate);
+            })
+            ->when($endDate, function($q) use ($endDate) {
+                $q->whereDate('created_at', '<=', $endDate);
+            });
+        
+        if (!$startDate && !$endDate) {
+            $regularSalesQuery->where('created_at', '>=', $defaultRange);
+        }
+        
+        $regularSales = $regularSalesQuery
             ->select(
-                DB::raw("COALESCE(categories.name, 'Uncategorized') as category_name"),
-                DB::raw("DATE(orders.created_at) as sales_date"),
-                DB::raw('SUM(order_items.total_price) as day_total')
+                DB::raw($dateExpr . ' as ' . $dateField),
+                DB::raw('COUNT(*) as orders_count'),
+                DB::raw('SUM(total_amount) as revenue')
             )
-            ->whereIn('orders.status', ['completed', 'delivered', 'shipped', 'processing'])
-            ->whereBetween('orders.created_at', [$reportStartDate, $reportEndDate])
-            ->groupBy('category_name', 'sales_date')
+            ->groupBy($dateField)
+            ->orderBy($dateField)
             ->get();
-
-        // Initialize matrix with zeros for all categories and days
-        $categoryNames = $rawCategoryDaily->pluck('category_name')->unique()->values();
-        $productSales = [];
-        foreach ($categoryNames as $cat) {
-            $productSales[$cat] = [
-                'category_name' => $cat,
-                'daily' => array_fill(0, 7, 0.0),
-                'total_sales' => 0.0,
+        
+        $customSalesQuery = CustomDesignOrder::whereIn('status', $statusFilter)
+            ->when($startDate, function($q) use ($startDate) {
+                $q->whereDate('created_at', '>=', $startDate);
+            })
+            ->when($endDate, function($q) use ($endDate) {
+                $q->whereDate('created_at', '<=', $endDate);
+            });
+        
+        if (!$startDate && !$endDate) {
+            $customSalesQuery->where('created_at', '>=', $defaultRange);
+        }
+        
+        $customSales = $customSalesQuery
+            ->select(
+                DB::raw($dateExpr . ' as ' . $dateField),
+                DB::raw('COUNT(*) as orders_count'),
+                DB::raw('SUM(total_amount) as revenue')
+            )
+            ->groupBy($dateField)
+            ->orderBy($dateField)
+            ->get();
+        
+        $allSales = $regularSales->concat($customSales);
+        $salesByPeriod = $allSales->groupBy($dateField)->map(function ($periodOrders) use ($dateField) {
+            return (object) [
+                'period' => $periodOrders->first()->$dateField,
+                'orders_count' => (int) $periodOrders->sum('orders_count'),
+                'revenue' => (float) $periodOrders->sum('revenue'),
             ];
-        }
-
-        // Helper map from date->day index 0..6
-        $dateToIndex = [];
-        foreach ($dailySales as $idx => $day) {
-            $dateToIndex[$day['date']] = $idx; // 0..6 oldest->newest
-        }
-
-        foreach ($rawCategoryDaily as $row) {
-            $cat = $row->category_name;
-            $date = (string) $row->sales_date;
-            if (!isset($productSales[$cat])) {
-                $productSales[$cat] = [
-                    'category_name' => $cat,
-                    'daily' => array_fill(0, 7, 0.0),
-                    'total_sales' => 0.0,
-                ];
-            }
-            if (isset($dateToIndex[$date])) {
-                $i = $dateToIndex[$date];
-                $productSales[$cat]['daily'][$i] += (float) $row->day_total;
-                $productSales[$cat]['total_sales'] += (float) $row->day_total;
-            }
-        }
-
-        // Sort categories by weekly total desc
-        uasort($productSales, function ($a, $b) {
-            return $b['total_sales'] <=> $a['total_sales'];
-        });
-        $productSales = array_values($productSales);
+        })->sortBy('period')->values();
         
-        $totalRevenue = (float) Order::whereIn('status', ['completed', 'delivered', 'shipped', 'processing'])
-            ->where('created_at', '>=', $reportStartDate)
-            ->where('created_at', '<=', $reportEndDate)
-            ->sum('total_amount');
+        // Top customers
+        $topCustomers = User::select('users.id', 'users.name', 'users.email')
+            ->selectRaw('COUNT(DISTINCT orders.id) + COUNT(DISTINCT custom_design_orders.id) as orders_count')
+            ->selectRaw('COALESCE(SUM(orders.total_amount), 0) + COALESCE(SUM(custom_design_orders.total_amount), 0) as total_spent')
+            ->leftJoin('orders', function($join) use ($statusFilter, $startDate, $endDate) {
+                $join->on('users.id', '=', 'orders.user_id')
+                     ->whereIn('orders.status', $statusFilter);
+                if ($startDate) {
+                    $join->whereDate('orders.created_at', '>=', $startDate);
+                }
+                if ($endDate) {
+                    $join->whereDate('orders.created_at', '<=', $endDate);
+                }
+            })
+            ->leftJoin('custom_design_orders', function($join) use ($statusFilter, $startDate, $endDate) {
+                $join->on('users.id', '=', 'custom_design_orders.user_id')
+                     ->whereIn('custom_design_orders.status', $statusFilter);
+                if ($startDate) {
+                    $join->whereDate('custom_design_orders.created_at', '>=', $startDate);
+                }
+                if ($endDate) {
+                    $join->whereDate('custom_design_orders.created_at', '<=', $endDate);
+                }
+            })
+            ->groupBy('users.id', 'users.name', 'users.email')
+            ->havingRaw('(COALESCE(SUM(orders.total_amount), 0) + COALESCE(SUM(custom_design_orders.total_amount), 0)) > 0')
+            ->orderByRaw('(COALESCE(SUM(orders.total_amount), 0) + COALESCE(SUM(custom_design_orders.total_amount), 0)) DESC')
+            ->limit(10)
+            ->get();
         
-        $totalOrders = (int) Order::whereIn('status', ['completed', 'delivered', 'shipped', 'processing'])
-            ->where('created_at', '>=', $reportStartDate)
-            ->where('created_at', '<=', $reportEndDate)
-            ->count();
+        // Best sellers
+        $bestSellers = DB::table('order_items')
+            ->join('barong_products', 'order_items.product_id', '=', 'barong_products.id')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->select(
+                'barong_products.id as product_id',
+                'barong_products.name',
+                DB::raw('SUM(order_items.quantity) as total_qty'),
+                DB::raw('SUM(order_items.total_price) as total_sales')
+            )
+            ->whereIn('orders.status', $statusFilter)
+            ->when($startDate, function($q) use ($startDate) {
+                $q->whereDate('orders.created_at', '>=', $startDate);
+            })
+            ->when($endDate, function($q) use ($endDate) {
+                $q->whereDate('orders.created_at', '<=', $endDate);
+            })
+            ->groupBy('barong_products.id', 'barong_products.name')
+            ->orderByDesc('total_qty')
+            ->limit(10)
+            ->get();
         
-        $monthToDate = (float) Order::whereIn('status', ['completed', 'delivered', 'shipped', 'processing'])
-            ->whereMonth('created_at', now()->month)
-            ->whereYear('created_at', now()->year)
-            ->sum('total_amount');
-        
-        $previousMonth = (float) Order::whereIn('status', ['completed', 'delivered', 'shipped', 'processing'])
-            ->whereMonth('created_at', now()->subMonth()->month)
-            ->whereYear('created_at', now()->subMonth()->year)
-            ->sum('total_amount');
-        
-        $yearToDate = (float) Order::whereIn('status', ['completed', 'delivered', 'shipped', 'processing'])
-            ->whereYear('created_at', now()->year)
-            ->sum('total_amount');
+        // Format labels
+        $formatLabels = [
+            'daily' => 'Daily',
+            'weekly' => 'Weekly',
+            'monthly' => 'Monthly'
+        ];
+        $formatLabel = $formatLabels[$format] ?? 'Monthly';
         
         $salesReport = [
-            'report_start_date' => $reportStartDate,
-            'report_end_date' => $reportEndDate,
-            'daily_sales' => $dailySales,
-            'product_sales' => $productSales,
             'total_revenue' => $totalRevenue,
             'total_orders' => $totalOrders,
-            'total_products' => BarongProduct::count(),
-            'total_customers' => User::where('role', '!=', 'admin')->count(),
-            'month_to_date' => $monthToDate,
-            'previous_month' => $previousMonth,
-            'year_to_date' => $yearToDate,
+            'average_order_value' => $averageOrderValue,
+            'top_customers' => $topCustomers,
+            'sales_by_period' => $salesByPeriod,
+            'best_sellers' => $bestSellers,
+            'format' => $format,
+            'format_label' => $formatLabel,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'report_date' => now()->format('F d, Y'),
         ];
 
         return view('admin.reports-print', compact('salesReport'));
